@@ -26,16 +26,15 @@ export function useTodos(userId) {
   }
 
   async function addTodo(title) {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('todos')
       .insert({ user_id: userId, title, completed: false })
-      .select()
-      .single()
     if (error) {
       console.error('할일 추가 실패:', error)
-      return
+      return false
     }
-    setTodos(prev => [data, ...prev])
+    await fetchTodos()
+    return true
   }
 
   async function toggleTodo(id, completed) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
+import { useGoals } from './hooks/useGoals'
 import { useAlarm } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
 import LoginForm from './components/auth/LoginForm'
@@ -68,6 +69,7 @@ export default function App() {
   const { user, loading, signOut } = useAuth()
   const [activeTab, setActiveTab] = useState('home')
   const { todos } = useTodos(user?.id)
+  const { goals } = useGoals(user?.id)
   const { alarmCount, immersionMinutes, showPopup, closePopup, fireAlarm } = useAlarm()
 
   if (loading) {
@@ -77,11 +79,18 @@ export default function App() {
   if (!user) return <AuthScreen />
 
   const pendingTodos = todos.filter(t => !t.completed).length
+  const todayGoals = goals.filter(g => g.period === 'daily')
 
   function renderPage() {
     switch (activeTab) {
       case 'home':
-        return <HomePage pendingTodos={pendingTodos} alarmCount={alarmCount} immersionMinutes={immersionMinutes} />
+        return <HomePage
+          pendingTodos={pendingTodos}
+          alarmCount={alarmCount}
+          immersionMinutes={immersionMinutes}
+          todos={todos}
+          todayGoals={todayGoals}
+        />
       case 'goals':
         return <GoalsPage userId={user.id} />
       case 'todos':
@@ -91,7 +100,13 @@ export default function App() {
       case 'settings':
         return <SettingsPage userId={user.id} user={user} onTestAlarm={fireAlarm} />
       default:
-        return <HomePage pendingTodos={pendingTodos} alarmCount={alarmCount} immersionMinutes={immersionMinutes} />
+        return <HomePage
+          pendingTodos={pendingTodos}
+          alarmCount={alarmCount}
+          immersionMinutes={immersionMinutes}
+          todos={todos}
+          todayGoals={todayGoals}
+        />
     }
   }
 

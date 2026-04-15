@@ -26,16 +26,15 @@ export function useGoals(userId) {
   }
 
   async function addGoal({ title, period, parentGoalId = null }) {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('goals')
       .insert({ user_id: userId, title, period, parent_goal_id: parentGoalId, progress: 0 })
-      .select()
-      .single()
     if (error) {
       console.error('목표 추가 실패:', error)
-      return
+      return false
     }
-    setGoals(prev => [...prev, data])
+    await fetchGoals()
+    return true
   }
 
   async function updateProgress(id, progress) {
@@ -60,7 +59,7 @@ export function useGoals(userId) {
       console.error('목표 삭제 실패:', error)
       return
     }
-    setGoals(prev => prev.filter(g => g.id !== id))
+    await fetchGoals()
   }
 
   return { goals, loading, addGoal, updateProgress, deleteGoal }
