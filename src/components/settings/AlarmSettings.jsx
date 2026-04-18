@@ -62,9 +62,9 @@ export default function AlarmSettings({ userId }) {
       <p style={styles.sectionTitle}>⏰ 알람 시간대 설정</p>
       <div style={styles.grid}>
         {settings.map(s => (
-          <div key={s.id} style={styles.cell(s.enabled)} onClick={() => toggleHour(s.id, s.enabled)}>
-            <p style={styles.hour(s.enabled)}>{String(s.hour).padStart(2, '0')}시</p>
-            <p style={styles.ampm(s.enabled)}>{s.hour < 12 ? 'AM' : 'PM'}</p>
+          <div key={s.id} style={styles.cell(s.is_enabled)} onClick={() => toggleHour(s.id, s.is_enabled)}>
+            <p style={styles.hour(s.is_enabled)}>{String(s.trigger_hour).padStart(2, '0')}시</p>
+            <p style={styles.ampm(s.is_enabled)}>{s.trigger_hour < 12 ? 'AM' : 'PM'}</p>
           </div>
         ))}
       </div>

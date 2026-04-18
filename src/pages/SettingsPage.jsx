@@ -1,5 +1,6 @@
 import { theme, gradients } from '../styles/theme'
 import AlarmSettings from '../components/settings/AlarmSettings'
+import AlarmSoundSettings from '../components/settings/AlarmSoundSettings'
 import ContentSettings from '../components/settings/ContentSettings'
 import ProfileSettings from '../components/settings/ProfileSettings'
 
@@ -41,6 +42,7 @@ export default function SettingsPage({ userId, user, onTestAlarm }) {
     <div style={styles.wrapper}>
       <ProfileSettings user={user} />
       <AlarmSettings userId={userId} />
+      <AlarmSoundSettings />
       <ContentSettings userId={userId} />
       <div style={styles.testSection}>
         <p style={styles.sectionTitle}>🔔 알람 테스트</p>

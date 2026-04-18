@@ -6,7 +6,7 @@ import { useAlarm } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
 import LoginForm from './components/auth/LoginForm'
 import SignupForm from './components/auth/SignupForm'
-import AlarmPopup from './components/alarm/AlarmPopup'
+import OguCheckin from './components/alarm/OguCheckin'
 import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
@@ -68,7 +68,7 @@ function AuthScreen() {
 export default function App() {
   const { user, loading, signOut } = useAuth()
   const [activeTab, setActiveTab] = useState('home')
-  const { todos } = useTodos(user?.id)
+  const { todos, toggleTodo } = useTodos(user?.id)
   const { goals } = useGoals(user?.id)
   const { alarmCount, immersionMinutes, showPopup, closePopup, fireAlarm } = useAlarm()
 
@@ -78,19 +78,17 @@ export default function App() {
 
   if (!user) return <AuthScreen />
 
-  const pendingTodos = todos.filter(t => !t.completed).length
-  const todayGoals = goals.filter(g => g.period === 'daily')
-
   function renderPage() {
     switch (activeTab) {
       case 'home':
-        return <HomePage
-          pendingTodos={pendingTodos}
-          alarmCount={alarmCount}
-          immersionMinutes={immersionMinutes}
-          todos={todos}
-          todayGoals={todayGoals}
-        />
+        return (
+          <HomePage
+            alarmCount={alarmCount}
+            immersionMinutes={immersionMinutes}
+            todos={todos}
+            goals={goals}
+          />
+        )
       case 'goals':
         return <GoalsPage userId={user.id} />
       case 'todos':
@@ -100,21 +98,28 @@ export default function App() {
       case 'settings':
         return <SettingsPage userId={user.id} user={user} onTestAlarm={fireAlarm} />
       default:
-        return <HomePage
-          pendingTodos={pendingTodos}
-          alarmCount={alarmCount}
-          immersionMinutes={immersionMinutes}
-          todos={todos}
-          todayGoals={todayGoals}
-        />
+        return (
+          <HomePage
+            alarmCount={alarmCount}
+            immersionMinutes={immersionMinutes}
+            todos={todos}
+            goals={goals}
+          />
+        )
     }
   }
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab} onSignOut={signOut}>
       {renderPage()}
+
+      {/* 오구 체크인 팝업 (매시 59분 알람) */}
       {showPopup && (
-        <AlarmPopup pendingTodos={pendingTodos} onClose={closePopup} />
+        <OguCheckin
+          todos={todos}
+          onToggle={toggleTodo}
+          onClose={closePopup}
+        />
       )}
     </Layout>
   )

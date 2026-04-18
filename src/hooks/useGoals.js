@@ -26,9 +26,22 @@ export function useGoals(userId) {
   }
 
   async function addGoal({ title, period, parentGoalId = null }) {
+    const today = new Date()
+    const start_date = today.toISOString().split('T')[0]
+
+    // period에 따라 end_date 자동 계산
+    const end = new Date(today)
+    if (period === 'yearly')       end.setFullYear(end.getFullYear() + 1)
+    else if (period === 'monthly') end.setMonth(end.getMonth() + 1)
+    else if (period === 'weekly')  end.setDate(end.getDate() + 7)
+    else                           end.setDate(end.getDate() + 1) // daily
+    const end_date = end.toISOString().split('T')[0]
+
+    const payload = { user_id: userId, title, period, progress: 0, start_date, end_date }
+    if (parentGoalId) payload.parent_goal_id = parentGoalId
     const { error } = await supabase
       .from('goals')
-      .insert({ user_id: userId, title, period, parent_goal_id: parentGoalId, progress: 0 })
+      .insert(payload)
     if (error) {
       console.error('목표 추가 실패:', error)
       return false
@@ -62,5 +75,5 @@ export function useGoals(userId) {
     await fetchGoals()
   }
 
-  return { goals, loading, addGoal, updateProgress, deleteGoal }
+  return { goals, loading, addGoal, updateProgress, deleteGoal, refresh: fetchGoals }
 }

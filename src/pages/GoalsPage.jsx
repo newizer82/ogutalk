@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useGoals } from '../hooks/useGoals'
-import GoalList from '../components/goals/GoalList'
+import { useTodos } from '../hooks/useTodos'
+import GoalCard from '../components/goals/GoalCard'
+import GoalForm from '../components/goals/GoalForm'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { theme, gradients } from '../styles/theme'
 
@@ -32,14 +34,55 @@ const styles = {
   content: {
     padding: '0 16px',
   },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: theme.text.muted,
+    marginBottom: 8,
+    marginTop: 16,
+    letterSpacing: 1,
+  },
+  unlinkedCard: {
+    background: theme.bg.secondary,
+    borderRadius: 14,
+    padding: '10px 14px',
+    marginBottom: 8,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  check: (done) => ({
+    width: 16,
+    height: 16,
+    borderRadius: '50%',
+    flexShrink: 0,
+    background: done ? theme.status.success : 'transparent',
+    border: done ? 'none' : `2px solid ${theme.text.muted}`,
+    cursor: 'pointer',
+  }),
+  unlinkedText: (done) => ({
+    fontSize: 13,
+    color: done ? theme.text.muted : theme.text.primary,
+    textDecoration: done ? 'line-through' : 'none',
+  }),
 }
 
 export default function GoalsPage({ userId }) {
   const [period, setPeriod] = useState('monthly')
-  const { goals, loading, addGoal, updateProgress, deleteGoal } = useGoals(userId)
+  const { goals, loading, addGoal, deleteGoal, refresh: refreshGoals } = useGoals(userId)
+  const { todos, toggleTodo } = useTodos(userId)
+
+  const filtered = goals.filter(g => g.period === period)
+  const unlinkedTodos = todos.filter(t => !t.goal_id)
+
+  async function handleToggleTodo(id, completed) {
+    await toggleTodo(id, completed)
+    // 할일 토글 후 목표 추진율이 Supabase에 업데이트됐으므로 goals 재조회
+    await refreshGoals()
+  }
 
   return (
-    <div style={{ paddingBottom: 8 }}>
+    <div style={{ paddingBottom: 16 }}>
       <div style={styles.tabRow}>
         {PERIODS.map(p => (
           <button
@@ -51,19 +94,48 @@ export default function GoalsPage({ userId }) {
           </button>
         ))}
       </div>
+
       <div style={styles.content}>
-        {loading
-          ? <LoadingSpinner />
-          : (
-            <GoalList
-              goals={goals}
-              period={period}
-              onAdd={addGoal}
-              onUpdateProgress={updateProgress}
-              onDelete={deleteGoal}
-            />
-          )
-        }
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <>
+            <GoalForm period={period} onAdd={addGoal} />
+
+            {filtered.length === 0 ? (
+              <p style={{ color: theme.text.muted, fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
+                아직 목표가 없어요. 추가해보세요!
+              </p>
+            ) : (
+              filtered.map(goal => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  todos={todos}
+                  onDelete={deleteGoal}
+                  onToggleTodo={handleToggleTodo}
+                />
+              ))
+            )}
+
+            {/* 미분류 할일 섹션 */}
+            {unlinkedTodos.length > 0 && (
+              <>
+                <p style={styles.sectionLabel}>🗂️ 미분류 할일</p>
+                {unlinkedTodos.map(todo => (
+                  <div
+                    key={todo.id}
+                    style={styles.unlinkedCard}
+                    onClick={() => toggleTodo(todo.id, !todo.completed)}
+                  >
+                    <div style={styles.check(todo.completed)} />
+                    <span style={styles.unlinkedText(todo.completed)}>{todo.title}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   )

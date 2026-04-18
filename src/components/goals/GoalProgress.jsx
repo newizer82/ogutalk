@@ -25,11 +25,11 @@ const styles = {
   },
 }
 
-export default function GoalProgress({ progress = 0 }) {
+export default function GoalProgress({ progress = 0, height }) {
   const pct = Math.min(100, Math.max(0, progress))
   return (
     <div>
-      <div style={styles.bar}>
+      <div style={{ ...styles.bar, ...(height ? { height } : {}) }}>
         <div style={styles.fill(pct)} />
       </div>
       <p style={styles.label}>{pct}%</p>

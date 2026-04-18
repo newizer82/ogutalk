@@ -14,11 +14,11 @@ const styles = {
   },
 }
 
-export default function TodoList({ todos, loading, onAdd, onToggle, onDelete }) {
+export default function TodoList({ todos, loading, onAdd, onToggle, onDelete, goals = [] }) {
   return (
     <div style={styles.wrapper}>
       <p style={styles.header}>오늘의 할일</p>
-      <TodoForm onAdd={onAdd} />
+      <TodoForm onAdd={onAdd} goals={goals} />
       {loading
         ? <LoadingSpinner />
         : todos.length === 0
