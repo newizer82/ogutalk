@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { loadAlarmSoundSettings } from './useAlarmSoundSettings'
+import { TONE_CONFIGS, TONE_DURATION, VOICE_CHARACTERS, VOICE_TEXTS } from '../data/oguData'
 
-export function useAlarm() {
-  const [alarmCount, setAlarmCount] = useState(0)
-  const [immersionMinutes, setImmersionMinutes] = useState(0)
-  const [showPopup, setShowPopup] = useState(false)
-  const lastFiredRef = useRef(null)
-  const startTimeRef = useRef(Date.now())
+export function useAlarm({
+  oguTone = '유쾌',
+  oguRepeat = 2,
+  voiceChar = 'girl',
+  voiceEnabled = false,
+  alarmMode = 'both',   // 'sound' | 'vibrate' | 'both'
+  alarmHours = {},
+  immersionAlerts = { m30: true, m60: true },
+} = {}) {
+  const [alarmCount, setAlarmCount]         = useState(0)
+  const [immersionSec, setImmersionSec]     = useState(0)
+  const [showAlarmPopup, setShowAlarmPopup] = useState(false)
+  const [alarmContent, setAlarmContent]     = useState(null)
+  const [immersionPopup, setImmersionPopup] = useState(false)
+  const [immersionLevel, setImmersionLevel] = useState(null)
+
+  const lastHourRef        = useRef(-1)
+  const immersionAlertedRef = useRef({ m30: false, m60: false })
 
   // 브라우저 알림 권한 요청
   useEffect(() => {
@@ -15,112 +27,145 @@ export function useAlarm() {
     }
   }, [])
 
-  // 몰입 시간 카운터 (1분마다 +1)
+  // 매초 카운터: 몰입 시간 + 59분 알람 체크
   useEffect(() => {
     const id = setInterval(() => {
-      setImmersionMinutes(Math.floor((Date.now() - startTimeRef.current) / 60000))
-    }, 60000)
-    return () => clearInterval(id)
-  }, [])
+      setImmersionSec(prev => prev + 1)
 
-  // 59분 알람 체크 (매초)
-  useEffect(() => {
-    const id = setInterval(() => {
       const now = new Date()
-      if (now.getMinutes() === 59 && now.getSeconds() === 0) {
-        const key = `${now.getHours()}-${now.getDate()}`
-        if (lastFiredRef.current !== key) {
-          lastFiredRef.current = key
-          fireAlarm(now.getHours())
-        }
+      const m = now.getMinutes(), h = now.getHours(), s = now.getSeconds()
+      if (m === 59 && s === 0 && alarmHours[h] && lastHourRef.current !== h) {
+        lastHourRef.current = h
+        _fire(h)
       }
     }, 1000)
     return () => clearInterval(id)
-  }, [])
+  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours])
 
-  const fireAlarm = useCallback((hour = new Date().getHours()) => {
-    const { soundDuration, repeatCount, announceHour } = loadAlarmSoundSettings()
-
-    // 1. 오구 사운드 재생
-    playOguSound(soundDuration, repeatCount)
-
-    // 2. 사운드 완료 후 "다음 시" 음성 알림
-    //    예) 1:59 → 사운드 끝난 뒤 "2시" 안내
-    if (announceHour) {
-      const nextHour = (hour + 1) % 24
-      const delay = soundDuration * 1000 + 100  // 사운드 길이 + 여유 100ms
-      setTimeout(() => announceHourVoice(nextHour), delay)
+  // 몰입 경고 체크
+  useEffect(() => {
+    const mins = immersionSec / 60
+    if (immersionAlerts.m30 && mins >= 30 && !immersionAlertedRef.current.m30) {
+      immersionAlertedRef.current.m30 = true
+      setImmersionLevel('30분')
+      setImmersionPopup(true)
+      if (alarmMode !== 'vibrate') playOguSound('화남', 1)
+      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate([300, 150, 300])
     }
+    if (immersionAlerts.m60 && mins >= 60 && !immersionAlertedRef.current.m60) {
+      immersionAlertedRef.current.m60 = true
+      setImmersionLevel('1시간')
+      setImmersionPopup(true)
+      if (alarmMode !== 'vibrate') playOguSound('화남', 2)
+      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 600])
+    }
+  }, [immersionSec])
 
+  const _fire = useCallback((hour = new Date().getHours()) => {
+    // 소리
+    if (alarmMode !== 'vibrate') playOguSound(oguTone, oguRepeat)
+    // 진동
+    if (alarmMode !== 'sound' && navigator.vibrate) {
+      const pat = []
+      for (let i = 0; i < oguRepeat; i++) { pat.push(250, 120) }
+      pat.push(400)
+      navigator.vibrate(pat)
+    }
+    // 음성
+    if (voiceEnabled) speakTime(voiceChar, hour, oguRepeat)
+    // 브라우저 알림
     sendNotification(hour)
+
     setAlarmCount(c => c + 1)
-    setImmersionMinutes(0)
-    startTimeRef.current = Date.now()
-    setShowPopup(true)
+    setImmersionSec(0)
+    immersionAlertedRef.current = { m30: false, m60: false }
+    setShowAlarmPopup(true)
+    setAlarmContent(buildContent())
+  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode])
+
+  const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
+
+  const resetImmersion = useCallback(() => {
+    setImmersionSec(0)
+    immersionAlertedRef.current = { m30: false, m60: false }
+    setImmersionPopup(false)
   }, [])
 
   return {
     alarmCount,
-    immersionMinutes,
-    showPopup,
-    closePopup: () => setShowPopup(false),
+    immersionSec,
+    immersionMinutes: Math.floor(immersionSec / 60),
+    showAlarmPopup,
+    alarmContent,
+    closeAlarmPopup: () => { setShowAlarmPopup(false); setAlarmContent(null) },
+    immersionPopup,
+    immersionLevel,
+    closeImmersionPopup: () => setImmersionPopup(false),
+    resetImmersion,
     fireAlarm,
   }
 }
 
-// ─── 오구 사운드 ───────────────────────────────────────────────
-function playOguSound(totalDuration = 3, repeatCount = 2) {
+// ── 내부 헬퍼 ──────────────────────────────────────────────────
+
+function buildContent() {
+  const QUOTES = [
+    { text: '시간은 금이다.',             author: '벤자민 프랭클린' },
+    { text: '시작이 반이다.',             author: '아리스토텔레스' },
+    { text: '천 리 길도 한 걸음부터.',    author: '노자' },
+    { text: '오늘 할 일을 내일로 미루지 마라.', author: '벤자민 프랭클린' },
+    { text: '실패는 성공의 어머니다.',     author: '토마스 에디슨' },
+  ]
+  const TIPS = [
+    { title: '복리의 마법', content: '매년 7% 수익이면 약 10년 후 원금이 2배.', category: '투자기초' },
+    { title: '72의 법칙',  content: '72 ÷ 수익률(%) = 원금이 2배 되는 기간(년)', category: '투자기초' },
+    { title: 'ETF란?',     content: '주식처럼 거래되는 분산투자 펀드.', category: '투자기초' },
+  ]
+  return {
+    quote: QUOTES[Math.floor(Math.random() * QUOTES.length)],
+    tip:   TIPS[Math.floor(Math.random() * TIPS.length)],
+  }
+}
+
+export function playOguSound(tone = '유쾌', repeat = 1) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const duration = Math.min(Math.max(totalDuration, 1), 10)
-    const count    = Math.min(Math.max(repeatCount, 1), 5)
+    const ctx      = new (window.AudioContext || window.webkitAudioContext)()
+    const baseTime = ctx.currentTime
+    const interval = TONE_DURATION[tone] || 0.9
+    const notes    = TONE_CONFIGS[tone] || TONE_CONFIGS['유쾌']
 
-    // 반복 간격 계산
-    const interval = duration / count
-
-    for (let i = 0; i < count; i++) {
-      const base = ctx.currentTime + i * interval
-
-      // 오 — 낮은 음 (C5)
-      playNote(ctx, 523.25, base,        interval * 0.30, 0.45)
-      // 구 — 높은 음 (E5)
-      playNote(ctx, 659.25, base + interval * 0.35, interval * 0.28, 0.40)
+    for (let r = 0; r < Math.max(1, repeat); r++) {
+      const offset = r * interval
+      notes.forEach(({ freq, start, dur, type, gain: g }) => {
+        const osc  = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = type
+        const t = baseTime + offset + start
+        osc.frequency.setValueAtTime(freq, t)
+        gain.gain.setValueAtTime(g, t)
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur)
+        osc.start(t)
+        osc.stop(t + dur + 0.05)
+      })
     }
-  } catch (e) {
-    console.warn('오디오 재생 실패:', e)
-  }
+  } catch (_) {}
 }
 
-function playNote(ctx, freq, startTime, duration, gain = 0.4) {
-  const osc  = ctx.createOscillator()
-  const gainNode = ctx.createGain()
-  osc.connect(gainNode)
-  gainNode.connect(ctx.destination)
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(freq, startTime)
-  gainNode.gain.setValueAtTime(gain, startTime)
-  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-  osc.start(startTime)
-  osc.stop(startTime + duration + 0.01)
+export function speakTime(voiceId, alarmHour, repeat = 1) {
+  if (!window.speechSynthesis) return
+  const vc       = VOICE_CHARACTERS.find(v => v.id === voiceId) || VOICE_CHARACTERS[0]
+  const nextHour = (alarmHour + 1) % 24
+  const txt      = (VOICE_TEXTS[voiceId] || VOICE_TEXTS.boy)(nextHour, repeat)
+  const utt      = new SpeechSynthesisUtterance(txt)
+  utt.lang  = 'ko-KR'
+  utt.rate  = vc.rate
+  utt.pitch = vc.pitch
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utt)
 }
 
-// ─── 시간 음성 알림 (Web Speech API) ──────────────────────────
-function announceHourVoice(hour) {
-  if (!('speechSynthesis' in window)) return
-  try {
-    window.speechSynthesis.cancel()
-    const utter = new SpeechSynthesisUtterance(`${hour}시`)
-    utter.lang  = 'ko-KR'
-    utter.rate  = 0.85
-    utter.pitch = 1.1
-    utter.volume = 1.0
-    window.speechSynthesis.speak(utter)
-  } catch (e) {
-    console.warn('음성 알림 실패:', e)
-  }
-}
-
-// ─── 브라우저 푸시 알림 ────────────────────────────────────────
 function sendNotification(hour) {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(`⏱️ ${hour}시 오구!`, {

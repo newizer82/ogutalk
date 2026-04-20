@@ -1,58 +1,46 @@
-import { theme } from '../../styles/theme'
-
-const tabs = [
-  { id: 'home',     icon: '⏱️', label: '홈' },
-  { id: 'goals',    icon: '🎯', label: '목표' },
-  { id: 'todos',    icon: '✅', label: '할일' },
-  { id: 'keywords', icon: '📰', label: '키워드' },
-  { id: 'settings', icon: '⚙️', label: '설정' },
+const TABS = [
+  { id: 'home',     icon: '🏠', label: '홈',    pro: false },
+  { id: 'todos',    icon: '✅', label: '할일',   pro: true  },
+  { id: 'goals',    icon: '🎯', label: '목표',   pro: true  },
+  { id: 'keywords', icon: '📈', label: '키워드', pro: true  },
+  { id: 'settings', icon: '⚙️', label: '설정',  pro: false },
 ]
 
-const styles = {
-  bar: {
-    position: 'fixed',
-    bottom: 0,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '100%',
-    maxWidth: 420,
-    display: 'flex',
-    background: theme.bg.secondary,
-    borderTop: '1px solid #1e293b',
-    paddingBottom: 'env(safe-area-inset-bottom)',
-  },
-  tab: (active) => ({
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '10px 0 8px',
-    cursor: 'pointer',
-    gap: 3,
-  }),
-  icon: (active) => ({
-    fontSize: 22,
-    opacity: active ? 1 : 0.5,
-    transition: 'opacity 0.15s',
-  }),
-  label: (active) => ({
-    fontSize: 10,
-    fontWeight: active ? 700 : 400,
-    color: active ? theme.accent.secondary : theme.text.muted,
-    transition: 'color 0.15s',
-  }),
-}
-
-export default function TabBar({ active, onChange }) {
+export default function TabBar({ active, onChange, isPremium }) {
   return (
-    <nav style={styles.bar}>
-      {tabs.map(tab => (
-        <div key={tab.id} style={styles.tab(active === tab.id)} onClick={() => onChange(tab.id)}>
-          <span style={styles.icon(active === tab.id)}>{tab.icon}</span>
-          <span style={styles.label(active === tab.id)}>{tab.label}</span>
-        </div>
-      ))}
+    <nav style={{
+      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100%', maxWidth: 420,
+      display: 'flex', justifyContent: 'space-around',
+      padding: '8px 8px 16px',
+      background: 'rgba(8,15,30,0.92)',
+      backdropFilter: 'blur(16px)',
+      borderTop: '1px solid rgba(255,255,255,0.06)',
+      zIndex: 100,
+    }}>
+      {TABS.map(tab => {
+        const isActive = active === tab.id
+        const locked   = tab.pro && !isPremium
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              padding: '6px 10px', border: 'none', borderRadius: 12,
+              background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
+              color: isActive ? '#818cf8' : '#475569',
+              cursor: 'pointer', position: 'relative', minWidth: 48,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>{tab.icon}</span>
+            <span style={{ fontSize: 9, marginTop: 1 }}>{tab.label}</span>
+            {locked && (
+              <span style={{ position: 'absolute', top: 4, right: 8, fontSize: 8 }}>🔒</span>
+            )}
+          </button>
+        )
+      })}
     </nav>
   )
 }

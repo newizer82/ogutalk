@@ -1,131 +1,99 @@
-import { theme, gradients } from '../../styles/theme'
+import GlassCard from '../common/GlassCard'
+import { OGU_TONES } from '../../data/oguData'
+import { gradients, S } from '../../styles/theme'
 
-const quotes = [
-  '지금 이 순간도 소중한 시간입니다.',
-  '휴식은 낭비가 아니라 재충전입니다.',
-  '작은 쉼이 더 큰 집중을 만듭니다.',
-  '시간을 의식하는 것이 삶을 바꿉니다.',
-  '지금 당신은 잘 하고 있어요.',
-]
+const pad = n => String(n).padStart(2, '0')
 
-const overlay = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.75)',
-  display: 'flex',
-  alignItems: 'flex-end',
-  justifyContent: 'center',
-  zIndex: 1000,
-  maxWidth: 420,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  animation: 'fadeIn 0.2s ease',
-}
-
-const sheet = {
-  width: '100%',
-  background: theme.bg.secondary,
-  borderRadius: '24px 24px 0 0',
-  padding: '28px 24px 40px',
-  animation: 'slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-}
-
-const styles = {
-  badge: {
-    textAlign: 'center',
-    fontSize: 52,
-    marginBottom: 8,
-  },
-  title: {
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 800,
-    background: gradients.logo,
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    marginBottom: 4,
-  },
-  subtitle: {
-    textAlign: 'center',
-    color: theme.text.muted,
-    fontSize: 13,
-    marginBottom: 24,
-  },
-  quoteBox: {
-    background: theme.bg.elevated,
-    borderRadius: 14,
-    padding: '16px 18px',
-    marginBottom: 12,
-  },
-  quoteLabel: {
-    fontSize: 11,
-    color: theme.accent.secondary,
-    fontWeight: 600,
-    marginBottom: 6,
-  },
-  quoteText: {
-    fontSize: 15,
-    color: theme.text.primary,
-    lineHeight: 1.6,
-  },
-  todoBox: {
-    background: theme.bg.elevated,
-    borderRadius: 14,
-    padding: '14px 18px',
-    marginBottom: 24,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  todoLabel: {
-    fontSize: 14,
-    color: theme.text.secondary,
-  },
-  todoBadge: (n) => ({
-    fontSize: 20,
-    fontWeight: 800,
-    color: n > 0 ? theme.status.warning : theme.status.success,
-  }),
-  closeBtn: {
-    width: '100%',
-    padding: '14px',
-    background: gradients.button,
-    border: 'none',
-    borderRadius: 14,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-}
-
-export default function AlarmPopup({ pendingTodos = 0, onClose }) {
+export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '유쾌', onClose }) {
   const now = new Date()
-  const quote = quotes[now.getMinutes() % quotes.length]
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  const HH  = pad(now.getHours())
+  const MM  = pad(now.getMinutes())
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <div style={sheet} onClick={e => e.stopPropagation()}>
-        <div style={styles.badge}>⏱️</div>
-        <p style={styles.title}>오구!</p>
-        <p style={styles.subtitle}>{timeStr} — 벌써 59분이 지났어요</p>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 999, padding: 20,
+      background: 'radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.25) 0%, rgba(0,0,0,0.95) 70%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* 펄스 링 */}
+      <div style={{
+        position: 'absolute', width: 300, height: 300, borderRadius: '50%',
+        border: '1px solid rgba(99,102,241,0.2)',
+        animation: 'pulse 2s ease-out infinite',
+        top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+        border: '1px solid rgba(99,102,241,0.1)',
+        animation: 'pulse 2s ease-out infinite 0.5s',
+        top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        pointerEvents: 'none',
+      }} />
 
-        <div style={styles.quoteBox}>
-          <p style={styles.quoteLabel}>💬 오늘의 한마디</p>
-          <p style={styles.quoteText}>{quote}</p>
+      <div style={{
+        width: '100%', maxWidth: 380, position: 'relative', zIndex: 1,
+        background: 'linear-gradient(180deg,rgba(30,41,59,0.9),rgba(8,15,30,0.95))',
+        backdropFilter: 'blur(20px)',
+        borderRadius: 28, padding: 28, textAlign: 'center',
+        border: '1px solid rgba(99,102,241,0.3)',
+        boxShadow: '0 0 80px rgba(99,102,241,0.2)',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 4 }}>⏰</div>
+        <div style={{
+          fontSize: 56, fontWeight: 900, lineHeight: 1,
+          background: gradients.logo,
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        }}>
+          {HH}:{MM}
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: 13, margin: '6px 0 24px' }}>
+          {OGU_TONES[oguTone]?.emoji} 오구! 정각이 다가옵니다
         </div>
 
-        <div style={styles.todoBox}>
-          <span style={styles.todoLabel}>남은 할일</span>
-          <span style={styles.todoBadge(pendingTodos)}>
-            {pendingTodos > 0 ? `${pendingTodos}개` : '모두 완료!'}
-          </span>
-        </div>
+        {alarmContent?.quote && (
+          <GlassCard style={{ marginBottom: 10, textAlign: 'left' }}>
+            <div style={{ color: '#818cf8', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>💬 오늘의 명언</div>
+            <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14, lineHeight: 1.4 }}>
+              "{alarmContent.quote.text}"
+            </div>
+            <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>— {alarmContent.quote.author}</div>
+          </GlassCard>
+        )}
 
-        <button style={styles.closeBtn} onClick={onClose}>
-          확인했어요
-        </button>
+        {alarmContent?.tip && (
+          <GlassCard style={{ marginBottom: 10, textAlign: 'left' }}>
+            <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>
+              📈 {alarmContent.tip.category}
+            </div>
+            <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{alarmContent.tip.title}</div>
+            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
+              {alarmContent.tip.content}
+            </div>
+          </GlassCard>
+        )}
+
+        {pendingCount > 0 && (
+          <GlassCard style={{
+            marginBottom: 10, textAlign: 'left',
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+          }}>
+            <div style={{ color: '#f87171', fontSize: 13 }}>
+              ✅ 미완료 할일 {pendingCount}개 남아있어요
+            </div>
+          </GlassCard>
+        )}
+
+        <GlassCard style={{
+          marginBottom: 20, textAlign: 'left',
+          background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.15)',
+        }}>
+          <div style={{ color: '#fbbf24', fontSize: 12 }}>
+            💡 잠깐 스트레칭하고 눈도 쉬어주세요!
+          </div>
+        </GlassCard>
+
+        <button style={S.primaryBtn} onClick={onClose}>확인했어요! 👍</button>
       </div>
     </div>
   )
