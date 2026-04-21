@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
-import { KW_DATA, TRENDING_DATA, CATEGORY_COLOR, SENTIMENT_STYLE, KW_SUMMARIES } from '../data/oguData'
+import { KW_DATA, CATEGORY_COLOR, SENTIMENT_STYLE, KW_SUMMARIES } from '../data/oguData'
 import { S } from '../styles/theme'
 import { useNaverNews } from '../hooks/useNaverNews'
+import { useTrendingData } from '../hooks/useTrendingData'
 
 // ── 유틸
 function stripHtml(str = '') {
@@ -69,10 +70,10 @@ function PeriodTabs({ value, onChange }) {
   )
 }
 
-// ── 트렌딩 탭 (기존 유지)
-function TrendingTab({ period }) {
-  const td    = TRENDING_DATA[period]
-  const cats  = Object.entries(td)
+// ── 트렌딩 탭
+function TrendingTab({ period, trendData, trendLoading, trendUpdatedAt, isLive }) {
+  const td   = trendData[period] ?? {}
+  const cats = Object.entries(td)
   const allHot = cats.flatMap(([cat, d]) =>
     d.items.filter(it => it.hot).map(it => ({ ...it, cat, color: d.color }))
   ).sort((a, b) => b.count - a.count)
@@ -84,6 +85,16 @@ function TrendingTab({ period }) {
 
   return (
     <>
+      {isLive && trendUpdatedAt && (
+        <div style={{ color: '#475569', fontSize: 10, marginBottom: 10, textAlign: 'right' }}>
+          📡 실시간 · {new Date(trendUpdatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 업데이트
+        </div>
+      )}
+      {trendLoading && !isLive && (
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>
+          🔄 실시간 데이터 로딩 중...
+        </div>
+      )}
       {allHot.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
           {allHot.map((it, i) => (
@@ -360,6 +371,7 @@ function MyKeywordsTab({ userKeywords, setUserKeywords }) {
 export default function KeywordsPage({ userKeywords, setUserKeywords, isPremium, setIsPremium }) {
   const [mainTab, setMainTab] = useState('trending')
   const [period, setPeriod]   = useState('weekly')
+  const { data: trendData, loading: trendLoading, updatedAt: trendUpdatedAt, isLive } = useTrendingData()
 
   if (!isPremium) return <PremiumLock onUnlock={() => setIsPremium(true)} />
 
@@ -369,7 +381,7 @@ export default function KeywordsPage({ userKeywords, setUserKeywords, isPremium,
       <PeriodTabs value={period} onChange={setPeriod} />
 
       {mainTab === 'trending'
-        ? <TrendingTab period={period} />
+        ? <TrendingTab period={period} trendData={trendData} trendLoading={trendLoading} trendUpdatedAt={trendUpdatedAt} isLive={isLive} />
         : <MyKeywordsTab userKeywords={userKeywords} setUserKeywords={setUserKeywords} />
       }
     </div>
