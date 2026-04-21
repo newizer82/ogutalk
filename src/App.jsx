@@ -19,19 +19,24 @@ function LoginModal({ open, onClose, onLogin }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
-  const { signIn, signUp }      = useAuth()
+  const { signIn, signUp, signInWithKakao } = useAuth()
 
   if (!open) return null
 
   const handleSubmit = async () => {
     setError('')
     if (!email || !password) { setError('이메일과 비밀번호를 입력해주세요.'); return }
-    const { error: err } = authMode === 'login'
-      ? await signIn(email, password)
-      : await signUp(email, password)
-    if (err) { setError(err.message); return }
-    onLogin(email)
-    onClose()
+    try {
+      if (authMode === 'login') {
+        await signIn(email, password)
+      } else {
+        await signUp(email, password)
+      }
+      onLogin(email)
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -83,7 +88,7 @@ function LoginModal({ open, onClose, onLogin }) {
             background: '#FEE500', color: '#3A1D1D', fontWeight: 800, fontSize: 14,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
-          onClick={() => { onLogin('카카오 사용자'); onClose() }}
+          onClick={async () => { try { await signInWithKakao() } catch(e) { setError(e.message) } }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M9 1C4.582 1 1 3.79 1 7.237c0 2.178 1.454 4.092 3.644 5.201l-.928 3.455c-.083.308.266.55.533.37L8.47 13.48A9.17 9.17 0 009 13.474c4.418 0 8-2.79 8-6.237C17 3.789 13.418 1 9 1z" fill="#3A1D1D"/>

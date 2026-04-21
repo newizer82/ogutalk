@@ -30,10 +30,19 @@ export function useAuth() {
     return data
   }
 
+  async function signInWithKakao() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: window.location.origin + '/auth/callback' },
+    })
+    if (error) throw error
+    return data
+  }
+
   async function signOut() {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }
 
-  return { user, loading, signUp, signIn, signOut }
+  return { user, loading, signUp, signIn, signInWithKakao, signOut }
 }

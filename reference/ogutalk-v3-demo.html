@@ -524,6 +524,21 @@ function OguTalkV3() {
   const [alarmCount, setAlarmCount]     = useState(0);
   const lastHour = useRef(-1);
 
+  // ── 알람 모드 (알람음 / 진동 / 모두)
+  const [alarmMode, setAlarmMode] = useState("both"); // "sound"|"vibrate"|"both"
+
+  // ── 몰입 시간 경고 알람
+  const [immersionAlerts, setImmersionAlerts] = useState({ m30:true, m60:true });
+  const [immersionPopup,  setImmersionPopup]  = useState(false);
+  const [immersionLevel,  setImmersionLevel]  = useState(null); // "30분" | "1시간"
+  const immersionAlerted = useRef({ m30:false, m60:false });
+
+  // ── 카카오 로그인 모달
+  const [kakaoMode, setKakaoMode] = useState(false);
+
+  // ── 백업/복원 상태
+  const [backupMsg, setBackupMsg] = useState("");
+
   const [premiumFeatures, setPremiumFeatures] = useState({
     todos:true, goals:true, keywords:true, scheduleAlerts:false,
   });
@@ -559,6 +574,7 @@ function OguTalkV3() {
   const [kwTab,      setKwTab]      = useState("weekly");   // "weekly" | "monthly"
   const [selectedKw, setSelectedKw] = useState(null);       // 선택된 키워드 id
   const [kwSortBy,   setKwSortBy]   = useState("importance"); // "importance"|"count"|"trend"
+  const [kwMainTab,  setKwMainTab]  = useState("trending");  // "trending" | "mine"
 
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -578,9 +594,37 @@ function OguTalkV3() {
     }
   }, [now]);
 
+  // ── 몰입 시간 경고 (30분 / 1시간)
+  useEffect(() => {
+    const mins = Math.floor(immersion);
+    if (immersionAlerts.m30 && mins >= 30 && !immersionAlerted.current.m30) {
+      immersionAlerted.current.m30 = true;
+      setImmersionLevel("30분");
+      setImmersionPopup(true);
+      if (alarmMode !== "vibrate") playOguSound("화남", 1);
+      if (alarmMode !== "sound" && navigator.vibrate) navigator.vibrate([300,150,300]);
+    }
+    if (immersionAlerts.m60 && mins >= 60 && !immersionAlerted.current.m60) {
+      immersionAlerted.current.m60 = true;
+      setImmersionLevel("1시간");
+      setImmersionPopup(true);
+      if (alarmMode !== "vibrate") playOguSound("화남", 2);
+      if (alarmMode !== "sound" && navigator.vibrate) navigator.vibrate([400,150,400,150,600]);
+    }
+  }, [immersion]);
+
+  // ── 알람 실행 (알람모드 반영)
+  const fireAlarmSignal = useCallback((tone, repeat) => {
+    if (alarmMode !== "vibrate") playOguSound(tone, repeat);
+    if (alarmMode !== "sound" && navigator.vibrate) {
+      const pat = [];
+      for(let i=0;i<repeat;i++){ pat.push(250,120); } pat.push(400);
+      navigator.vibrate(pat);
+    }
+  }, [alarmMode]);
+
   const triggerAlarm = useCallback((h = now.getHours(), m = now.getMinutes()) => {
-    if (soundOn) playOguSound(oguTone, oguRepeat);
-    // 음성 안내: alarmHour 기준으로 다음 정시 안내 + 오구 N회
+    fireAlarmSignal(oguTone, oguRepeat);
     if (voiceEnabled) speakTime(voiceChar, h, oguRepeat);
     const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
     const t = ECONOMIC_TIPS[Math.floor(Math.random() * ECONOMIC_TIPS.length)];
@@ -589,10 +633,59 @@ function OguTalkV3() {
     setAlarmActive(true);
     setAlarmCount(c => c + 1);
     setImmersion(0);
-  }, [soundOn, oguTone, oguRepeat, voiceEnabled, voiceChar, todos]);
+    immersionAlerted.current = { m30:false, m60:false };
+  }, [fireAlarmSignal, oguTone, oguRepeat, voiceEnabled, voiceChar, todos]);
 
   const pad = n => String(n).padStart(2,"0");
   const HH = pad(now.getHours()), MM = pad(now.getMinutes()), SS = pad(now.getSeconds());
+
+  // ── 백업 내보내기
+  const exportBackup = () => {
+    const data = JSON.stringify({
+      version:2, exportedAt: new Date().toISOString(),
+      todos, goals, userKeywords, alarmHours,
+      oguTone, oguRepeat, voiceChar, voiceEnabled, soundOn,
+      alarmMode, immersionAlerts,
+    }, null, 2);
+    const blob = new Blob([data], { type:"application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `ogutalk-backup-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupMsg("✅ 백업 파일 저장 완료!");
+    setTimeout(() => setBackupMsg(""), 3000);
+  };
+
+  // ── 백업 복원
+  const importBackup = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        if(d.todos)        setTodos(d.todos);
+        if(d.goals)        setGoals(d.goals);
+        if(d.userKeywords) setUserKeywords(d.userKeywords);
+        if(d.alarmHours)   setAlarmHours(d.alarmHours);
+        if(d.oguTone)      setOguTone(d.oguTone);
+        if(d.oguRepeat)    setOguRepeat(d.oguRepeat);
+        if(d.voiceChar)    setVoiceChar(d.voiceChar);
+        if(typeof d.voiceEnabled!=="undefined") setVoiceEnabled(d.voiceEnabled);
+        if(typeof d.soundOn!=="undefined")      setSoundOn(d.soundOn);
+        if(d.alarmMode)    setAlarmMode(d.alarmMode);
+        if(d.immersionAlerts) setImmersionAlerts(d.immersionAlerts);
+        setBackupMsg("✅ 복원 완료! 데이터가 반영됐습니다.");
+        setTimeout(() => setBackupMsg(""), 4000);
+      } catch(err) {
+        setBackupMsg("⚠️ 파일 형식 오류. 올바른 백업 파일을 선택해주세요.");
+        setTimeout(() => setBackupMsg(""), 4000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
   const weekday = ["일","월","화","수","목","금","토"][now.getDay()];
   const dateStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${weekday})`;
 
@@ -609,7 +702,45 @@ function OguTalkV3() {
     return { time:"없음", diff:"" };
   })();
 
-  // ── 알람 팝업
+  // ── 몰입 경고 팝업
+  if (immersionPopup) {
+    const msgs = {
+      "30분": { emoji:"😮", title:"스마트폰 30분 경과!", sub:"잠깐 눈을 쉬고 스트레칭해보세요", color:"#f59e0b", grad:"linear-gradient(135deg,rgba(245,158,11,0.25),rgba(251,191,36,0.1))" },
+      "1시간": { emoji:"😱", title:"스마트폰 1시간 경과!", sub:"장시간 사용은 눈과 목에 무리를 줘요", color:"#ef4444", grad:"linear-gradient(135deg,rgba(239,68,68,0.25),rgba(248,113,113,0.1))" },
+    };
+    const info = msgs[immersionLevel] || msgs["30분"];
+    return (
+      <div style={S.root}>
+        <div style={{ ...S.phone, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+          background:info.grad, backdropFilter:"blur(20px)" }}>
+          <div style={{ fontSize:72, marginBottom:16, animation:"pulse 1s infinite" }}>{info.emoji}</div>
+          <div style={{ fontSize:20, fontWeight:900, color:"#f1f5f9", textAlign:"center", marginBottom:8 }}>
+            {info.title}
+          </div>
+          <div style={{ color:"#94a3b8", fontSize:13, textAlign:"center", marginBottom:6, lineHeight:1.6 }}>
+            {info.sub}
+          </div>
+          <div style={{ color:info.color, fontSize:28, fontWeight:900, marginBottom:6 }}>
+            {pad(Math.floor(immersion/60))}:{pad(Math.floor(immersion%60))}
+          </div>
+          <div style={{ color:"#64748b", fontSize:11, marginBottom:32 }}>현재 몰입 시간</div>
+
+          {/* 이번엔 그냥 / 리셋 버튼 */}
+          <div style={{ display:"flex", flexDirection:"column", gap:10, width:"100%" }}>
+            <button style={{ ...S.primaryBtn, background:`linear-gradient(135deg,${info.color},${info.color}cc)` }}
+              onClick={() => { setImmersion(0); immersionAlerted.current={m30:false,m60:false}; setImmersionPopup(false); }}>
+              🔄 몰입 시간 리셋
+            </button>
+            <button style={S.ghostBtn} onClick={() => setImmersionPopup(false)}>
+              계속 사용하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 오구 알람 팝업
   if (alarmActive && alarmContent) {
     return (
       <div style={S.root}>
@@ -725,87 +856,264 @@ function OguTalkV3() {
       <div style={S.content} className="fade-in">
 
         {/* ═══ 홈 ═══ */}
-        {tab === "home" && (
+        {tab === "home" && (() => {
+          // 오늘 일간 목표
+          const dailyGoals = goals["daily"] || [];
+          const totalDailyProgress = dailyGoals.length
+            ? Math.round(dailyGoals.reduce((s,g)=>s+g.progress,0)/dailyGoals.length)
+            : 0;
+          const pendingTodos = todos.filter(t=>!t.done);
+          const doneTodos   = todos.filter(t=>t.done);
+          const quoteObj    = QUOTES[Math.floor(now.getMinutes()/12)%QUOTES.length];
+
+          // 다음 알람까지 남은 초
+          const secondsLeft = 60 - now.getSeconds() + (59 - now.getMinutes()) * 60;
+          const mLeft = Math.floor(secondsLeft / 60);
+          const sLeft = secondsLeft % 60;
+
+          return (
           <>
-            <div style={{ textAlign:"center", padding:"12px 0 24px" }}>
-              <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:2 }}>
-                <span style={{ fontSize:72, fontWeight:900, color:"#f1f5f9", letterSpacing:-4, lineHeight:1 }}>{HH}</span>
-                <span style={{ fontSize:52, color:"#6366f1", fontWeight:300, lineHeight:1, marginBottom:4 }}>:</span>
-                <span style={{ fontSize:72, fontWeight:900, background:G.logo, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:-4, lineHeight:1 }}>{MM}</span>
-                <span style={{ fontSize:20, color:"#475569", marginLeft:6, lineHeight:1 }}>{SS}</span>
+            {/* ── 상단: 시계 + 다음 알람 ── */}
+            <div style={{ textAlign:"center", padding:"8px 0 20px" }}>
+              {/* 시 : 분 */}
+              <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"center", gap:0, lineHeight:1, marginBottom:4 }}>
+                <span style={{ fontSize:80, fontWeight:900, color:"#f1f5f9", letterSpacing:-5 }}>{HH}</span>
+                <span style={{ fontSize:60, color:"#6366f1", fontWeight:200, marginBottom:6, marginInline:2 }}>:</span>
+                <span style={{ fontSize:80, fontWeight:900, background:G.logo, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:-5 }}>{MM}</span>
               </div>
-              <div style={{ color:"#64748b", fontSize:13, marginTop:6 }}>{dateStr}</div>
-              <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:12, padding:"6px 14px", borderRadius:20, background:"rgba(99,102,241,0.12)", border:"1px solid rgba(99,102,241,0.2)" }}>
-                <span style={{ fontSize:12 }}>🔔</span>
-                <span style={{ color:"#818cf8", fontSize:13, fontWeight:600 }}>다음 오구: {nextAlarm.time}</span>
-                <span style={{ color:"#475569", fontSize:11 }}>{nextAlarm.diff}</span>
+              <div style={{ color:"#475569", fontSize:12 }}>{dateStr} &nbsp;·&nbsp; <span style={{ color:"#64748b" }}>{SS}초</span></div>
+
+              {/* 다음 알람 카운트다운 */}
+              <div style={{ display:"inline-flex", alignItems:"center", gap:10, marginTop:16,
+                padding:"10px 20px", borderRadius:24,
+                background:"linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12))",
+                border:"1px solid rgba(99,102,241,0.3)" }}>
+                <span style={{ fontSize:16 }}>🔔</span>
+                <div style={{ textAlign:"left" }}>
+                  <div style={{ color:"#818cf8", fontSize:12, fontWeight:700 }}>다음 오구 · {nextAlarm.time}</div>
+                  <div style={{ color:"#475569", fontSize:11, marginTop:1 }}>
+                    {mLeft}분 {pad(sLeft)}초 후
+                  </div>
+                </div>
+                <button
+                  style={{ padding:"6px 14px", borderRadius:14, border:"none",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                    color:"white", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                  onClick={() => triggerAlarm()}>
+                  {OGU_TONES[oguTone]?.emoji} 테스트
+                </button>
               </div>
             </div>
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+            {/* ── 스탯 3칸 ── */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:18 }}>
               {[
-                { label:"오늘 알람",   value:`${alarmCount}회`, icon:"📢", color:"#818cf8" },
-                { label:"몰입 시간",   value:`${pad(Math.floor(immersion/60))}:${pad(Math.floor(immersion%60))}`, icon:"⏳", color:"#f59e0b" },
-                { label:"미완료 할일", value:`${todos.filter(t=>!t.done).length}개`, icon:"✅", color:"#34d399" },
+                { label:"오늘 알람",  value:`${alarmCount}회`,
+                  icon:"📢", color:"#818cf8",
+                  bar: Math.min(100, alarmCount * 10) },
+                { label:"몰입 시간",  value:`${pad(Math.floor(immersion/60))}:${pad(Math.floor(immersion%60))}`,
+                  icon:"⏱️", color:"#f59e0b",
+                  bar: Math.min(100, Math.floor(immersion / 60) * 5) },
+                { label:"할일 완료",  value:`${doneTodos.length}/${todos.length}`,
+                  icon:"✅", color:"#34d399",
+                  bar: todos.length ? Math.round(doneTodos.length/todos.length*100) : 0 },
               ].map(s => (
-                <GlassCard key={s.label} style={{ textAlign:"center", padding:"14px 8px" }}>
-                  <div style={{ fontSize:20, marginBottom:4 }}>{s.icon}</div>
-                  <div style={{ color:s.color, fontSize:18, fontWeight:800 }}>{s.value}</div>
-                  <div style={{ color:"#64748b", fontSize:10, marginTop:2 }}>{s.label}</div>
+                <GlassCard key={s.label} style={{ textAlign:"center", padding:"12px 6px" }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>{s.icon}</div>
+                  <div style={{ color:s.color, fontSize:17, fontWeight:900 }}>{s.value}</div>
+                  <div style={{ color:"#475569", fontSize:9, marginTop:2, marginBottom:6 }}>{s.label}</div>
+                  <div style={{ width:"100%", height:3, borderRadius:2, background:"rgba(255,255,255,0.06)" }}>
+                    <div style={{ width:`${s.bar}%`, height:"100%", borderRadius:2, background:s.color, opacity:0.6 }} />
+                  </div>
                 </GlassCard>
               ))}
             </div>
 
-            <button style={{ ...S.primaryBtn, marginBottom:20 }} onClick={() => triggerAlarm()}>
-              {OGU_TONES[oguTone]?.emoji} 오구 테스트
-            </button>
+            {/* ── 오늘의 목표 (일간) ── */}
+            {isPremium && premiumFeatures.goals ? (
+              <GlassCard style={{ marginBottom:16 }}>
+                {/* 헤더 */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:14 }}>🎯</span>
+                    <span style={{ color:"#cbd5e1", fontSize:13, fontWeight:700 }}>오늘의 목표</span>
+                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10,
+                      background:"rgba(99,102,241,0.15)", color:"#818cf8" }}>
+                      일간 {dailyGoals.length}개
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ color:"#6366f1", fontSize:13, fontWeight:800 }}>{totalDailyProgress}%</span>
+                    <button style={{ padding:"4px 10px", borderRadius:10, border:"none",
+                      background:"rgba(99,102,241,0.2)", color:"#818cf8", fontSize:11, cursor:"pointer" }}
+                      onClick={() => setTab("goals")}>전체 →</button>
+                  </div>
+                </div>
 
+                {/* 전체 진행률 바 */}
+                <div style={{ width:"100%", height:6, borderRadius:3, background:"rgba(255,255,255,0.06)", marginBottom:14 }}>
+                  <div style={{ width:`${totalDailyProgress}%`, height:"100%", borderRadius:3,
+                    background: totalDailyProgress>=70
+                      ? "linear-gradient(90deg,#34d399,#6ee7b7)"
+                      : "linear-gradient(90deg,#6366f1,#8b5cf6)",
+                    transition:"width 0.6s ease" }} />
+                </div>
+
+                {/* 목표 리스트 */}
+                {dailyGoals.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:"16px 0", color:"#475569", fontSize:13 }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>🌱</div>
+                    오늘의 목표를 추가해보세요
+                    <br />
+                    <button style={{ marginTop:10, padding:"6px 14px", borderRadius:10, border:"none",
+                      background:"rgba(99,102,241,0.2)", color:"#818cf8", fontSize:12, cursor:"pointer" }}
+                      onClick={() => setTab("goals")}>+ 목표 추가</button>
+                  </div>
+                ) : (
+                  dailyGoals.slice(0,3).map(g => (
+                    <div key={g.id} style={{ marginBottom:10 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                        <span style={{ color:"#e2e8f0", fontSize:13, fontWeight:600 }}>{g.title}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          {/* 빠른 조절 버튼 */}
+                          {[-10,+10].map(d=>(
+                            <button key={d}
+                              style={{ width:24, height:24, borderRadius:7, border:"1px solid rgba(255,255,255,0.1)",
+                                background:"rgba(255,255,255,0.04)", color:"#94a3b8", fontSize:10, cursor:"pointer",
+                                display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}
+                              onClick={()=>setGoals({...goals,daily:goals.daily.map(x=>x.id===g.id?{...x,progress:Math.min(100,Math.max(0,x.progress+d))}:x)})}>
+                              {d>0?"+":"-"}
+                            </button>
+                          ))}
+                          <span style={{ color: g.progress>=100?"#34d399":"#818cf8", fontSize:12, fontWeight:800, minWidth:30, textAlign:"right" }}>
+                            {g.progress}%
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ width:"100%", height:5, borderRadius:3, background:"rgba(255,255,255,0.05)" }}>
+                        <div style={{ width:`${g.progress}%`, height:"100%", borderRadius:3, transition:"width 0.4s ease",
+                          background: g.progress>=100
+                            ? "linear-gradient(90deg,#34d399,#6ee7b7)"
+                            : g.progress>=50
+                            ? "linear-gradient(90deg,#818cf8,#a78bfa)"
+                            : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+                {dailyGoals.length > 3 && (
+                  <div style={{ color:"#475569", fontSize:11, textAlign:"center", marginTop:4, cursor:"pointer" }}
+                    onClick={() => setTab("goals")}>
+                    + {dailyGoals.length - 3}개 더 보기
+                  </div>
+                )}
+              </GlassCard>
+            ) : (
+              /* 미가입 상태: 목표 예시 잠금 카드 */
+              <GlassCard style={{ marginBottom:16, opacity:0.75 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <span style={{ color:"#cbd5e1", fontSize:13, fontWeight:700 }}>🎯 오늘의 목표</span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:"linear-gradient(135deg,#f59e0b,#f97316)", color:"white", fontWeight:700 }}>PRO</span>
+                </div>
+                {["독서 30분","운동 1시간","코딩 공부"].map((t,i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0",
+                    borderBottom: i<2?"1px solid rgba(255,255,255,0.04)":"none" }}>
+                    <div style={{ width:"100%", height:5, borderRadius:3, background:"rgba(255,255,255,0.05)" }}>
+                      <div style={{ width:`${[60,35,80][i]}%`, height:"100%", borderRadius:3,
+                        background:"linear-gradient(90deg,#6366f1,#8b5cf6)", filter:"blur(0.5px)" }} />
+                    </div>
+                    <span style={{ color:"#64748b", fontSize:12, whiteSpace:"nowrap" }}>{t}</span>
+                  </div>
+                ))}
+                <button style={{ width:"100%", marginTop:12, padding:"8px", borderRadius:12, border:"none",
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"white", fontSize:12,
+                  fontWeight:700, cursor:"pointer" }}
+                  onClick={() => setIsPremium(true)}>
+                  ✨ 잠금 해제 · 월 2,900원
+                </button>
+              </GlassCard>
+            )}
+
+            {/* ── 오늘의 할일 (프리미엄) ── */}
+            {isPremium && premiumFeatures.todos && (
+              <GlassCard style={{ marginBottom:16 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:14 }}>✅</span>
+                    <span style={{ color:"#cbd5e1", fontSize:13, fontWeight:700 }}>오늘의 할일</span>
+                    {pendingTodos.length > 0 && (
+                      <span style={{ fontSize:10, padding:"2px 7px", borderRadius:10,
+                        background:"rgba(248,113,113,0.15)", color:"#f87171", fontWeight:700 }}>
+                        {pendingTodos.length}개 남음
+                      </span>
+                    )}
+                  </div>
+                  <button style={{ padding:"4px 10px", borderRadius:10, border:"none",
+                    background:"rgba(99,102,241,0.2)", color:"#818cf8", fontSize:11, cursor:"pointer" }}
+                    onClick={() => setTab("todos")}>전체 →</button>
+                </div>
+
+                {pendingTodos.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:"12px 0", color:"#34d399", fontSize:13, fontWeight:700 }}>
+                    🎉 모든 할일 완료!
+                  </div>
+                ) : (
+                  pendingTodos.slice(0,4).map((t,i) => (
+                    <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10,
+                      padding:"8px 0",
+                      borderBottom: i < Math.min(pendingTodos.length,4)-1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      {/* 체크 버튼 */}
+                      <div style={{ width:20, height:20, borderRadius:6, border:"1.5px solid #334155",
+                        cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}
+                        onClick={() => setTodos(todos.map(x=>x.id===t.id?{...x,done:true}:x))}>
+                      </div>
+                      {/* 우선순위 점 */}
+                      <span style={{ width:6, height:6, borderRadius:3, flexShrink:0,
+                        background: t.priority==="high"?"#ef4444":t.priority==="medium"?"#f59e0b":"#475569" }} />
+                      <span style={{ color:"#e2e8f0", fontSize:13, flex:1 }}>{t.text}</span>
+                    </div>
+                  ))
+                )}
+                {pendingTodos.length > 4 && (
+                  <div style={{ color:"#475569", fontSize:11, textAlign:"center", marginTop:8, cursor:"pointer" }}
+                    onClick={() => setTab("todos")}>
+                    + {pendingTodos.length - 4}개 더 보기
+                  </div>
+                )}
+              </GlassCard>
+            )}
+
+            {/* ── 업그레이드 배너 (무료) ── */}
             {!isPremium && (
-              <GlassCard style={{ marginBottom:20, background:"linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))", border:"1px solid rgba(99,102,241,0.3)" }}>
+              <GlassCard style={{ marginBottom:16,
+                background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",
+                border:"1px solid rgba(99,102,241,0.25)" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
-                    <div style={{ color:"#e2e8f0", fontWeight:700, fontSize:14 }}>✨ 프리미엄으로 업그레이드</div>
-                    <div style={{ color:"#94a3b8", fontSize:12, marginTop:3 }}>할일·목표·키워드·특별 목소리 잠금 해제</div>
-                    <div style={{ color:"#818cf8", fontSize:13, fontWeight:700, marginTop:4 }}>월 2,900원</div>
+                    <div style={{ color:"#e2e8f0", fontWeight:700, fontSize:14 }}>✨ 프리미엄 업그레이드</div>
+                    <div style={{ color:"#94a3b8", fontSize:11, marginTop:3 }}>목표·할일·키워드·특별 목소리 잠금 해제</div>
+                    <div style={{ color:"#818cf8", fontSize:13, fontWeight:800, marginTop:4 }}>월 2,900원</div>
                   </div>
-                  <button style={{ padding:"8px 14px", borderRadius:12, border:"none", background:G.purple, color:"white", fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }} onClick={() => setIsPremium(true)}>
-                    시작하기
-                  </button>
+                  <button style={{ padding:"10px 16px", borderRadius:14, border:"none",
+                    background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                    color:"white", fontWeight:700, fontSize:12, cursor:"pointer" }}
+                    onClick={() => setIsPremium(true)}>시작하기</button>
                 </div>
               </GlassCard>
             )}
 
-            <div style={{ fontSize:12, fontWeight:700, color:"#94a3b8", marginBottom:8, letterSpacing:0.5 }}>📚 오늘의 경제 상식</div>
-            <GlassCard style={{ marginBottom:16 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:8, background:"rgba(245,158,11,0.15)", color:"#f59e0b" }}>{ECONOMIC_TIPS[tipIdx].category}</span>
-                <span style={{ color:"#475569", fontSize:12, cursor:"pointer" }} onClick={() => setTipIdx((tipIdx+1)%ECONOMIC_TIPS.length)}>다음 →</span>
+            {/* ── 오늘의 명언 (하단 미니) ── */}
+            <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+              borderRadius:14, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.05)" }}>
+              <span style={{ color:"#334155", fontSize:18 }}>"</span>
+              <div style={{ flex:1 }}>
+                <div style={{ color:"#64748b", fontSize:12, lineHeight:1.5, fontStyle:"italic" }}>{quoteObj.text}</div>
+                <div style={{ color:"#334155", fontSize:10, marginTop:3 }}>— {quoteObj.author}</div>
               </div>
-              <div style={{ color:"#e2e8f0", fontWeight:700, fontSize:15, marginBottom:6 }}>{ECONOMIC_TIPS[tipIdx].title}</div>
-              <div style={{ color:"#94a3b8", fontSize:13, lineHeight:1.6 }}>{ECONOMIC_TIPS[tipIdx].content}</div>
-            </GlassCard>
-
-            {isPremium && premiumFeatures.todos && (
-              <>
-                <div style={{ fontSize:12, fontWeight:700, color:"#94a3b8", marginBottom:8 }}>✅ 오늘의 할일</div>
-                <GlassCard style={{ marginBottom:16 }}>
-                  {todos.filter(t=>!t.done).slice(0,3).map(t => (
-                    <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ width:7, height:7, borderRadius:4, flexShrink:0, background: t.priority==="high"?"#ef4444":t.priority==="medium"?"#f59e0b":"#64748b" }} />
-                      <span style={{ color:"#e2e8f0", fontSize:13 }}>{t.text}</span>
-                    </div>
-                  ))}
-                  {todos.filter(t=>!t.done).length===0 && <div style={{ color:"#64748b", fontSize:13, textAlign:"center", padding:"8px 0" }}>모든 할일 완료! 🎉</div>}
-                </GlassCard>
-              </>
-            )}
-
-            <GlassCard style={{ borderLeft:"3px solid #818cf8" }}>
-              <div style={{ color:"#e2e8f0", fontSize:13, fontStyle:"italic", lineHeight:1.5 }}>"{QUOTES[Math.floor(now.getMinutes()/12)%QUOTES.length].text}"</div>
-              <div style={{ color:"#475569", fontSize:11, marginTop:6 }}>— {QUOTES[Math.floor(now.getMinutes()/12)%QUOTES.length].author}</div>
-            </GlassCard>
+            </div>
           </>
-        )}
+          );
+        })()}
 
         {/* ═══ 할일 ═══ */}
         {tab === "todos" && (
@@ -947,20 +1255,155 @@ function OguTalkV3() {
           !isPremium || !premiumFeatures.keywords
           ? <PremiumLock feature="키워드 & 주식" onUnlock={() => setIsPremium(true)} />
           : (() => {
-              // 선택된 키워드 찾기
-              const detailKw = selectedKw ? KW_DATA.find(k=>k.id===selectedKw) : null;
-              const period   = kwTab; // "weekly" | "monthly"
+              const period = kwTab; // "weekly" | "monthly"
 
-              /* ───── 상세 뷰 ───── */
+              /* ── 상단 메인 탭 바 ── */
+              const MainTabBar = () => (
+                <div style={{ display:"flex", background:"rgba(255,255,255,0.04)", borderRadius:14, padding:4, marginBottom:16, gap:4 }}>
+                  {[["trending","📊 트렌딩 분석"],["mine","🔍 내 키워드"]].map(([id,label])=>(
+                    <button key={id} onClick={()=>{ setKwMainTab(id); setSelectedKw(null); }}
+                      style={{ flex:1, padding:"8px 0", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", border:"none",
+                        background: kwMainTab===id ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "transparent",
+                        color: kwMainTab===id ? "#fff" : "#64748b", transition:"all 0.2s" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              /* ── 주간/월간 탭 ── */
+              const PeriodTabs = () => (
+                <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+                  {["weekly","monthly"].map(t=>(
+                    <button key={t} onClick={()=>setKwTab(t)}
+                      style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer",
+                        border:`1px solid ${kwTab===t?"#6366f1":"rgba(255,255,255,0.1)"}`,
+                        background:kwTab===t?"rgba(99,102,241,0.2)":"transparent",
+                        color:kwTab===t?"#818cf8":"#94a3b8" }}>
+                      {t==="weekly"?"📅 주간":"📆 월간"}
+                    </button>
+                  ))}
+                </div>
+              );
+
+              /* ════════════════════════════
+                 탭 1 — 트렌딩 분석
+              ════════════════════════════ */
+              if (kwMainTab === "trending") {
+                const td = TRENDING_DATA[period]; // { 경제:{}, AI:{}, 사회:{}, 정치:{} }
+                const cats = Object.entries(td);  // [[name, {color,icon,items}], ...]
+
+                // 전체 HOT 키워드 (hot===true) 내림차순
+                const allHot = cats.flatMap(([cat, d])=>
+                  d.items.filter(it=>it.hot).map(it=>({ ...it, cat, color:d.color, icon:d.icon }))
+                ).sort((a,b)=>b.count-a.count);
+
+                // 전체 키워드 top10 (count 기준)
+                const top10 = cats.flatMap(([cat, d])=>
+                  d.items.map(it=>({ ...it, cat, color:d.color }))
+                ).sort((a,b)=>b.count-a.count).slice(0,10);
+                const maxTopCount = top10[0]?.count || 1;
+
+                return (
+                  <div className="fade-in">
+                    <MainTabBar />
+                    <PeriodTabs />
+
+                    {/* 🔥 핫 키워드 배지 */}
+                    {allHot.length > 0 && (
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:16 }}>
+                        {allHot.map((it,i)=>(
+                          <span key={i} style={{
+                            display:"inline-flex", alignItems:"center", gap:4,
+                            padding:"5px 11px", borderRadius:20, fontSize:11, fontWeight:700,
+                            background:`${it.color}20`, border:`1px solid ${it.color}50`, color:it.color,
+                          }}>
+                            🔥 {it.kw}
+                            <span style={{ color:"#94a3b8", fontSize:9, fontWeight:400 }}>{it.count}건</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 분야별 카드 2×2 그리드 */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                      {cats.map(([catName, d])=>{
+                        const maxC = d.items[0]?.count || 1;
+                        return (
+                          <GlassCard key={catName} style={{ padding:14 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                              <span style={{ fontSize:16 }}>{d.icon}</span>
+                              <span style={{ fontSize:13, fontWeight:800, color:d.color }}>{catName}</span>
+                            </div>
+                            {d.items.map((it,i)=>(
+                              <div key={i} style={{ marginBottom:i<d.items.length-1?8:0 }}>
+                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                                    <span style={{ color:"#475569", fontSize:9, fontWeight:700, minWidth:10 }}>#{i+1}</span>
+                                    <span style={{ color:"#e2e8f0", fontSize:11, fontWeight:600 }}>{it.kw}</span>
+                                    {it.hot && <span style={{ fontSize:8, color:"#f59e0b" }}>🔥</span>}
+                                  </div>
+                                  <span style={{ color:it.trend>=0?"#34d399":"#f87171", fontSize:10, fontWeight:700 }}>
+                                    {it.trend>=0?"▲":"▼"}{Math.abs(it.trend)}%
+                                  </span>
+                                </div>
+                                <div style={{ width:"100%", height:4, borderRadius:2, background:"rgba(255,255,255,0.05)" }}>
+                                  <div style={{ width:`${Math.round(it.count/maxC*100)}%`, height:"100%", borderRadius:2, background:d.color, opacity:0.7 }} />
+                                </div>
+                                <div style={{ color:"#475569", fontSize:9, marginTop:2 }}>{it.count.toLocaleString()}건</div>
+                              </div>
+                            ))}
+                          </GlassCard>
+                        );
+                      })}
+                    </div>
+
+                    {/* HOT TOP 10 전체 순위 바 차트 */}
+                    <GlassCard>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#cbd5e1", marginBottom:14 }}>
+                        🏆 {period==="weekly"?"주간":"월간"} 전체 HOT TOP 10
+                      </div>
+                      {top10.map((it,i)=>(
+                        <div key={i} style={{ marginBottom:10 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ color: i<3?"#f59e0b":"#475569", fontSize:11, fontWeight:800, minWidth:18 }}>
+                                {i<3?["🥇","🥈","🥉"][i]:`#${i+1}`}
+                              </span>
+                              <span style={{ fontSize:10, padding:"2px 7px", borderRadius:8, background:`${it.color}18`, color:it.color, fontWeight:700 }}>{it.cat}</span>
+                              <span style={{ color:"#e2e8f0", fontSize:12, fontWeight:700 }}>{it.kw}</span>
+                            </div>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ color:it.trend>=0?"#34d399":"#f87171", fontSize:10, fontWeight:700 }}>
+                                {it.trend>=0?"▲":"▼"}{Math.abs(it.trend)}%
+                              </span>
+                              <span style={{ color:"#64748b", fontSize:10 }}>{it.count.toLocaleString()}건</span>
+                            </div>
+                          </div>
+                          <div style={{ width:"100%", height:6, borderRadius:3, background:"rgba(255,255,255,0.05)" }}>
+                            <div style={{ width:`${Math.round(it.count/maxTopCount*100)}%`, height:"100%", borderRadius:3, background:`linear-gradient(90deg,${it.color},${it.color}88)`, transition:"width 0.8s ease" }} />
+                          </div>
+                        </div>
+                      ))}
+                    </GlassCard>
+                  </div>
+                );
+              }
+
+              /* ════════════════════════════
+                 탭 2 — 내 키워드
+              ════════════════════════════ */
+              // 선택된 키워드 상세 뷰
+              const detailKw = selectedKw ? KW_DATA.find(k=>k.id===selectedKw) : null;
               if (detailKw) {
                 const p   = detailKw[period];
                 const cat = CATEGORY_COLOR[detailKw.category] || "#818cf8";
                 return (
                   <div className="fade-in">
-                    {/* 뒤로가기 */}
+                    <MainTabBar />
                     <button style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#818cf8", fontSize:13, cursor:"pointer", marginBottom:14, padding:0 }}
                       onClick={() => setSelectedKw(null)}>
-                      ← 전체 분석으로
+                      ← 목록으로
                     </button>
 
                     {/* 키워드 헤더 */}
@@ -985,13 +1428,11 @@ function OguTalkV3() {
                           <div style={{ color:"#64748b", fontSize:10, marginTop:2 }}>{period==="weekly"?"주간":"월간"} 트렌드</div>
                         </div>
                       </div>
-
-                      {/* 요약 통계 3개 */}
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:14 }}>
                         {[
-                          { label:"언급량",   value:`${p.count}건`, color:cat },
+                          { label:"언급량",   value:`${p.count}건`,    color:cat },
                           { label:"중요도",   value:`${p.importance}점`, color:"#f59e0b" },
-                          { label:"감성지수", value: p.headlines.filter(h=>h.sentiment==="positive").length > p.headlines.filter(h=>h.sentiment==="negative").length ? "긍정 우세" : "부정 우세",
+                          { label:"감성지수", value: p.headlines.filter(h=>h.sentiment==="positive").length > p.headlines.filter(h=>h.sentiment==="negative").length ? "긍정 우세":"부정 우세",
                             color: p.headlines.filter(h=>h.sentiment==="positive").length > p.headlines.filter(h=>h.sentiment==="negative").length ? "#34d399":"#f87171" },
                         ].map(s=>(
                           <div key={s.label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 8px", textAlign:"center" }}>
@@ -1002,18 +1443,7 @@ function OguTalkV3() {
                       </div>
                     </GlassCard>
 
-                    {/* 주간/월간 탭 */}
-                    <div style={{ display:"flex", gap:6, marginBottom:14 }}>
-                      {["weekly","monthly"].map(t=>(
-                        <button key={t} onClick={()=>setKwTab(t)}
-                          style={{ padding:"7px 18px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer",
-                            border:`1px solid ${kwTab===t?"#6366f1":"rgba(255,255,255,0.1)"}`,
-                            background:kwTab===t?"rgba(99,102,241,0.2)":"transparent",
-                            color:kwTab===t?"#818cf8":"#94a3b8" }}>
-                          {t==="weekly"?"📅 주간":"📆 월간"}
-                        </button>
-                      ))}
-                    </div>
+                    <PeriodTabs />
 
                     {/* 감성 분포 바 */}
                     <GlassCard style={{ marginBottom:14 }}>
@@ -1043,27 +1473,38 @@ function OguTalkV3() {
                       })()}
                     </GlassCard>
 
-                    {/* 헤드라인 뉴스 목록 */}
+                    {/* 헤드라인 + 요약 */}
                     <div style={{ fontSize:12, fontWeight:700, color:"#cbd5e1", marginBottom:10 }}>
-                      📰 주요 헤드라인 ({period==="weekly"?"이번 주":"이번 달"})
+                      📰 헤드라인 뉴스 요약 ({period==="weekly"?"이번 주":"이번 달"})
                     </div>
                     {p.headlines.map((h,i)=>{
-                      const ss = SENTIMENT_STYLE[h.sentiment];
+                      const ss  = SENTIMENT_STYLE[h.sentiment];
+                      const key = `${detailKw.id}.${period}.${i}`;
+                      const summary = KW_SUMMARIES[key] || null;
                       return (
-                        <GlassCard key={i} style={{ marginBottom:8, padding:"12px 14px" }}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                        <GlassCard key={i} style={{ marginBottom:10, padding:"13px 14px" }}>
+                          {/* 제목 + 감성 배지 */}
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, marginBottom: summary?8:0 }}>
                             <div style={{ flex:1 }}>
-                              <div style={{ color:"#e2e8f0", fontSize:13, fontWeight:500, lineHeight:1.5, marginBottom:6 }}>{h.title}</div>
+                              <div style={{ color:"#e2e8f0", fontSize:13, fontWeight:600, lineHeight:1.5, marginBottom:5 }}>{h.title}</div>
                               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                                 <span style={{ color:"#475569", fontSize:10 }}>{h.source}</span>
                                 <span style={{ color:"#334155", fontSize:10 }}>·</span>
                                 <span style={{ color:"#475569", fontSize:10 }}>{h.date}</span>
                               </div>
                             </div>
-                            <span style={{ fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:8, background:ss.bg, border:`1px solid ${ss.border}`, color:ss.color, whiteSpace:"nowrap", flexShrink:0 }}>
+                            <span style={{ fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:8, flexShrink:0,
+                              background:ss.bg, border:`1px solid ${ss.border}`, color:ss.color }}>
                               {ss.label}
                             </span>
                           </div>
+                          {/* 2문장 요약 */}
+                          {summary && (
+                            <div style={{ borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8, marginTop:2 }}>
+                              <div style={{ color:"#64748b", fontSize:9, fontWeight:700, letterSpacing:0.5, marginBottom:5 }}>AI 요약</div>
+                              <div style={{ color:"#94a3b8", fontSize:11, lineHeight:1.7 }}>{summary}</div>
+                            </div>
+                          )}
                         </GlassCard>
                       );
                     })}
@@ -1071,171 +1512,83 @@ function OguTalkV3() {
                 );
               }
 
-              /* ───── 전체 분석 뷰 ───── */
-              const sorted = [...KW_DATA].sort((a,b) => {
-                const ap = a[period], bp = b[period];
-                if(kwSortBy==="count")      return bp.count      - ap.count;
-                if(kwSortBy==="trend")      return bp.trend      - ap.trend;
-                return bp.importance - ap.importance; // default: importance
-              });
-              const maxCount = Math.max(...KW_DATA.map(k=>k[period].count));
-              const maxImp   = Math.max(...KW_DATA.map(k=>k[period].importance));
-
+              /* ── 내 키워드 목록 뷰 ── */
               return (
                 <div className="fade-in">
-                  {/* 키워드 관리 */}
-                  <SectionHeader title="📈 키워드 분석" action="+ 추가" onAction={()=>document.getElementById("kwInputBox").focus()} />
+                  <MainTabBar />
+
+                  {/* 키워드 추가/관리 */}
                   <GlassCard style={{ marginBottom:14 }}>
-                    <div style={{ display:"flex", gap:8 }}>
-                      <input id="kwInputBox" type="text" placeholder="키워드 추가 (예: AI, 현대차…)" value={kwInput}
+                    <div style={{ fontSize:12, fontWeight:700, color:"#cbd5e1", marginBottom:10 }}>🔖 내 관심 키워드</div>
+                    <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                      <input id="kwInputBox" type="text" placeholder="키워드 추가 (예: 현대차, 금리…)" value={kwInput}
                         onChange={e=>setKwInput(e.target.value)}
                         onKeyDown={e=>{ if(e.key==="Enter"&&kwInput.trim()){ setUserKeywords([...userKeywords,{id:Date.now().toString(),text:kwInput.trim(),ticker:""}]); setKwInput(""); } }}
                         style={{...S.input, flex:1}} />
                       <button style={{...S.accentSmallBtn, whiteSpace:"nowrap"}}
                         onClick={()=>{ if(kwInput.trim()){ setUserKeywords([...userKeywords,{id:Date.now().toString(),text:kwInput.trim(),ticker:""}]); setKwInput(""); } }}>
-                        추가
+                        + 추가
                       </button>
                     </div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:10 }}>
-                      {KW_DATA.map(k=>(
-                        <span key={k.id}
-                          onClick={()=>setSelectedKw(k.id)}
-                          style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:16, cursor:"pointer",
-                            background:`${CATEGORY_COLOR[k.category]}18`,
-                            border:`1px solid ${CATEGORY_COLOR[k.category]}44`,
-                            color:CATEGORY_COLOR[k.category], fontSize:12 }}>
-                          {k.keyword}
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {userKeywords.map(k=>(
+                        <span key={k.id} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:16,
+                          background:"rgba(99,102,241,0.12)", border:"1px solid rgba(99,102,241,0.3)", color:"#818cf8", fontSize:12 }}>
+                          {k.text}
+                          <span onClick={()=>setUserKeywords(userKeywords.filter(u=>u.id!==k.id))}
+                            style={{ color:"#475569", cursor:"pointer", fontSize:13, lineHeight:1 }}>×</span>
                         </span>
                       ))}
                     </div>
-                    <div style={{ color:"#475569", fontSize:10, marginTop:8 }}>키워드를 탭하면 헤드라인 뉴스를 확인할 수 있습니다</div>
                   </GlassCard>
 
-                  {/* 주간 / 월간 + 정렬 */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                    <div style={{ display:"flex", gap:6 }}>
-                      {["weekly","monthly"].map(t=>(
-                        <button key={t} onClick={()=>setKwTab(t)}
-                          style={{ padding:"7px 16px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer",
-                            border:`1px solid ${kwTab===t?"#6366f1":"rgba(255,255,255,0.1)"}`,
-                            background:kwTab===t?"rgba(99,102,241,0.2)":"transparent",
-                            color:kwTab===t?"#818cf8":"#94a3b8" }}>
-                          {t==="weekly"?"📅 주간":"📆 월간"}
-                        </button>
-                      ))}
-                    </div>
-                    <select value={kwSortBy} onChange={e=>setKwSortBy(e.target.value)}
-                      style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#94a3b8", fontSize:11, padding:"5px 10px", outline:"none", cursor:"pointer" }}>
-                      <option value="importance">중요도순</option>
-                      <option value="count">언급량순</option>
-                      <option value="trend">트렌드순</option>
-                    </select>
+                  {/* 기간 탭 */}
+                  <PeriodTabs />
+
+                  {/* 키워드별 헤드라인 카드 */}
+                  <div style={{ fontSize:12, fontWeight:700, color:"#94a3b8", marginBottom:12 }}>
+                    탭하면 헤드라인 뉴스 + AI 요약을 볼 수 있습니다
                   </div>
-
-                  {/* ① 언급량 + 중요도 바 차트 */}
-                  <GlassCard style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#cbd5e1", marginBottom:14 }}>
-                      🔥 {kwTab==="weekly"?"이번 주":"이번 달"} 전체 키워드 순위
-                    </div>
-                    {sorted.map((k,i)=>{
-                      const p    = k[period];
-                      const cat  = CATEGORY_COLOR[k.category] || "#818cf8";
-                      const cPct = Math.round(p.count      / maxCount * 100);
-                      const iPct = Math.round(p.importance / maxImp   * 100);
-                      return (
-                        <div key={k.id} style={{ marginBottom:14, cursor:"pointer" }} onClick={()=>setSelectedKw(k.id)}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ color:"#475569", fontSize:11, fontWeight:700, width:16, textAlign:"right" }}>#{i+1}</span>
-                              <span style={{ width:8, height:8, borderRadius:4, background:cat, flexShrink:0 }} />
-                              <span style={{ color:"#e2e8f0", fontSize:13, fontWeight:700 }}>{k.keyword}</span>
-                              <span style={{ fontSize:9, padding:"2px 6px", borderRadius:6, background:`${cat}18`, border:`1px solid ${cat}33`, color:cat }}>{k.category}</span>
+                  {KW_DATA.map(kw => {
+                    const p   = kw[period];
+                    const cat = CATEGORY_COLOR[kw.category] || "#818cf8";
+                    const posCount = p.headlines.filter(h=>h.sentiment==="positive").length;
+                    const negCount = p.headlines.filter(h=>h.sentiment==="negative").length;
+                    const dominant = posCount > negCount ? "긍정" : negCount > posCount ? "부정" : "중립";
+                    const domColor = posCount > negCount ? "#34d399" : negCount > posCount ? "#f87171" : "#94a3b8";
+                    return (
+                      <GlassCard key={kw.id} style={{ marginBottom:12, cursor:"pointer" }}
+                        onClick={()=>setSelectedKw(kw.id)}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                          <div style={{ flex:1 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                              <span style={{ fontSize:16, fontWeight:900, color:"#f1f5f9" }}>{kw.keyword}</span>
+                              <span style={{ fontSize:9, padding:"2px 7px", borderRadius:8, background:`${cat}18`, border:`1px solid ${cat}44`, color:cat, fontWeight:700 }}>{kw.category}</span>
+                              <span style={{ fontSize:9, padding:"2px 7px", borderRadius:8, background:`${domColor}15`, border:`1px solid ${domColor}40`, color:domColor, fontWeight:700 }}>{dominant} 우세</span>
                             </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                              <span style={{ color:p.trend>=0?"#34d399":"#f87171", fontSize:11, fontWeight:700 }}>
-                                {p.trend>=0?"▲":"▼"}{Math.abs(p.trend)}%
-                              </span>
-                              <span style={{ color:"#f59e0b", fontSize:11, fontWeight:700 }}>★{p.importance}</span>
-                              <span style={{ color:"#64748b", fontSize:11 }}>{p.count}건</span>
+                            {/* 헤드라인 미리보기 (최신 2개) */}
+                            {p.headlines.slice(0,2).map((h,i)=>{
+                              const ss = SENTIMENT_STYLE[h.sentiment];
+                              return (
+                                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:6, marginBottom:4 }}>
+                                  <span style={{ fontSize:8, padding:"1px 5px", borderRadius:5, background:ss.bg, color:ss.color, flexShrink:0, marginTop:2 }}>{ss.label}</span>
+                                  <span style={{ color:"#94a3b8", fontSize:11, lineHeight:1.5 }}>{h.title}</span>
+                                </div>
+                              );
+                            })}
+                            <div style={{ color:"#475569", fontSize:10, marginTop:4 }}>+ {p.headlines.length - 2}개 더 보기 →</div>
+                          </div>
+                          <div style={{ textAlign:"right", flexShrink:0, marginLeft:10 }}>
+                            <div style={{ color:p.trend>=0?"#34d399":"#f87171", fontSize:16, fontWeight:900 }}>
+                              {p.trend>=0?"▲":"▼"}{Math.abs(p.trend)}%
                             </div>
-                          </div>
-                          {/* 이중 바: 회색=언급량, 색=중요도 */}
-                          <div style={{ position:"relative", width:"100%", height:7, borderRadius:4, background:"rgba(255,255,255,0.06)" }}>
-                            <div style={{ position:"absolute", left:0, top:0, height:"100%", width:`${cPct}%`, borderRadius:4, background:"rgba(255,255,255,0.12)" }} />
-                            <div style={{ position:"absolute", left:0, top:0, height:"100%", width:`${iPct}%`, borderRadius:4, background:cat, opacity:0.8, transition:"width 0.8s ease" }} />
-                          </div>
-                          <div style={{ display:"flex", gap:12, marginTop:4 }}>
-                            <span style={{ color:"#334155", fontSize:9 }}>■ 중요도점수</span>
-                            <span style={{ color:"#334155", fontSize:9 }}>□ 언급량 비율</span>
+                            <div style={{ color:"#64748b", fontSize:9, marginTop:2 }}>{p.count}건</div>
+                            <div style={{ color:"#f59e0b", fontSize:9, marginTop:4 }}>★{p.importance}</div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </GlassCard>
-
-                  {/* ② 버블 차트 (트렌드 × 언급량) */}
-                  <GlassCard style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#cbd5e1", marginBottom:4 }}>📊 트렌드 × 언급량 버블 차트</div>
-                    <div style={{ color:"#64748b", fontSize:10, marginBottom:12 }}>버블 크기 = 중요도, 좌우 = 트렌드 방향, 탭하면 상세 뉴스</div>
-                    <div style={{ position:"relative", height:180, background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
-                      <div style={{ position:"absolute", left:"50%", top:0, bottom:0, width:1, background:"rgba(255,255,255,0.07)" }} />
-                      <div style={{ position:"absolute", top:"50%", left:0, right:0, height:1, background:"rgba(255,255,255,0.07)" }} />
-                      <span style={{ position:"absolute", left:6, bottom:6, color:"#334155", fontSize:9 }}>◀ 감소</span>
-                      <span style={{ position:"absolute", right:6, bottom:6, color:"#334155", fontSize:9 }}>증가 ▶</span>
-                      {(() => {
-                        const maxTr   = Math.max(...KW_DATA.map(k=>Math.abs(k[period].trend)));
-                        const rows    = [0,1,2,3,4,5];
-                        return KW_DATA.map((k,i)=>{
-                          const p    = k[period];
-                          const cat  = CATEGORY_COLOR[k.category]||"#818cf8";
-                          const r    = 16 + (p.importance / maxImp) * 20;
-                          const xPct = 50 + (p.trend / (maxTr||1)) * 42;
-                          const yPct = 12 + (i % 3) * 30 + (i > 2 ? 5 : 0);
-                          return (
-                            <div key={k.id} onClick={()=>setSelectedKw(k.id)}
-                              style={{ position:"absolute", left:`${xPct}%`, top:`${yPct}%`,
-                                transform:"translate(-50%,-50%)", width:r*2, height:r*2, borderRadius:"50%",
-                                background:`${cat}25`, border:`2px solid ${cat}70`,
-                                display:"flex", alignItems:"center", justifyContent:"center",
-                                fontSize:9, color:cat, fontWeight:700, textAlign:"center", lineHeight:1.1,
-                                cursor:"pointer" }}>
-                              {k.keyword.slice(0,3)}
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </GlassCard>
-
-                  {/* ③ 카테고리별 분류 요약 */}
-                  <GlassCard style={{ marginBottom:14 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#cbd5e1", marginBottom:12 }}>🏷️ 카테고리별 분류</div>
-                    {Object.entries(CATEGORY_COLOR).map(([cat, color])=>{
-                      const inCat = KW_DATA.filter(k=>k.category===cat);
-                      if(!inCat.length) return null;
-                      const totalCount = inCat.reduce((s,k)=>s+k[period].count,0);
-                      const avgTrend   = Math.round(inCat.reduce((s,k)=>s+k[period].trend,0)/inCat.length);
-                      return (
-                        <div key={cat} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                            <span style={{ fontSize:9, fontWeight:700, padding:"3px 8px", borderRadius:8, background:`${color}18`, border:`1px solid ${color}44`, color, minWidth:32, textAlign:"center" }}>{cat}</span>
-                            <div style={{ display:"flex", gap:6 }}>
-                              {inCat.map(k=>(
-                                <span key={k.id} onClick={()=>setSelectedKw(k.id)}
-                                  style={{ color:"#94a3b8", fontSize:11, cursor:"pointer", textDecoration:"underline", textDecorationColor:"#334155" }}>
-                                  {k.keyword}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div style={{ textAlign:"right", flexShrink:0 }}>
-                            <div style={{ color:avgTrend>=0?"#34d399":"#f87171", fontSize:11, fontWeight:700 }}>{avgTrend>=0?"▲":"▼"}{Math.abs(avgTrend)}%</div>
-                            <div style={{ color:"#475569", fontSize:9 }}>{totalCount}건</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </GlassCard>
+                      </GlassCard>
+                    );
+                  })}
                 </div>
               );
             })()
@@ -1244,16 +1597,73 @@ function OguTalkV3() {
         {/* ═══ 설정 ═══ */}
         {tab === "settings" && (
           <>
-            <GlassCard style={{ marginBottom:16, display:"flex", alignItems:"center", gap:14 }}>
-              <div style={{ width:50, height:50, borderRadius:25, background:G.purple, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, color:"white", fontWeight:700 }}>
-                {isLoggedIn && email ? email[0].toUpperCase() : "🐾"}
+            {/* ── 프로필 카드 ── */}
+            <GlassCard style={{ marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom: isLoggedIn?0:12 }}>
+                <div style={{ width:52, height:52, borderRadius:26, background:G.purple,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, color:"white", fontWeight:700, flexShrink:0 }}>
+                  {isLoggedIn && email ? email[0].toUpperCase() : "🐾"}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ color:"#e2e8f0", fontWeight:700, fontSize:15 }}>{isLoggedIn ? email : "비로그인 사용자"}</div>
+                  <div style={{ color:"#64748b", fontSize:12, marginTop:2 }}>{isPremium ? "✨ 프리미엄 플랜" : "🔓 무료 플랜"}</div>
+                </div>
+                {!isLoggedIn && (
+                  <button style={S.loginBtn} onClick={() => setLoginOpen(true)}>이메일</button>
+                )}
               </div>
-              <div style={{ flex:1 }}>
-                <div style={{ color:"#e2e8f0", fontWeight:700, fontSize:15 }}>{isLoggedIn ? email : "비로그인 사용자"}</div>
-                <div style={{ color:"#64748b", fontSize:12, marginTop:2 }}>{isPremium ? "✨ 프리미엄 플랜" : "🔓 무료 플랜"}</div>
-              </div>
-              {!isLoggedIn && <button style={S.loginBtn} onClick={() => setLoginOpen(true)}>로그인</button>}
+
+              {/* 카카오 로그인 버튼 */}
+              {!isLoggedIn && (
+                <button
+                  style={{ width:"100%", marginTop:10, padding:"12px", borderRadius:14, border:"none",
+                    background:"#FEE500", color:"#3A1D1D", fontWeight:800, fontSize:14, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
+                  onClick={() => setKakaoMode(true)}>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 1C4.582 1 1 3.79 1 7.237c0 2.178 1.454 4.092 3.644 5.201l-.928 3.455c-.083.308.266.55.533.37L8.47 13.48A9.17 9.17 0 009 13.474c4.418 0 8-2.79 8-6.237C17 3.789 13.418 1 9 1z" fill="#3A1D1D"/>
+                  </svg>
+                  카카오로 시작하기
+                </button>
+              )}
             </GlassCard>
+
+            {/* 카카오 로그인 모달 */}
+            {kakaoMode && (
+              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:200,
+                display:"flex", alignItems:"center", justifyContent:"center" }}
+                onClick={() => setKakaoMode(false)}>
+                <div style={{ background:"#1e293b", borderRadius:24, padding:28, width:300,
+                  border:"1px solid rgba(255,255,255,0.08)" }}
+                  onClick={e=>e.stopPropagation()}>
+                  <div style={{ textAlign:"center", marginBottom:20 }}>
+                    <div style={{ fontSize:44, marginBottom:8 }}>💛</div>
+                    <div style={{ color:"#e2e8f0", fontWeight:800, fontSize:17 }}>카카오 로그인</div>
+                    <div style={{ color:"#64748b", fontSize:12, marginTop:5, lineHeight:1.6 }}>
+                      카카오 계정으로 간편하게 시작하고<br/>모든 기기에서 데이터를 동기화하세요
+                    </div>
+                  </div>
+                  <button
+                    style={{ width:"100%", padding:"14px", borderRadius:14, border:"none",
+                      background:"#FEE500", color:"#3A1D1D", fontWeight:800, fontSize:15, cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}
+                    onClick={() => {
+                      setIsLoggedIn(true);
+                      setEmail("카카오 사용자");
+                      setKakaoMode(false);
+                    }}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M9 1C4.582 1 1 3.79 1 7.237c0 2.178 1.454 4.092 3.644 5.201l-.928 3.455c-.083.308.266.55.533.37L8.47 13.48A9.17 9.17 0 009 13.474c4.418 0 8-2.79 8-6.237C17 3.789 13.418 1 9 1z" fill="#3A1D1D"/>
+                    </svg>
+                    카카오 계정으로 로그인
+                  </button>
+                  <button style={{ ...S.ghostBtn, width:"100%" }} onClick={() => setKakaoMode(false)}>취소</button>
+                  <div style={{ color:"#2d3748", fontSize:10, textAlign:"center", marginTop:12, lineHeight:1.6 }}>
+                    실제 서비스에서는 Kakao OAuth 2.0으로 연결됩니다
+                  </div>
+                </div>
+              </div>
+            )}
 
             {!isPremium && (
               <GlassCard style={{ marginBottom:16, background:"linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))", border:"1px solid rgba(99,102,241,0.3)" }}>
@@ -1263,12 +1673,82 @@ function OguTalkV3() {
               </GlassCard>
             )}
 
+            {/* ── 알람 출력 방식 ── */}
+            <SettingSection title="🔔 알람 출력 방식">
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
+                {[
+                  { id:"sound",   emoji:"🔊", label:"알람음만",  desc:"소리로만" },
+                  { id:"vibrate", emoji:"📳", label:"진동만",    desc:"무음 진동" },
+                  { id:"both",    emoji:"🔔", label:"소리+진동", desc:"모두 사용" },
+                ].map(m=>(
+                  <button key={m.id}
+                    style={{ padding:"10px 4px", borderRadius:14, textAlign:"center", cursor:"pointer",
+                      border:`1px solid ${alarmMode===m.id?"#818cf8":"rgba(255,255,255,0.08)"}`,
+                      background: alarmMode===m.id?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.03)",
+                      color: alarmMode===m.id?"#818cf8":"#94a3b8" }}
+                    onClick={()=>setAlarmMode(m.id)}>
+                    <div style={{ fontSize:20, marginBottom:4 }}>{m.emoji}</div>
+                    <div style={{ fontSize:11, fontWeight:700 }}>{m.label}</div>
+                    <div style={{ fontSize:9, opacity:0.55, marginTop:2 }}>{m.desc}</div>
+                  </button>
+                ))}
+              </div>
+              <SettingRow label="알람 소리" icon="🔊">
+                <Toggle on={alarmMode!=="vibrate"} onToggle={()=>setAlarmMode(alarmMode==="vibrate"?"both":"vibrate")} />
+              </SettingRow>
+              <SettingRow label="진동" icon="📳">
+                <Toggle on={alarmMode!=="sound"} onToggle={()=>setAlarmMode(alarmMode==="sound"?"both":"sound")} />
+              </SettingRow>
+            </SettingSection>
+
+            {/* ── 몰입 시간 경고 알람 ── */}
+            <SettingSection title="⏱️ 몰입 시간 경고 알람">
+              <div style={{ color:"#64748b", fontSize:11, marginBottom:12, lineHeight:1.6 }}>
+                스마트폰을 일정 시간 이상 사용하면 경고 알람이 울립니다.<br/>
+                오구 알람이 울리면 몰입 시간이 자동으로 초기화됩니다.
+              </div>
+              <SettingRow label="30분 경고" icon="🟡">
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <span style={{ color:immersionAlerts.m30?"#f59e0b":"#475569", fontSize:11, fontWeight:700 }}>30분</span>
+                  <Toggle on={immersionAlerts.m30} color="#f59e0b"
+                    onToggle={()=>setImmersionAlerts({...immersionAlerts,m30:!immersionAlerts.m30})} />
+                </div>
+              </SettingRow>
+              <SettingRow label="1시간 경고" icon="🔴">
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <span style={{ color:immersionAlerts.m60?"#ef4444":"#475569", fontSize:11, fontWeight:700 }}>60분</span>
+                  <Toggle on={immersionAlerts.m60} color="#ef4444"
+                    onToggle={()=>setImmersionAlerts({...immersionAlerts,m60:!immersionAlerts.m60})} />
+                </div>
+              </SettingRow>
+              {/* 현재 몰입 시간 인라인 */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                marginTop:12, padding:"10px 14px", borderRadius:12,
+                background: immersion>=60?"rgba(239,68,68,0.08)": immersion>=30?"rgba(245,158,11,0.08)":"rgba(52,211,153,0.06)",
+                border:`1px solid ${immersion>=60?"rgba(239,68,68,0.2)":immersion>=30?"rgba(245,158,11,0.2)":"rgba(52,211,153,0.15)"}` }}>
+                <div>
+                  <div style={{ color:"#94a3b8", fontSize:10 }}>현재 몰입 시간</div>
+                  <div style={{ color: immersion>=60?"#ef4444": immersion>=30?"#f59e0b":"#34d399",
+                    fontSize:24, fontWeight:900, marginTop:2 }}>
+                    {pad(Math.floor(immersion/60))}:{pad(Math.floor(immersion%60))}
+                  </div>
+                </div>
+                <button
+                  style={{ padding:"8px 14px", borderRadius:10, border:"none",
+                    background:"rgba(99,102,241,0.2)", color:"#818cf8", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                  onClick={()=>{ setImmersion(0); immersionAlerted.current={m30:false,m60:false}; }}>
+                  🔄 리셋
+                </button>
+              </div>
+            </SettingSection>
+
+            {/* ── 오구 사운드 톤 ── */}
             <SettingSection title="🎵 오구 사운드 톤">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
                 {Object.entries(OGU_TONES).map(([key,t]) => (
                   <button key={key}
                     style={{ padding:"10px 12px", borderRadius:12, border:`1px solid ${oguTone===key?t.color:"rgba(255,255,255,0.08)"}`, background: oguTone===key?`${t.color}22`:"rgba(255,255,255,0.03)", color: oguTone===key?t.color:"#94a3b8", cursor:"pointer", textAlign:"left" }}
-                    onClick={() => { setOguTone(key); playOguSound(key, oguRepeat); }}
+                    onClick={() => { setOguTone(key); fireAlarmSignal(key, oguRepeat); }}
                   >
                     <div style={{ fontSize:18, marginBottom:2 }}>{t.emoji}</div>
                     <div style={{ fontSize:13, fontWeight:700 }}>{t.label}</div>
@@ -1276,27 +1756,22 @@ function OguTalkV3() {
                   </button>
                 ))}
               </div>
-
-              {/* 오구 반복 횟수 */}
               <SettingRow label="오구 반복 횟수" icon="🔁">
-                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                <div style={{ display:"flex", gap:6 }}>
                   {[1,2,3].map(n => (
                     <button key={n}
-                      style={{
-                        width:36, height:36, borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer",
+                      style={{ width:36, height:36, borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer",
                         border:`1px solid ${oguRepeat===n?"#818cf8":"rgba(255,255,255,0.1)"}`,
                         background: oguRepeat===n?"rgba(99,102,241,0.25)":"transparent",
-                        color: oguRepeat===n?"#818cf8":"#64748b",
-                      }}
-                      onClick={() => { setOguRepeat(n); playOguSound(oguTone, n); }}
+                        color: oguRepeat===n?"#818cf8":"#64748b" }}
+                      onClick={() => { setOguRepeat(n); fireAlarmSignal(oguTone, n); }}
                     >{n}회</button>
                   ))}
                 </div>
               </SettingRow>
-
-              <SettingRow label="알람 소리" icon="🔊"><Toggle on={soundOn} onToggle={() => setSoundOn(!soundOn)} /></SettingRow>
             </SettingSection>
 
+            {/* ── 시간 안내 목소리 ── */}
             <SettingSection title={<span>🗣️ 시간 안내 목소리 {!isPremium && <PremiumBadge />}</span>}>
               <SettingRow label="음성 안내 사용" icon="💬"><Toggle on={voiceEnabled} onToggle={() => setVoiceEnabled(!voiceEnabled)} /></SettingRow>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginTop:12 }}>
@@ -1306,7 +1781,7 @@ function OguTalkV3() {
                   return (
                     <button key={vc.id}
                       style={{ padding:"10px 8px", borderRadius:12, border:`1px solid ${selected?"#818cf8":"rgba(255,255,255,0.08)"}`, background: selected?"rgba(99,102,241,0.2)":locked?"rgba(255,255,255,0.02)":"rgba(255,255,255,0.04)", color: locked?"#475569":selected?"#818cf8":"#94a3b8", cursor:locked?"not-allowed":"pointer", textAlign:"center", position:"relative", opacity:locked?0.6:1 }}
-                      onClick={() => { if(locked) return; setVoiceChar(vc.id); if(voiceEnabled) speakTime(vc.id, now.getHours(), now.getMinutes()); }}
+                      onClick={() => { if(locked) return; setVoiceChar(vc.id); if(voiceEnabled) speakTime(vc.id, now.getHours(), oguRepeat); }}
                     >
                       <div style={{ fontSize:22, marginBottom:2 }}>{vc.emoji}</div>
                       <div style={{ fontSize:11, fontWeight:600 }}>{vc.name}</div>
@@ -1318,17 +1793,21 @@ function OguTalkV3() {
               {isPremium && (
                 <button style={{ ...S.ghostBtn, width:"100%", marginTop:10, color:"#818cf8" }}
                   onClick={() => speakTime(voiceChar, now.getHours(), oguRepeat)}>
-                  ▶ 목소리 미리듣기 (현재: {"오구 ".repeat(oguRepeat).trim()} {(now.getHours()+1)%24}시)
+                  ▶ 목소리 미리듣기 ({(now.getHours()+1)%24}시)
                 </button>
               )}
             </SettingSection>
 
+            {/* ── 알람 시간 설정 ── */}
             <SettingSection title="⏰ 알람 시간 설정">
               <div style={{ color:"#64748b", fontSize:11, marginBottom:12 }}>선택한 시간의 59분에 알람이 울립니다</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:5 }}>
                 {Array.from({length:24},(_,i)=>i).map(h => (
                   <button key={h} onClick={() => setAlarmHours({...alarmHours,[h]:!alarmHours[h]})}
-                    style={{ padding:"7px 2px", borderRadius:8, fontSize:11, fontWeight:600, cursor:"pointer", border:`1px solid ${alarmHours[h]?"#6366f1":"rgba(255,255,255,0.08)"}`, background: alarmHours[h]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.03)", color: alarmHours[h]?"#818cf8":"#64748b" }}>
+                    style={{ padding:"7px 2px", borderRadius:8, fontSize:11, fontWeight:600, cursor:"pointer",
+                      border:`1px solid ${alarmHours[h]?"#6366f1":"rgba(255,255,255,0.08)"}`,
+                      background: alarmHours[h]?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.03)",
+                      color: alarmHours[h]?"#818cf8":"#64748b" }}>
                     {pad(h)}
                   </button>
                 ))}
@@ -1340,9 +1819,9 @@ function OguTalkV3() {
               </div>
             </SettingSection>
 
+            {/* ── 기능 활성화 ── */}
             {isPremium && (
               <SettingSection title="🛠️ 기능 활성화">
-                <div style={{ color:"#64748b", fontSize:11, marginBottom:10 }}>홈 화면 및 탭에 표시할 기능을 선택하세요</div>
                 {[
                   { key:"todos",          icon:"✅", label:"할일 관리" },
                   { key:"goals",          icon:"🎯", label:"목표 관리" },
@@ -1355,6 +1834,61 @@ function OguTalkV3() {
                 ))}
               </SettingSection>
             )}
+
+            {/* ── 백업 & 복원 ── */}
+            <SettingSection title="💾 데이터 백업 & 복원">
+              <div style={{ color:"#64748b", fontSize:11, marginBottom:14, lineHeight:1.6 }}>
+                설정·할일·목표·키워드를 JSON 파일로 저장하고,<br/>
+                다른 기기에서 복원해 동일한 환경을 만들 수 있습니다.
+              </div>
+
+              {/* 내보내기 */}
+              <button
+                style={{ width:"100%", padding:"13px", borderRadius:14, border:"none", marginBottom:10,
+                  background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"white",
+                  fontSize:14, fontWeight:700, cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}
+                onClick={exportBackup}>
+                📤 백업 내보내기 (JSON 다운로드)
+              </button>
+
+              {/* 불러오기 */}
+              <label style={{ width:"100%", padding:"13px", borderRadius:14,
+                border:"1px solid rgba(99,102,241,0.3)", color:"#818cf8",
+                fontSize:14, fontWeight:700, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                background:"rgba(99,102,241,0.08)" }}>
+                📥 백업 불러오기 (복원)
+                <input type="file" accept=".json" style={{ display:"none" }} onChange={importBackup} />
+              </label>
+
+              {/* 메시지 */}
+              {backupMsg && (
+                <div style={{ marginTop:12, padding:"10px 14px", borderRadius:10,
+                  background: backupMsg.startsWith("✅") ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
+                  border:`1px solid ${backupMsg.startsWith("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+                  color: backupMsg.startsWith("✅") ? "#34d399" : "#f87171",
+                  fontSize:12, fontWeight:600 }}>
+                  {backupMsg}
+                </div>
+              )}
+
+              {/* 백업 정보 */}
+              <div style={{ marginTop:14, display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                {[
+                  { label:"할일", value:`${todos.length}개`, icon:"✅" },
+                  { label:"목표", value:`${Object.values(goals).flat().length}개`, icon:"🎯" },
+                  { label:"키워드", value:`${userKeywords.length}개`, icon:"📌" },
+                  { label:"알람 설정", value:`${Object.values(alarmHours).filter(Boolean).length}시간대`, icon:"⏰" },
+                ].map(item=>(
+                  <div key={item.label} style={{ padding:"8px 12px", borderRadius:10,
+                    background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ color:"#475569", fontSize:10 }}>{item.icon} {item.label}</div>
+                    <div style={{ color:"#818cf8", fontSize:14, fontWeight:800, marginTop:2 }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </SettingSection>
 
             {isLoggedIn && (
               <button style={{ ...S.ghostBtn, width:"100%", marginTop:8, color:"#ef4444", borderColor:"rgba(239,68,68,0.2)" }}
