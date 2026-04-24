@@ -242,12 +242,23 @@ export default function App() {
         {activeTab === 'todos' && (
           <TodosPage
             todos={activeTodos}
+            userId={userId}  // ← 추가
             isPremium={isPremium}
             setIsPremium={setIsPremium}
-            onAdd={userId ? addTodo : t => setLocalTodos(p => [{ id: Date.now().toString(), title: t, completed: false, priority: 'medium' }, ...p])}
+            onAdd={userId 
+              ? addTodo 
+              : (title, goalId) => setLocalTodos(p => [{  // ← goalId 파라미터 추가
+                  id: Date.now().toString(), 
+                  title, 
+                  completed: false, 
+                  priority: 'medium',
+                  goal_id: goalId  // ← goal_id 필드 추가
+                }, ...p])
+            }
             onToggle={userId ? toggleTodo : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
             onDelete={userId ? deleteTodo : id => setLocalTodos(p => p.filter(t => t.id !== id))}
           />
+    
         )}
         {activeTab === 'goals' && (
           <GoalsPage
