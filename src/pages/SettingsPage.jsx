@@ -2,6 +2,7 @@ import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES, VOICE_CHARACTERS } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
+import { usePushNotification } from '../hooks/usePushNotification'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -37,9 +38,20 @@ export default function SettingsPage({
   todos = [], goals = {}, userKeywords = [],
   onLoginOpen, onSignOut,
   playSound, speakTimePreview,
+  userId = null,
 }) {
   const immMins = Math.floor(immersionSec / 60)
   const immSecs = Math.floor(immersionSec % 60)
+
+  const {
+    supported: pushSupported,
+    permission: pushPermission,
+    isSubscribed,
+    loading: pushLoading,
+    error: pushError,
+    subscribe: pushSubscribe,
+    unsubscribe: pushUnsubscribe,
+  } = usePushNotification(userId)
 
   const fireSignal = (tone, repeat) => {
     if (alarmMode !== 'vibrate') playSound(tone, repeat)
@@ -224,6 +236,84 @@ export default function SettingsPage({
           <button style={{ ...S.ghostBtn, width: '100%', marginTop: 10, color: '#818cf8' }} onClick={speakTimePreview}>
             ▶ 목소리 미리듣기
           </button>
+        )}
+      </SettingSection>
+
+      {/* ── 백그라운드 푸시 알람 ── */}
+      <SettingSection title="📡 백그라운드 푸시 알람">
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12 }}>
+          앱을 닫아도 매시 59분에 알림이 옵니다
+        </div>
+
+        {!pushSupported ? (
+          <div style={{ color: '#f59e0b', fontSize: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            ⚠️ 이 브라우저는 Web Push를 지원하지 않습니다.<br />
+            <span style={{ color: '#64748b', fontSize: 11 }}>Chrome / Edge / Firefox 최신 버전 또는 iOS 16.4+ PWA를 사용해주세요.</span>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div>
+                <div style={{ color: isSubscribed ? '#34d399' : '#94a3b8', fontSize: 13, fontWeight: 700 }}>
+                  {isSubscribed ? '🟢 활성화됨' : '⚪ 비활성화'}
+                </div>
+                <div style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
+                  {isSubscribed
+                    ? '앱을 닫아도 59분에 알림이 와요'
+                    : '로그인 후 활성화하면 앱 없이도 알람을 받아요'}
+                </div>
+              </div>
+
+              {isSubscribed ? (
+                <button
+                  onClick={pushUnsubscribe}
+                  disabled={pushLoading}
+                  style={{
+                    padding: '7px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)',
+                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                    fontSize: 12, fontWeight: 600, cursor: pushLoading ? 'wait' : 'pointer',
+                    opacity: pushLoading ? 0.6 : 1,
+                  }}
+                >
+                  {pushLoading ? '...' : '해제'}
+                </button>
+              ) : (
+                <button
+                  onClick={pushSubscribe}
+                  disabled={pushLoading || !userId}
+                  style={{
+                    padding: '7px 16px', borderRadius: 10, border: 'none',
+                    background: userId
+                      ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
+                      : 'rgba(255,255,255,0.06)',
+                    color: userId ? 'white' : '#475569',
+                    fontSize: 12, fontWeight: 700, cursor: (pushLoading || !userId) ? 'not-allowed' : 'pointer',
+                    opacity: pushLoading ? 0.6 : 1,
+                  }}
+                >
+                  {pushLoading ? '처리 중...' : userId ? '✨ 활성화' : '로그인 필요'}
+                </button>
+              )}
+            </div>
+
+            {pushError && (
+              <div style={{ color: '#f87171', fontSize: 11, padding: '8px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', marginBottom: 6 }}>
+                ⚠️ {pushError}
+              </div>
+            )}
+
+            {pushPermission === 'denied' && (
+              <div style={{ color: '#f59e0b', fontSize: 11, padding: '8px 10px', borderRadius: 8, background: 'rgba(245,158,11,0.08)' }}>
+                💡 브라우저 설정에서 알림 권한을 허용해주세요
+              </div>
+            )}
+
+            {!userId && (
+              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+                * 카카오 또는 이메일로 로그인하면 푸시 알람을 사용할 수 있어요
+              </div>
+            )}
+          </>
         )}
       </SettingSection>
 

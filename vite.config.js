@@ -7,7 +7,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+
+      // injectManifest: 커스텀 SW에 Workbox 캐시 목록 자동 주입
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw-custom.js',
+
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      },
+
       includeAssets: ['icon-192.png', 'icon-512.png'],
+
       manifest: {
         name: '오구톡',
         short_name: '오구톡',
@@ -31,19 +42,6 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
-            },
           },
         ],
       },

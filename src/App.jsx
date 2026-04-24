@@ -313,6 +313,7 @@ export default function App() {
             onSignOut={handleSignOut}
             playSound={playOguSound}
             speakTimePreview={() => speakTime(voiceChar, new Date().getHours(), oguRepeat)}
+            userId={userId}
           />
         )}
       </Layout>
