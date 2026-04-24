@@ -4,6 +4,42 @@
 
 ---
 
+## [0.6.0] — 2026-04-24
+
+### Added
+- **홈 화면 "오늘의 기여" 카드** (`src/pages/HomePage.jsx`)
+  - mock 데이터 제거 → `todos` props 기반 실시간 계산
+  - 오늘 완료된 목표 연결 할일 수 + 기여한 목표 수를 숫자 카드로 표시
+  - 2칸 그리드 레이아웃, 인디고·퍼플 그라데이션 스타일
+- **알람 체크인 UI** (`src/components/alarm/AlarmPopup.jsx`)
+  - 알람 팝업 하단에 "이번 시간 뭐 하셨어요?" 섹션 추가
+  - 4개 선택지: 🎯 목표 할일 / 📚 공부·업무 / 📱 SNS·유튜브 / 😴 휴식·식사
+  - 선택 시 색상 하이라이트 + "✓ 체크인 완료" 메시지 → 1.2초 후 자동 닫기
+- **체크인 데이터 저장** (`src/hooks/useAlarm.js`, `src/App.jsx`)
+  - `useAlarm`에 `userId` 파라미터 추가, `saveCheckin(activityType)` 함수 구현
+  - `notification_log` 테이블에 `alarm_hour` + `activity_type` 저장 (Supabase)
+  - `App.jsx` → `AlarmPopup`의 `onCheckin` prop으로 연결 완료
+
+### DB 마이그레이션 필요
+```sql
+-- Supabase SQL Editor에서 실행
+ALTER TABLE notification_log
+ADD COLUMN IF NOT EXISTS activity_type TEXT;
+
+COMMENT ON COLUMN notification_log.activity_type IS
+'goal_work | study | sns | rest';
+```
+
+---
+
+## [0.5.0] — 2026-04-24
+
+### Added
+- **알람 정확도 개선**: `setInterval` → `setTimeout` 체인 방식으로 변경, `visibilitychange` 탭 복귀 시 재예약
+- **목표 ↔ 할일 연결**: 할일 추가 시 목표 선택 드롭다운, 완료 시 `syncGoalProgress`로 진행률 자동 업데이트
+
+---
+
 ## [0.4.0] — 2026-04-22
 
 ### Added

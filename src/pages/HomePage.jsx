@@ -66,6 +66,19 @@ export default function HomePage({
   // 명언
   const quoteObj = QUOTES[Math.floor(now.getMinutes() / 12) % QUOTES.length]
 
+  // ── 오늘의 기여 계산 ──
+  const todayStr = new Date().toDateString()
+  const todayCompletedWithGoal = todos.filter(t => {
+    const isDone = t.completed || t.is_completed || t.done
+    const hasGoal = !!t.goal_id
+    const ts = t.updated_at || t.completed_at || t.created_at
+    const isToday = ts ? new Date(ts).toDateString() === todayStr : false
+    return isDone && hasGoal && isToday
+  })
+  const contributedGoalIds = [...new Set(todayCompletedWithGoal.map(t => t.goal_id))]
+  const todayDoneCount = todayCompletedWithGoal.length
+  const contributedGoalCount = contributedGoalIds.length
+
   return (
     <div>
       {/* ── 대형 시계 + 다음 오구 카운트다운 ── */}
@@ -129,6 +142,52 @@ export default function HomePage({
           </GlassCard>
         ))}
       </div>
+
+      {/* ── 오늘의 기여 카드 ── */}
+      <GlassCard style={{
+        marginBottom: 16,
+        background: 'linear-gradient(135deg,rgba(99,102,241,0.13),rgba(139,92,246,0.10))',
+        border: '1px solid rgba(139,92,246,0.25)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 14 }}>🔥</span>
+          <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>오늘의 기여</span>
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+            목표 연결 할일 기준
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{
+            flex: 1, textAlign: 'center', padding: '12px 8px', borderRadius: 14,
+            background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+          }}>
+            <div style={{
+              fontSize: 32, fontWeight: 900, lineHeight: 1,
+              background: 'linear-gradient(135deg,#818cf8,#a78bfa)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>{todayDoneCount}</div>
+            <div style={{ color: '#64748b', fontSize: 10, marginTop: 4 }}>완료한 할일</div>
+          </div>
+          <div style={{
+            flex: 1, textAlign: 'center', padding: '12px 8px', borderRadius: 14,
+            background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
+          }}>
+            <div style={{
+              fontSize: 32, fontWeight: 900, lineHeight: 1,
+              background: 'linear-gradient(135deg,#a78bfa,#c084fc)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>{contributedGoalCount}</div>
+            <div style={{ color: '#64748b', fontSize: 10, marginTop: 4 }}>기여한 목표</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 10, color: '#475569', fontSize: 11, textAlign: 'center' }}>
+          {todayDoneCount === 0
+            ? '목표와 연결된 할일을 완료하면 여기에 기록돼요 💪'
+            : contributedGoalCount > 0
+              ? `${contributedGoalCount}개 목표에 진전이 있었어요 🎉`
+              : `오늘 ${todayDoneCount}개 완료! 목표에 연결해보세요`}
+        </div>
+      </GlassCard>
 
       {/* ── 오늘의 목표 (일간) ── */}
       {isPremium && premiumFeatures.goals ? (

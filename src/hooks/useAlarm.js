@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, VOICE_CHARACTERS, VOICE_TEXTS } from '../data/oguData'
+import { supabase } from '../lib/supabase'
 
 export function useAlarm({
   oguTone = '유쾌',
@@ -9,6 +10,7 @@ export function useAlarm({
   alarmMode = 'both',   // 'sound' | 'vibrate' | 'both'
   alarmHours = {},
   immersionAlerts = { m30: true, m60: true },
+  userId = null,
 } = {}) {
   const [alarmCount, setAlarmCount]         = useState(0)
   const [immersionSec, setImmersionSec]     = useState(0)
@@ -130,6 +132,20 @@ useEffect(() => {
     setImmersionPopup(false)
   }, [])
 
+  // ── 체크인 저장 ──
+  const saveCheckin = useCallback(async (activityType) => {
+    if (!userId) return
+    const { error } = await supabase
+      .from('notification_log')
+      .insert({
+        user_id:       userId,
+        alarm_hour:    new Date().getHours(),
+        activity_type: activityType,
+        created_at:    new Date().toISOString(),
+      })
+    if (error) console.error('체크인 저장 실패:', error)
+  }, [userId])
+
   return {
     alarmCount,
     immersionSec,
@@ -142,6 +158,7 @@ useEffect(() => {
     closeImmersionPopup: () => setImmersionPopup(false),
     resetImmersion,
     fireAlarm,
+    saveCheckin,
   }
 }
 

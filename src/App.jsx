@@ -187,7 +187,8 @@ export default function App() {
   const {
     alarmCount, immersionSec, showAlarmPopup, alarmContent, closeAlarmPopup,
     immersionPopup, immersionLevel, closeImmersionPopup, resetImmersion, fireAlarm,
-  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts })
+    saveCheckin,
+  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts, userId })
 
   const handleLogin = useCallback((email) => {
     setLocalEmail(email)
@@ -319,6 +320,7 @@ export default function App() {
           pendingCount={activeTodosForAlarm}
           oguTone={oguTone}
           onClose={closeAlarmPopup}
+          onCheckin={saveCheckin}
         />
       )}
 
