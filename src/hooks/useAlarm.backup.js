@@ -27,59 +27,20 @@ export function useAlarm({
     }
   }, [])
 
-  // 몰입 시간 카운터 (1초마다 증가 — 이건 유지)
-useEffect(() => {
-  const id = setInterval(() => {
-    setImmersionSec(prev => prev + 1)
-  }, 1000)
-  return () => clearInterval(id)
-}, [])
+  // 매초 카운터: 몰입 시간 + 59분 알람 체크
+  useEffect(() => {
+    const id = setInterval(() => {
+      setImmersionSec(prev => prev + 1)
 
-// 59분 알람 스케줄링 (setTimeout 체인 방식)
-useEffect(() => {
-  let timeoutId = null
-
-  const scheduleNext59 = () => {
-    const now = new Date()
-    const next = new Date(now)
-
-    // 다음 59분 시각 계산
-    if (now.getMinutes() < 59) {
-      next.setMinutes(59, 0, 0)
-    } else {
-      next.setHours(next.getHours() + 1)
-      next.setMinutes(59, 0, 0)
-    }
-
-    const msUntilNext = next.getTime() - now.getTime()
-
-    timeoutId = setTimeout(() => {
-      const h = new Date().getHours()
-      // 활성 시간대 + 중복 방지 체크 (기존 로직 유지)
-      if (alarmHours[h] && lastHourRef.current !== h) {
+      const now = new Date()
+      const m = now.getMinutes(), h = now.getHours(), s = now.getSeconds()
+      if (m === 59 && s === 0 && alarmHours[h] && lastHourRef.current !== h) {
         lastHourRef.current = h
         _fire(h)
       }
-      scheduleNext59() // 다음 알람 재예약
-    }, msUntilNext)
-  }
-
-  scheduleNext59()
-
-  // 탭 복귀 시 재예약 (중요!)
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      if (timeoutId) clearTimeout(timeoutId)
-      scheduleNext59()
-    }
-  }
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-
-  return () => {
-    if (timeoutId) clearTimeout(timeoutId)
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }
-}, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours])
+    }, 1000)
+    return () => clearInterval(id)
+  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours])
 
   // 몰입 경고 체크
   useEffect(() => {
