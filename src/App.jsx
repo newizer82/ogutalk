@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
 import KeywordsPage from './pages/KeywordsPage'
+import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
 import { gradients, S } from './styles/theme'
 
@@ -276,6 +277,9 @@ export default function App() {
             isPremium={isPremium}
             setIsPremium={setIsPremium}
           />
+        )}
+        {activeTab === 'reports' && (
+          <ReportsPage userId={userId} />
         )}
         {activeTab === 'settings' && (
           <SettingsPage

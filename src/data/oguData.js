@@ -47,15 +47,15 @@ export const VOICE_CHARACTERS = [
 
 // ── 캐릭터별 음성 텍스트 (nextHour: 다음 정시, repeat: 오구 반복 횟수)
 export const VOICE_TEXTS = {
-  boy:         (h, n) => `${'오구 '.repeat(n).trim()} ${h}시야! 집중해!`,
-  girl:        (h, n) => `${'오구 '.repeat(n).trim()} ${h}시예요~ 파이팅!`,
-  girlfriend:  (h, n) => `${'오구 '.repeat(n).trim()}~ 곧 ${h}시야 자기~ 잠깐 쉬어~`,
-  boyfriend:   (h, n) => `${'오구 '.repeat(n).trim()} ${h}시야. 스트레칭 해.`,
-  mom:         (h, n) => `${'오구 '.repeat(n).trim()}~ ${h}시가 됐네. 눈 좀 쉬어야지~`,
-  grandma:     (h, n) => `아이고, ${'오구 '.repeat(n).trim()}~ ${h}시구먼. 허리 좀 펴거라~`,
-  gyeongsan:   (h, n) => `${'오구 '.repeat(n).trim()}! ${h}시 됐다 아이가! 쉬어라 카이!`,
-  jeolla:      (h, n) => `${'오구 '.repeat(n).trim()}~ ${h}시여! 잠깐 쉬어부러~`,
-  chungcheong: (h, n) => `${'오구 '.repeat(n).trim()}유~ ${h}시가 됐유. 쉬어야 쓰것어~`,
+  boy:         (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 집중해`,
+  girl:        (h, n) => `${'오구 '.repeat(n).trim()} ${h}시예요 파이팅`,
+  girlfriend:  (h, n) => `${'오구 '.repeat(n).trim()} 곧 ${h}시야 잠깐 쉬어`,
+  boyfriend:   (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 스트레칭 해`,
+  mom:         (h, n) => `${'오구 '.repeat(n).trim()} ${h}시가 됐네. 눈 좀 쉬어야지`,
+  grandma:     (h, n) => `아이고, ${'오구 '.repeat(n).trim()} ${h}시구먼. 허리 좀 펴거라`,
+  gyeongsan:   (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 됐다 아이가 쉬어라 카이`,
+  jeolla:      (h, n) => `${'오구 '.repeat(n).trim()} ${h}시여 잠깐 쉬어부러`,
+  chungcheong: (h, n) => `${'오구 '.repeat(n).trim()} ${h}시가 됐유. 쉬어야 쓰것어`,
 }
 
 // ── 경제 상식

@@ -4,6 +4,35 @@
 
 ---
 
+## [0.7.0] — 2026-04-25
+
+### Added
+- **주간 리포트 자동 생성** — Claude API 활용
+  - `supabase/functions/generate-weekly-report/index.ts` Edge Function 작성
+  - 지난 주 할일·체크인·목표 데이터를 수집해 Claude Sonnet에게 전달
+  - Claude가 하이라이트·이번 주 이야기·다음 주 제안을 한국어로 생성
+  - JSON 파싱 안전 처리 (정규식 추출)로 응답 오류 방어
+- **`useWeeklyReport` 훅** (`src/hooks/useWeeklyReport.js`)
+  - `fetchReports` — 최근 10주 리포트 조회
+  - `generateReport` — Edge Function 호출 + 결과 자동 갱신
+  - `error` state로 친절한 오류 메시지 표시
+- **`ReportsPage` 컴포넌트** (`src/pages/ReportsPage.jsx`)
+  - 주차별 탭 전환, 완료율·할일 수 StatBox 카드
+  - 활동 시간 분석 바 차트 (goal_work / study / sns / rest)
+  - 하이라이트·이야기·제안 카드, 수동 생성 버튼
+- **TabBar에 📊 리포트 탭 추가** (키워드 탭 대체)
+- **`weekly_reports` 테이블** (`supabase/migrations/v0.7.0_weekly_reports.sql`)
+  - RLS 정책 3개 (SELECT / INSERT / UPDATE)
+  - UNIQUE(user_id, year, week_number)로 중복 방지 + upsert 지원
+
+### 배포 순서
+1. Supabase SQL Editor → `v0.7.0_weekly_reports.sql` 실행
+2. Anthropic Console에서 API 키 발급 → Supabase Edge Function Secrets에 `ANTHROPIC_API_KEY` 등록
+3. `npx supabase functions deploy generate-weekly-report` 실행
+4. `git add . && git commit -m "feat: v0.7.0 주간 리포트" && git push`
+
+---
+
 ## [0.6.0] — 2026-04-24
 
 ### Added
