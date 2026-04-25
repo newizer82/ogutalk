@@ -249,14 +249,15 @@ export default function App() {
             userId={userId}  // ← 추가
             isPremium={isPremium}
             setIsPremium={setIsPremium}
-            onAdd={userId 
-              ? addTodo 
-              : (title, goalId) => setLocalTodos(p => [{  // ← goalId 파라미터 추가
-                  id: Date.now().toString(), 
-                  title, 
-                  completed: false, 
+            onAdd={userId
+              ? addTodo
+              : (title, todoType, dueDate) => setLocalTodos(p => [{
+                  id: Date.now().toString(),
+                  title,
+                  completed: false,
                   priority: 'medium',
-                  goal_id: goalId  // ← goal_id 필드 추가
+                  todo_type: todoType || 'weekly',
+                  due_date: dueDate || null,
                 }, ...p])
             }
             onToggle={userId ? toggleTodo : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}

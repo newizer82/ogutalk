@@ -39,9 +39,14 @@ export function useTodos(userId) {
     await supabase.from('goals').update({ progress }).eq('id', goalId)
   }
 
-  async function addTodo(title, goalId = null) {
-    const payload = { user_id: userId, title, completed: false }
-    if (goalId) payload.goal_id = goalId
+  async function addTodo(title, todoType = 'weekly', dueDate = null) {
+    const payload = {
+      user_id:   userId,
+      title,
+      completed: false,
+      todo_type: todoType,
+      due_date:  dueDate || null,
+    }
     const { error } = await supabase
       .from('todos')
       .insert(payload)
@@ -50,7 +55,6 @@ export function useTodos(userId) {
       return false
     }
     await fetchTodos()
-    if (goalId) await syncGoalProgress(goalId)
     return true
   }
 
