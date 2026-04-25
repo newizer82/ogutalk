@@ -1,17 +1,27 @@
 // ── 오구 사운드 톤 설정
 export const OGU_TONES = {
-  여유: { label: '여유', emoji: '😌', desc: '느리고 부드럽게',  color: '#34d399' },
-  바쁨: { label: '바쁨', emoji: '⚡', desc: '빠르고 긴박하게', color: '#f59e0b' },
-  화남: { label: '화남', emoji: '😤', desc: '강하고 거칠게',   color: '#ef4444' },
-  유쾌: { label: '유쾌', emoji: '😄', desc: '밝고 경쾌하게',   color: '#818cf8' },
+  오구: { label: '오구',  emoji: '⏱️', desc: '벌써 이 시간이!',  color: '#c084fc' },
+  여유: { label: '여유',  emoji: '😌', desc: '느리고 부드럽게',  color: '#34d399' },
+  바쁨: { label: '바쁨',  emoji: '⚡', desc: '빠르고 긴박하게',  color: '#f59e0b' },
+  화남: { label: '화남',  emoji: '😤', desc: '강하고 거칠게',    color: '#ef4444' },
+  유쾌: { label: '유쾌',  emoji: '😄', desc: '밝고 경쾌하게',    color: '#818cf8' },
 }
 
 // ── 톤별 재생 길이 (반복 간격용)
-export const TONE_DURATION = { 여유: 1.5, 바쁨: 0.55, 화남: 0.70, 유쾌: 1.05 }
+export const TONE_DURATION = { 오구: 0.80, 여유: 1.5, 바쁨: 0.55, 화남: 0.70, 유쾌: 1.05 }
 
 // ── 톤별 사운드 파라미터 (모던 리디자인 v2)
 // 실제 음계 사용: C5=523, D5=587, E5=659, G5=784, A5=880, C6=1047
 export const TONE_CONFIGS = {
+
+  // 오구: G5→E5 두 번 반복 "오-구 오-구" — 벌써 이 시간! 앱 시그니처
+  오구: [
+    { freq: 783.99, start: 0.00, dur: 0.10, type: 'sine',     gain: 0.26 }, // 오 (G5)
+    { freq: 659.25, start: 0.12, dur: 0.14, type: 'sine',     gain: 0.22 }, // 구 (E5)
+    { freq: 783.99, start: 0.32, dur: 0.10, type: 'sine',     gain: 0.24 }, // 오 (G5)
+    { freq: 659.25, start: 0.44, dur: 0.22, type: 'sine',     gain: 0.20 }, // 구 (E5) 여운
+    { freq: 660.50, start: 0.44, dur: 0.22, type: 'triangle', gain: 0.07 }, // E5 레이어 (풍성함)
+  ],
 
   // 여유: C장조 부드러운 종소리 (C5→G5→E5) — 명상·마음챙김 스타일
   여유: [

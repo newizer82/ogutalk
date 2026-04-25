@@ -129,7 +129,7 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false)
 
   // 알람 설정 (전역 상태)
-  const [oguTone, setOguTone]           = useState('유쾌')
+  const [oguTone, setOguTone]           = useState('오구')
   const [oguRepeat, setOguRepeat]       = useState(2)
   const [voiceChar, setVoiceChar]       = useState('girl')
   const [voiceEnabled, setVoiceEnabled] = useState(false)
