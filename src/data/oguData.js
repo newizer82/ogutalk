@@ -7,28 +7,43 @@ export const OGU_TONES = {
 }
 
 // ── 톤별 재생 길이 (반복 간격용)
-export const TONE_DURATION = { 여유: 1.1, 바쁨: 0.65, 화남: 0.65, 유쾌: 0.95 }
+export const TONE_DURATION = { 여유: 1.5, 바쁨: 0.55, 화남: 0.70, 유쾌: 1.05 }
 
-// ── 톤별 사운드 파라미터
+// ── 톤별 사운드 파라미터 (모던 리디자인 v2)
+// 실제 음계 사용: C5=523, D5=587, E5=659, G5=784, A5=880, C6=1047
 export const TONE_CONFIGS = {
+
+  // 여유: C장조 부드러운 종소리 (C5→G5→E5) — 명상·마음챙김 스타일
   여유: [
-    { freq: 392, start: 0,    dur: 0.4, type: 'sine',     gain: 0.25 },
-    { freq: 523, start: 0.35, dur: 0.5, type: 'sine',     gain: 0.20 },
+    { freq: 523.25, start: 0,    dur: 0.70, type: 'sine', gain: 0.20 }, // C5 메인
+    { freq: 524.80, start: 0,    dur: 0.70, type: 'sine', gain: 0.07 }, // C5 미세 디튠 (풍성함)
+    { freq: 783.99, start: 0.40, dur: 0.75, type: 'sine', gain: 0.15 }, // G5
+    { freq: 659.25, start: 0.85, dur: 0.90, type: 'sine', gain: 0.12 }, // E5 여운
   ],
+
+  // 바쁨: 두 번 핑 (E5→A5) — 현대적 슬랙·앱 알림 스타일
   바쁨: [
-    { freq: 659, start: 0,    dur: 0.12, type: 'square',  gain: 0.35 },
-    { freq: 784, start: 0.14, dur: 0.12, type: 'square',  gain: 0.35 },
-    { freq: 988, start: 0.28, dur: 0.14, type: 'square',  gain: 0.35 },
+    { freq: 659.25, start: 0,    dur: 0.14, type: 'triangle', gain: 0.28 }, // E5
+    { freq: 660.50, start: 0,    dur: 0.14, type: 'sine',     gain: 0.10 }, // E5 레이어
+    { freq: 880.00, start: 0.20, dur: 0.18, type: 'triangle', gain: 0.25 }, // A5
+    { freq: 881.50, start: 0.20, dur: 0.18, type: 'sine',     gain: 0.09 }, // A5 레이어
   ],
+
+  // 화남: 강한 하강 (G5→D5→G4) — 단호하지만 음악적
   화남: [
-    { freq: 880, start: 0,    dur: 0.15, type: 'sawtooth', gain: 0.45 },
-    { freq: 698, start: 0.1,  dur: 0.15, type: 'sawtooth', gain: 0.40 },
-    { freq: 523, start: 0.2,  dur: 0.20, type: 'sawtooth', gain: 0.35 },
+    { freq: 783.99, start: 0,    dur: 0.16, type: 'square', gain: 0.28 }, // G5
+    { freq: 783.99, start: 0,    dur: 0.16, type: 'sine',   gain: 0.12 }, // G5 sine 레이어 (부드럽게)
+    { freq: 587.33, start: 0.18, dur: 0.18, type: 'square', gain: 0.24 }, // D5
+    { freq: 392.00, start: 0.38, dur: 0.22, type: 'sine',   gain: 0.18 }, // G4 낮은 여운
   ],
+
+  // 유쾌: C장조 상승 아르페지오 (C5→E5→G5→C6) — 밝고 긍정적
   유쾌: [
-    { freq: 523, start: 0,    dur: 0.2, type: 'triangle', gain: 0.3 },
-    { freq: 659, start: 0.18, dur: 0.2, type: 'triangle', gain: 0.3 },
-    { freq: 784, start: 0.36, dur: 0.3, type: 'triangle', gain: 0.3 },
+    { freq: 523.25, start: 0,    dur: 0.16, type: 'triangle', gain: 0.24 }, // C5
+    { freq: 659.25, start: 0.16, dur: 0.16, type: 'triangle', gain: 0.24 }, // E5
+    { freq: 783.99, start: 0.32, dur: 0.18, type: 'triangle', gain: 0.22 }, // G5
+    { freq: 1046.5, start: 0.50, dur: 0.38, type: 'sine',     gain: 0.18 }, // C6 클리어
+    { freq: 1048.0, start: 0.50, dur: 0.38, type: 'triangle', gain: 0.08 }, // C6 레이어
   ],
 }
 
@@ -47,15 +62,15 @@ export const VOICE_CHARACTERS = [
 
 // ── 캐릭터별 음성 텍스트 (nextHour: 다음 정시, repeat: 오구 반복 횟수)
 export const VOICE_TEXTS = {
-  boy:         (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 집중해`,
-  girl:        (h, n) => `${'오구 '.repeat(n).trim()} ${h}시예요 파이팅`,
-  girlfriend:  (h, n) => `${'오구 '.repeat(n).trim()} 곧 ${h}시야 잠깐 쉬어`,
-  boyfriend:   (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 스트레칭 해`,
-  mom:         (h, n) => `${'오구 '.repeat(n).trim()} ${h}시가 됐네. 눈 좀 쉬어야지`,
-  grandma:     (h, n) => `아이고, ${'오구 '.repeat(n).trim()} ${h}시구먼. 허리 좀 펴거라`,
-  gyeongsan:   (h, n) => `${'오구 '.repeat(n).trim()} ${h}시 됐다 아이가 쉬어라 카이`,
-  jeolla:      (h, n) => `${'오구 '.repeat(n).trim()} ${h}시여 잠깐 쉬어부러`,
-  chungcheong: (h, n) => `${'오구 '.repeat(n).trim()} ${h}시가 됐유. 쉬어야 쓰것어`,
+  boy:         (h, n) => `오구! 벌써 ${h}시 59분이에요. 잠깐 쉬고 가요.`,
+  girl:        (h, n) => `오구~ ${h}시 59분! 눈 한번 감고 숨 크게 쉬어요.`,
+  girlfriend:  (h, n) => `있잖아, 벌써 ${h}시 59분이야. 잠깐 나 좀 봐줘.`,
+  boyfriend:   (h, n) => `야, ${h}시 59분이다. 스트레칭 한 번 하고 가자.`,
+  mom:         (h, n) => `${h}시 59분 됐어. 허리 펴고 물 한 잔 마셔.`,
+  grandma:     (h, n) => `아이고, 벌써 ${h}시 59분이구먼. 눈 좀 쉬어야지.`,
+  gyeongsan:   (h, n) => `${h}시 59분 됐다 아이가! 잠깐 쉬어라 카이.`,
+  jeolla:      (h, n) => `아이고메, ${h}시 59분이여! 쉬어부러 얼른.`,
+  chungcheong: (h, n) => `${h}시 59분이 됐유. 쉬어야 쓰것어유~`,
 }
 
 // ── 경제 상식
