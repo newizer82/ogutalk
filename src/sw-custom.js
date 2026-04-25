@@ -9,6 +9,10 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+// 새 서비스 워커 즉시 활성화 (탭 닫기 기다리지 않음)
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (e) => e.waitUntil(clients.claim()))
+
 // ── Push 이벤트 수신 ──────────────────────────
 self.addEventListener('push', (event) => {
   console.log('[SW] Push received')
