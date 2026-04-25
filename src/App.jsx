@@ -125,8 +125,9 @@ export default function App() {
   const [localEmail, setLocalEmail] = useState('')
   const isLoggedIn = !!user || !!localEmail
 
-  // 프리미엄
-  const [isPremium, setIsPremium] = useState(false)
+  // 프리미엄 = 로그인 상태와 연동 (로그인하면 모든 기능 사용 가능)
+  const isPremium    = isLoggedIn
+  const setIsPremium = () => {}  // 추후 결제 연동 시 활성화
 
   // 알람 설정 (전역 상태)
   const [oguTone, setOguTone]           = useState('오구')

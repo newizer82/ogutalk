@@ -84,7 +84,7 @@ export default function SettingsPage({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>{isLoggedIn ? displayEmail : '비로그인 사용자'}</div>
-            <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{isPremium ? '✨ 프리미엄 플랜' : '🔓 무료 플랜'}</div>
+            <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{isLoggedIn ? '✨ 로그인 회원 — 전체 기능 사용 중' : '🔓 비로그인 — 기본 기능만 사용 가능'}</div>
           </div>
           {!isLoggedIn && <button style={S.loginBtn} onClick={onLoginOpen}>로그인</button>}
         </div>
@@ -103,15 +103,7 @@ export default function SettingsPage({
         )}
       </GlassCard>
 
-      {!isPremium && (
-        <GlassCard style={{ marginBottom: 16, background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.3)' }}>
-          <div style={{ color: '#e2e8f0', fontWeight: 700, marginBottom: 4 }}>✨ 프리미엄 업그레이드</div>
-          <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12 }}>할일·목표·키워드·다양한 오구 목소리 잠금 해제</div>
-          <button style={{ ...S.primaryBtn, fontSize: 13, padding: '10px 20px', width: 'auto' }} onClick={() => setIsPremium(true)}>
-            월 2,900원으로 시작
-          </button>
-        </GlassCard>
-      )}
+      {/* 프리미엄 배너 — 추후 활성화 예정 */}
 
       {/* ── 알람 출력 방식 ── */}
       <SettingSection title="🔔 알람 출력 방식">
