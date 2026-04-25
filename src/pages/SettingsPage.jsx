@@ -32,7 +32,10 @@ export default function SettingsPage({
   premiumFeatures, setPremiumFeatures,
   oguTone, setOguTone, oguRepeat, setOguRepeat,
   voiceChar, setVoiceChar, voiceEnabled, setVoiceEnabled,
-  alarmMode, setAlarmMode, alarmHours, setAlarmHours,
+  alarmMode, setAlarmMode,
+  volume = 0.8, setVolume,
+  vibStrength = 'medium', setVibStrength,
+  alarmHours, setAlarmHours,
   immersionAlerts, setImmersionAlerts,
   immersionSec, onResetImmersion, onTestAlarm,
   todos = [], goals = {}, userKeywords = [],
@@ -54,10 +57,10 @@ export default function SettingsPage({
   } = usePushNotification(userId)
 
   const fireSignal = (tone, repeat) => {
-    if (alarmMode !== 'vibrate') playSound(tone, repeat)
+    if (alarmMode !== 'vibrate') playSound(tone, repeat, volume)
     if (alarmMode !== 'sound' && navigator.vibrate) {
-      const pat = []; for (let i = 0; i < repeat; i++) { pat.push(250, 120) }; pat.push(400)
-      navigator.vibrate(pat)
+      const pats = { weak: [80,60,80], medium: [250,120,250], strong: [400,150,400,150,600] }
+      navigator.vibrate(pats[vibStrength] || pats.medium)
     }
   }
 
@@ -136,6 +139,57 @@ export default function SettingsPage({
         <SettingRow label="진동" icon="📳">
           <Toggle on={alarmMode !== 'sound'} onToggle={() => setAlarmMode(alarmMode === 'sound' ? 'both' : 'sound')} />
         </SettingRow>
+
+        {/* 볼륨 슬라이더 */}
+        {alarmMode !== 'vibrate' && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ color: '#e2e8f0', fontSize: 13 }}>🔊 소리 크기</span>
+              <span style={{ color: '#818cf8', fontSize: 13, fontWeight: 700 }}>{Math.round(volume * 100)}%</span>
+            </div>
+            <input
+              type="range" min="0" max="1" step="0.05"
+              value={volume}
+              onChange={e => setVolume(parseFloat(e.target.value))}
+              onMouseUp={() => playSound(oguTone, 1, volume)}
+              onTouchEnd={() => playSound(oguTone, 1, volume)}
+              style={{ width: '100%', accentColor: '#6366f1', height: 4, cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: 10, marginTop: 4 }}>
+              <span>🔇 작게</span><span>🔊 크게</span>
+            </div>
+          </div>
+        )}
+
+        {/* 진동 세기 */}
+        {alarmMode !== 'sound' && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ color: '#e2e8f0', fontSize: 13, marginBottom: 8 }}>📳 진동 세기</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              {[
+                { id: 'weak',   label: '약하게', desc: '짧고 부드럽게' },
+                { id: 'medium', label: '보통',   desc: '기본 진동' },
+                { id: 'strong', label: '강하게', desc: '길고 강하게' },
+              ].map(v => (
+                <button key={v.id} onClick={() => {
+                  setVibStrength(v.id)
+                  if (navigator.vibrate) {
+                    const pats = { weak: [80,60,80], medium: [250,120,250], strong: [400,150,400,150,600] }
+                    navigator.vibrate(pats[v.id])
+                  }
+                }} style={{
+                  padding: '10px 4px', borderRadius: 12, textAlign: 'center', cursor: 'pointer',
+                  border: `1px solid ${vibStrength === v.id ? '#818cf8' : 'rgba(255,255,255,0.08)'}`,
+                  background: vibStrength === v.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
+                  color: vibStrength === v.id ? '#818cf8' : '#94a3b8',
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>{v.label}</div>
+                  <div style={{ fontSize: 9, opacity: 0.6, marginTop: 2 }}>{v.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </SettingSection>
 
       {/* ── 몰입 시간 경고 ── */}

@@ -134,6 +134,8 @@ export default function App() {
   const [voiceChar, setVoiceChar]       = useState('girl')
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [alarmMode, setAlarmMode]       = useState('both')
+  const [volume, setVolume]             = useState(0.8)
+  const [vibStrength, setVibStrength]   = useState('medium')
   const [alarmHours, setAlarmHours]     = useState(() => {
     const h = {}; for (let i = 7; i <= 23; i++) h[i] = true; return h
   })
@@ -189,7 +191,7 @@ export default function App() {
     alarmCount, immersionSec, showAlarmPopup, alarmContent, closeAlarmPopup,
     immersionPopup, immersionLevel, closeImmersionPopup, resetImmersion, fireAlarm,
     saveCheckin,
-  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts, userId })
+  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts, userId, volume, vibStrength })
 
   const handleLogin = useCallback((email) => {
     setLocalEmail(email)
@@ -299,6 +301,10 @@ export default function App() {
             setVoiceEnabled={setVoiceEnabled}
             alarmMode={alarmMode}
             setAlarmMode={setAlarmMode}
+            volume={volume}
+            setVolume={setVolume}
+            vibStrength={vibStrength}
+            setVibStrength={setVibStrength}
             alarmHours={alarmHours}
             setAlarmHours={setAlarmHours}
             immersionAlerts={immersionAlerts}

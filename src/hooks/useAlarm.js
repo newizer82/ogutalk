@@ -2,6 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, VOICE_CHARACTERS, VOICE_TEXTS } from '../data/oguData'
 import { supabase } from '../lib/supabase'
 
+// 진동 세기별 패턴
+export const VIBRATION_PATTERNS = {
+  weak:   [80,  60,  80],
+  medium: [250, 120, 250],
+  strong: [400, 150, 400, 150, 600],
+}
+
 export function useAlarm({
   oguTone = '유쾌',
   oguRepeat = 2,
@@ -11,6 +18,8 @@ export function useAlarm({
   alarmHours = {},
   immersionAlerts = { m30: true, m60: true },
   userId = null,
+  volume = 1.0,                // ← 볼륨 (0.0~1.0)
+  vibStrength = 'medium',      // ← 진동 세기 'weak' | 'medium' | 'strong'
 } = {}) {
   const [alarmCount, setAlarmCount]         = useState(0)
   const [immersionSec, setImmersionSec]     = useState(0)
@@ -90,26 +99,24 @@ useEffect(() => {
       immersionAlertedRef.current.m30 = true
       setImmersionLevel('30분')
       setImmersionPopup(true)
-      if (alarmMode !== 'vibrate') playOguSound('화남', 1)
-      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate([300, 150, 300])
+      if (alarmMode !== 'vibrate') playOguSound('화남', 1, volume)
+      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate(VIBRATION_PATTERNS[vibStrength])
     }
     if (immersionAlerts.m60 && mins >= 60 && !immersionAlertedRef.current.m60) {
       immersionAlertedRef.current.m60 = true
       setImmersionLevel('1시간')
       setImmersionPopup(true)
-      if (alarmMode !== 'vibrate') playOguSound('화남', 2)
-      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 600])
+      if (alarmMode !== 'vibrate') playOguSound('화남', 2, volume)
+      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate(VIBRATION_PATTERNS[vibStrength])
     }
   }, [immersionSec])
 
   const _fire = useCallback((hour = new Date().getHours()) => {
     // 소리
-    if (alarmMode !== 'vibrate') playOguSound(oguTone, oguRepeat)
+    if (alarmMode !== 'vibrate') playOguSound(oguTone, oguRepeat, volume)
     // 진동
     if (alarmMode !== 'sound' && navigator.vibrate) {
-      const pat = []
-      for (let i = 0; i < oguRepeat; i++) { pat.push(250, 120) }
-      pat.push(400)
+      const pat = VIBRATION_PATTERNS[vibStrength]
       navigator.vibrate(pat)
     }
     // 음성
@@ -122,7 +129,7 @@ useEffect(() => {
     immersionAlertedRef.current = { m30: false, m60: false }
     setShowAlarmPopup(true)
     setAlarmContent(buildContent())
-  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode])
+  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, volume, vibStrength])
 
   const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
 
@@ -183,12 +190,13 @@ function buildContent() {
   }
 }
 
-export function playOguSound(tone = '유쾌', repeat = 1) {
+export function playOguSound(tone = '유쾌', repeat = 1, volume = 1.0) {
   try {
     const ctx      = new (window.AudioContext || window.webkitAudioContext)()
     const baseTime = ctx.currentTime
     const interval = TONE_DURATION[tone] || 0.9
     const notes    = TONE_CONFIGS[tone] || TONE_CONFIGS['유쾌']
+    const vol      = Math.max(0.01, Math.min(1.0, volume))  // 0.01~1.0 클램프
 
     for (let r = 0; r < Math.max(1, repeat); r++) {
       const offset = r * interval
@@ -200,7 +208,7 @@ export function playOguSound(tone = '유쾌', repeat = 1) {
         osc.type = type
         const t = baseTime + offset + start
         osc.frequency.setValueAtTime(freq, t)
-        gain.gain.setValueAtTime(g, t)
+        gain.gain.setValueAtTime(g * vol, t)          // ← 볼륨 배율 적용
         gain.gain.exponentialRampToValueAtTime(0.001, t + dur)
         osc.start(t)
         osc.stop(t + dur + 0.05)
