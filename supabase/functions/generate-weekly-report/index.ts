@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.30.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,58 +67,44 @@ serve(async (req) => {
       }
     })
 
-    // ── 5. Claude API 호출 ─────────────────────────────
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY')!,
-    })
-
+    // ── 5. 템플릿 기반 리포트 자동 생성 ───────────────────
     const activityLabel: Record<string, string> = {
-      goal_work: '목표 할일',
-      study: '공부/업무',
-      sns: 'SNS/유튜브',
-      rest: '휴식/식사',
+      goal_work: '목표 할일', study: '공부/업무', sns: 'SNS/유튜브', rest: '휴식/식사',
     }
-    const activitySummary = Object.entries(activityMinutes)
-      .map(([k, v]) => `${activityLabel[k] ?? k}: ${Math.round(v / 60)}시간 ${v % 60}분`)
-      .join(', ') || '기록 없음'
 
-    const goalsSummary = goals?.map(g =>
-      `${g.title} (${g.type ?? ''}) ${g.progress ?? 0}%`
-    ).join(', ') || '목표 없음'
+    // 주요 활동 찾기
+    const topActivity = Object.entries(activityMinutes)
+      .sort(([,a],[,b]) => b - a)[0]
+    const topActivityName = topActivity ? activityLabel[topActivity[0]] ?? topActivity[0] : null
+    const topActivityHours = topActivity ? Math.round(topActivity[1] / 60) : 0
+    const snsMinutes = (activityMinutes['sns'] ?? 0)
+    const goalMinutes = (activityMinutes['goal_work'] ?? 0)
+    const totalCheckins = checkins?.length ?? 0
 
-    const prompt = `당신은 사용자의 주간 활동을 분석해 따뜻하고 동기부여가 되는 한국어 리포트를 작성하는 AI입니다.
-데이터가 적더라도 격려 위주로 긍정적으로 작성해 주세요.
+    // 완료율별 하이라이트
+    const highlights =
+      completionRate >= 90 ? `이번 주 할일 완료율 ${completionRate}%! 거의 완벽한 한 주였습니다. ${todosCompleted}개의 할일을 해낸 집중력과 실행력이 돋보입니다. 이 흐름을 다음 주에도 이어가세요.` :
+      completionRate >= 70 ? `할일 ${todosCompleted}개 완료, 완료율 ${completionRate}%로 꽤 알찬 한 주였습니다. 미완료 ${todosTotal - todosCompleted}개는 부담이 아니라 다음 주의 출발점입니다.` :
+      completionRate >= 40 ? `${todosCompleted}개를 완료했습니다. 완료율 ${completionRate}%는 아직 성장 여지가 있다는 신호예요. 할일을 조금 더 작게 쪼개보면 완료율이 확 올라갈 거예요.` :
+      todosTotal === 0 ? `이번 주는 할일 기록이 없었습니다. 다음 주부터 작은 할일 3개만 먼저 등록해보세요. 기록이 쌓이면 성취감도 커집니다.` :
+      `시작이 반입니다! ${todosCompleted}개를 완료했고, 오구톡으로 시간을 인식하기 시작했다는 것 자체가 이번 주의 가장 큰 성과입니다.`
 
-# 사용자 주간 데이터
-- 기간: ${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}
-- 할일 완료: ${todosCompleted}/${todosTotal}개 (완료율 ${completionRate}%)
-- 시간 활용: ${activitySummary}
-- 목표 현황: ${goalsSummary}
+    // 활동 패턴별 스토리
+    const story =
+      totalCheckins === 0 ? `이번 주 ${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}, 할일 ${todosTotal}개 중 ${todosCompleted}개를 완료했습니다. 체크인 기록은 없었지만, 꾸준히 앱을 열었다는 것 자체로 시간 인식 습관이 조금씩 자리잡고 있습니다.` :
+      goalMinutes > snsMinutes ? `이번 주는 목표 중심으로 움직인 한 주였습니다. 오구 알람에 ${totalCheckins}번 체크인했고, 그 중 목표 할일에 집중한 시간이 가장 길었습니다. 할일 ${todosCompleted}/${todosTotal}개 완료, 완료율 ${completionRate}%. 방향이 맞습니다.` :
+      snsMinutes > 120 ? `이번 주 ${totalCheckins}번 체크인 중 SNS/유튜브 시간이 ${Math.round(snsMinutes/60)}시간으로 가장 많았습니다. 할일 완료율은 ${completionRate}%. 스크린 타임을 줄이면 완료율이 자연스럽게 올라갈 거예요.` :
+      `${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}, 총 ${totalCheckins}번 체크인했습니다. ${topActivityName ? `주로 ${topActivityName}(${topActivityHours}시간)에 시간을 썼고, ` : ''}할일 ${todosCompleted}/${todosTotal}개(${completionRate}%)를 마무리했습니다.`
 
-# 작성 요청
-아래 3가지를 각각 2~3줄의 자연스러운 한국어로 작성해 주세요.
+    // 완료율 + 활동 패턴별 제안
+    const suggestions =
+      snsMinutes > goalMinutes && snsMinutes > 60 ? `다음 주에는 오구 알람이 울릴 때 SNS 대신 할일 1개를 먼저 처리해보세요. 59분마다 딱 하나씩만 해도 일주일에 ${7 * 3}개 이상 완료됩니다.` :
+      completionRate < 50 && todosTotal > 5 ? `다음 주 할일은 5개 이하로 줄여보세요. 적게 잡고 전부 완료하는 경험이 완료율 80% 이상의 지름길입니다.` :
+      completionRate >= 80 ? `이번 주처럼 잘 하고 있어요! 다음 주에는 조금 더 도전적인 할일을 1개 추가해서 성장의 폭을 넓혀보세요.` :
+      totalCheckins < 5 ? `오구 알람이 울릴 때 체크인 버튼을 눌러보세요. 내가 무엇을 하고 있는지 기록하는 것만으로도 시간 낭비를 줄일 수 있습니다.` :
+      `매일 아침 할일 목록을 한 번만 확인하는 습관을 추가해보세요. 3분이면 하루 방향이 잡힙니다.`
 
-1. **하이라이트**: 이번 주 가장 인상적인 성취나 긍정적인 변화
-2. **스토리**: 이번 주를 하나의 이야기처럼 요약 (구체적 숫자 포함)
-3. **제안**: 다음 주를 위한 구체적이고 실행 가능한 제안 1가지
-
-반드시 아래 JSON 형식으로만 응답하세요. 다른 설명은 절대 쓰지 마세요:
-{"highlights":"...","story":"...","suggestions":"..."}`
-
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const responseText = message.content[0].type === 'text'
-      ? message.content[0].text
-      : ''
-
-    // JSON 파싱 (앞뒤 불필요한 텍스트 제거)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('Claude 응답 파싱 실패: ' + responseText)
-    const aiContent = JSON.parse(jsonMatch[0])
+    const aiContent = { highlights, story, suggestions }
 
     // ── 6. DB 저장 ─────────────────────────────────────
     const weekNumber = getWeekNumber(startDate)
