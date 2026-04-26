@@ -53,19 +53,22 @@ serve(async (req) => {
     // ── 병렬 발송 ─────────────────────────────────────
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
-        // 해당 유저의 알람 시간대 설정 확인
-        const { data: alarmSetting } = await supabase
+        // 해당 유저의 알람 시간대 설정 확인 (trigger_hour + is_enabled 방식)
+        const { data: alarmRows } = await supabase
           .from('alarm_settings')
-          .select('alarm_hours')
+          .select('trigger_hour, is_enabled')
           .eq('user_id', sub.user_id)
-          .single()
 
-        const alarmHours = alarmSetting?.alarm_hours ?? {}
-
-        // 해당 시간 비활성화 → 스킵
-        if (!alarmHours[kstHour]) {
-          return { skipped: true, userId: sub.user_id, reason: 'hour disabled' }
+        // alarm_settings 데이터가 있는 경우 → 해당 시간 is_enabled 확인
+        // 데이터가 없는 경우 → 기본 7~23시 허용 (초기 유저 대비)
+        if (alarmRows && alarmRows.length > 0) {
+          const thisHour = alarmRows.find(r => r.trigger_hour === kstHour)
+          if (thisHour && !thisHour.is_enabled) {
+            return { skipped: true, userId: sub.user_id, reason: 'hour disabled' }
+          }
+          // thisHour가 없으면 (해당 시간 행 자체가 없으면) 기본 허용
         }
+        // alarmRows가 없거나 비어있으면 기본 허용
 
         // 알림 페이로드 구성
         const payload = JSON.stringify({

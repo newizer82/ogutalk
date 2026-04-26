@@ -129,18 +129,42 @@ export default function App() {
   const isPremium    = isLoggedIn
   const setIsPremium = () => {}  // 추후 결제 연동 시 활성화
 
-  // 알람 설정 (전역 상태)
-  const [oguTone, setOguTone]           = useState('오구')
-  const [oguRepeat, setOguRepeat]       = useState(2)
-  const [voiceChar, setVoiceChar]       = useState('girl')
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
-  const [alarmMode, setAlarmMode]       = useState('both')
-  const [volume, setVolume]             = useState(0.8)
-  const [vibStrength, setVibStrength]   = useState('medium')
-  const [alarmHours, setAlarmHours]     = useState(() => {
+  // ── localStorage 헬퍼 ─────────────────────────────────
+  const loadSetting = (key, defaultVal) => {
+    try {
+      const v = localStorage.getItem('ogu_' + key)
+      return v !== null ? JSON.parse(v) : defaultVal
+    } catch { return defaultVal }
+  }
+  const saveSetting = (key, val) => {
+    try { localStorage.setItem('ogu_' + key, JSON.stringify(val)) } catch {}
+  }
+
+  // 알람 설정 (전역 상태 — localStorage에서 초기값 로드)
+  const defaultAlarmHours = (() => {
     const h = {}; for (let i = 7; i <= 23; i++) h[i] = true; return h
-  })
-  const [immersionAlerts, setImmersionAlerts] = useState({ m30: true, m60: true })
+  })()
+
+  const [oguTone, _setOguTone]           = useState(() => loadSetting('oguTone', '오구'))
+  const [oguRepeat, _setOguRepeat]       = useState(() => loadSetting('oguRepeat', 2))
+  const [voiceChar, _setVoiceChar]       = useState(() => loadSetting('voiceChar', 'girl'))
+  const [voiceEnabled, _setVoiceEnabled] = useState(() => loadSetting('voiceEnabled', false))
+  const [alarmMode, _setAlarmMode]       = useState(() => loadSetting('alarmMode', 'both'))
+  const [volume, _setVolume]             = useState(() => loadSetting('volume', 0.8))
+  const [vibStrength, _setVibStrength]   = useState(() => loadSetting('vibStrength', 'medium'))
+  const [alarmHours, _setAlarmHours]     = useState(() => loadSetting('alarmHours', defaultAlarmHours))
+  const [immersionAlerts, _setImmersionAlerts] = useState(() => loadSetting('immersionAlerts', { m30: true, m60: true }))
+
+  // 설정 변경 시 localStorage 자동 저장 래퍼
+  const setOguTone      = v => { _setOguTone(v);      saveSetting('oguTone', v) }
+  const setOguRepeat    = v => { _setOguRepeat(v);    saveSetting('oguRepeat', v) }
+  const setVoiceChar    = v => { _setVoiceChar(v);    saveSetting('voiceChar', v) }
+  const setVoiceEnabled = v => { _setVoiceEnabled(v); saveSetting('voiceEnabled', v) }
+  const setAlarmMode    = v => { _setAlarmMode(v);    saveSetting('alarmMode', v) }
+  const setVolume       = v => { _setVolume(v);       saveSetting('volume', v) }
+  const setVibStrength  = v => { _setVibStrength(v);  saveSetting('vibStrength', v) }
+  const setAlarmHours   = v => { _setAlarmHours(v);   saveSetting('alarmHours', v) }
+  const setImmersionAlerts = v => { _setImmersionAlerts(v); saveSetting('immersionAlerts', v) }
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
