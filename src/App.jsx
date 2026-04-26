@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
-import { useAlarm, playOguSound, speakTime } from './hooks/useAlarm'
+import { useAlarm, playOguSound, speakTime, unlockAudio } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
 import ImmersionPopup from './components/alarm/ImmersionPopup'
 import AlarmPopup from './components/alarm/AlarmPopup'
@@ -217,6 +217,13 @@ export default function App() {
     immersionPopup, immersionLevel, closeImmersionPopup, resetImmersion, fireAlarm,
     saveCheckin,
   } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts, userId, volume, vibStrength })
+
+  // 모바일 AudioContext unlock — 첫 터치 시 소리 활성화
+  useEffect(() => {
+    const handler = () => { unlockAudio(); document.removeEventListener('touchstart', handler) }
+    document.addEventListener('touchstart', handler, { once: true })
+    return () => document.removeEventListener('touchstart', handler)
+  }, [])
 
   const handleLogin = useCallback((email) => {
     setLocalEmail(email)

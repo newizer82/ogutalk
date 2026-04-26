@@ -190,29 +190,58 @@ function buildContent() {
   }
 }
 
+// ── 모바일 AudioContext 싱글톤 (사용자 터치 시 미리 생성 후 재사용) ──
+let _audioCtx = null
+
+export function unlockAudio() {
+  // 사용자 첫 터치/클릭 시 호출 → AudioContext를 running 상태로 만들어둠
+  try {
+    if (!_audioCtx) {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+    }
+    if (_audioCtx.state === 'suspended') {
+      _audioCtx.resume()
+    }
+  } catch (_) {}
+}
+
 export function playOguSound(tone = '유쾌', repeat = 1, volume = 1.0) {
   try {
-    const ctx      = new (window.AudioContext || window.webkitAudioContext)()
-    const baseTime = ctx.currentTime
-    const interval = TONE_DURATION[tone] || 0.9
-    const notes    = TONE_CONFIGS[tone] || TONE_CONFIGS['유쾌']
-    const vol      = Math.max(0.01, Math.min(1.0, volume))  // 0.01~1.0 클램프
+    // 기존 컨텍스트 재사용 또는 신규 생성
+    if (!_audioCtx) {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+    }
+    const ctx = _audioCtx
 
-    for (let r = 0; r < Math.max(1, repeat); r++) {
-      const offset = r * interval
-      notes.forEach(({ freq, start, dur, type, gain: g }) => {
-        const osc  = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.type = type
-        const t = baseTime + offset + start
-        osc.frequency.setValueAtTime(freq, t)
-        gain.gain.setValueAtTime(g * vol, t)          // ← 볼륨 배율 적용
-        gain.gain.exponentialRampToValueAtTime(0.001, t + dur)
-        osc.start(t)
-        osc.stop(t + dur + 0.05)
-      })
+    // suspended 상태면 resume 시도
+    const playNotes = () => {
+      const baseTime = ctx.currentTime
+      const interval = TONE_DURATION[tone] || 0.9
+      const notes    = TONE_CONFIGS[tone] || TONE_CONFIGS['유쾌']
+      const vol      = Math.max(0.01, Math.min(1.0, volume))
+
+      for (let r = 0; r < Math.max(1, repeat); r++) {
+        const offset = r * interval
+        notes.forEach(({ freq, start, dur, type, gain: g }) => {
+          const osc  = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = type
+          const t = baseTime + offset + start
+          osc.frequency.setValueAtTime(freq, t)
+          gain.gain.setValueAtTime(g * vol, t)
+          gain.gain.exponentialRampToValueAtTime(0.001, t + dur)
+          osc.start(t)
+          osc.stop(t + dur + 0.05)
+        })
+      }
+    }
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(playNotes).catch(() => {})
+    } else {
+      playNotes()
     }
   } catch (_) {}
 }
