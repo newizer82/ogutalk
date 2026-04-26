@@ -70,103 +70,379 @@ function PeriodTabs({ value, onChange }) {
   )
 }
 
-// ── 트렌딩 탭
+// ── SVG 도넛 차트
+function DonutChart({ segments, size = 120 }) {
+  const cx = size / 2, cy = size / 2, r = size * 0.38, stroke = size * 0.14
+  let cumulative = 0
+  const total = segments.reduce((s, sg) => s + sg.value, 0) || 1
+  const circumference = 2 * Math.PI * r
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={stroke} />
+      {segments.map((sg, i) => {
+        const pct    = sg.value / total
+        const offset = circumference * (1 - cumulative)
+        const dash   = circumference * pct
+        cumulative  += pct
+        return (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+            stroke={sg.color} strokeWidth={stroke}
+            strokeDasharray={`${dash} ${circumference - dash}`}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px`, transition: 'stroke-dasharray 0.8s ease' }}
+          />
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── 레이더(거미줄) 차트 SVG
+function RadarChart({ data, size = 200 }) {
+  const cx = size / 2, cy = size / 2, maxR = size * 0.38
+  const n = data.length
+  if (!n) return null
+  const angles = data.map((_, i) => (i / n) * 2 * Math.PI - Math.PI / 2)
+  const maxVal = Math.max(...data.map(d => d.value), 1)
+  const pts = data.map((d, i) => {
+    const ratio = d.value / maxVal
+    return {
+      x: cx + maxR * ratio * Math.cos(angles[i]),
+      y: cy + maxR * ratio * Math.sin(angles[i]),
+      lx: cx + (maxR + 18) * Math.cos(angles[i]),
+      ly: cy + (maxR + 18) * Math.sin(angles[i]),
+    }
+  })
+  const polygon = pts.map(p => `${p.x},${p.y}`).join(' ')
+  // 배경 격자 3단계
+  const grids = [0.33, 0.66, 1].map(ratio =>
+    data.map((_, i) => `${cx + maxR * ratio * Math.cos(angles[i])},${cy + maxR * ratio * Math.sin(angles[i])}`).join(' ')
+  )
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {grids.map((g, i) => <polygon key={i} points={g} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />)}
+      {data.map((_, i) => (
+        <line key={i} x1={cx} y1={cy}
+          x2={cx + maxR * Math.cos(angles[i])} y2={cy + maxR * Math.sin(angles[i])}
+          stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+      ))}
+      <polygon points={polygon} fill="rgba(99,102,241,0.18)" stroke="#818cf8" strokeWidth={1.5} />
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill={data[i].color} />
+      ))}
+      {pts.map((p, i) => (
+        <text key={i} x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle"
+          fontSize={9} fill={data[i].color} fontWeight="700">
+          {data[i].label}
+        </text>
+      ))}
+    </svg>
+  )
+}
+
+// ── 트렌딩 탭 (인포그래픽 버전)
 function TrendingTab({ period, trendData, trendLoading, trendUpdatedAt, isLive }) {
+  const [selectedCat, setSelectedCat] = useState('전체')
   const td   = trendData[period] ?? {}
   const cats = Object.entries(td)
-  const allHot = cats.flatMap(([cat, d]) =>
-    d.items.filter(it => it.hot).map(it => ({ ...it, cat, color: d.color }))
+
+  const allItems = cats.flatMap(([cat, d]) =>
+    d.items.map(it => ({ ...it, cat, color: d.color, icon: d.icon }))
   ).sort((a, b) => b.count - a.count)
 
-  const top10 = cats.flatMap(([cat, d]) =>
-    d.items.map(it => ({ ...it, cat, color: d.color }))
-  ).sort((a, b) => b.count - a.count).slice(0, 10)
-  const maxTop = top10[0]?.count || 1
+  const hotItems = allItems.filter(it => it.hot)
+
+  // 카테고리 선택 필터
+  const catKeys = ['전체', ...cats.map(([c]) => c)]
+  const filteredCat = selectedCat === '전체' ? null : td[selectedCat]
+  const filteredItems = filteredCat
+    ? filteredCat.items.map(it => ({ ...it, cat: selectedCat, color: filteredCat.color, icon: filteredCat.icon }))
+    : allItems.slice(0, 10)
+  const maxCount = filteredItems[0]?.count || 1
+
+  // 도넛 차트용 세그먼트 (카테고리별 총합)
+  const donutSegs = cats.map(([cat, d]) => ({
+    label: cat, color: d.color,
+    value: d.items.reduce((s, it) => s + it.count, 0),
+  }))
+  const totalCount = donutSegs.reduce((s, sg) => s + sg.value, 0) || 1
+
+  // 레이더 차트용 데이터
+  const radarData = cats.map(([cat, d]) => ({
+    label: cat, color: d.color,
+    value: d.items.reduce((s, it) => s + it.count, 0),
+  }))
 
   return (
     <>
-      {isLive && trendUpdatedAt && (
-        <div style={{ color: '#475569', fontSize: 10, marginBottom: 10, textAlign: 'right' }}>
-          📡 실시간 · {new Date(trendUpdatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 업데이트
-        </div>
-      )}
-      {trendLoading && !isLive && (
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, textAlign: 'center' }}>
-          🔄 실시간 데이터 로딩 중...
-        </div>
-      )}
-      {allHot.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-          {allHot.map((it, i) => (
-            <span key={i} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '5px 11px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: `${it.color}20`, border: `1px solid ${it.color}50`, color: it.color,
-            }}>
-              🔥 {it.kw}
-              <span style={{ color: '#94a3b8', fontSize: 9, fontWeight: 400 }}>{it.count}건</span>
-            </span>
-          ))}
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        {cats.map(([catName, d]) => {
-          const maxC = d.items[0]?.count || 1
+      {/* 상태 표시 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
+          {isLive ? '📡 실시간' : trendLoading ? '🔄 로딩 중' : '📦 샘플 데이터'}
+        </span>
+        {isLive && trendUpdatedAt && (
+          <span style={{ color: '#475569', fontSize: 10 }}>
+            {new Date(trendUpdatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 업데이트
+          </span>
+        )}
+      </div>
+
+      {/* ── 카테고리 선택 칩 */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {catKeys.map(cat => {
+          const isActive = selectedCat === cat
+          const catColor = cat === '전체' ? '#818cf8' : (td[cat]?.color || '#818cf8')
           return (
-            <GlassCard key={catName} style={{ padding: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span style={{ fontSize: 16 }}>{d.icon}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: d.color }}>{catName}</span>
-              </div>
-              {d.items.map((it, i) => (
-                <div key={i} style={{ marginBottom: i < d.items.length - 1 ? 8 : 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, minWidth: 10 }}>#{i+1}</span>
-                      <span style={{ color: '#e2e8f0', fontSize: 11, fontWeight: 600 }}>{it.kw}</span>
-                      {it.hot && <span style={{ fontSize: 8, color: '#f59e0b' }}>🔥</span>}
-                    </div>
-                    <span style={{ color: it.trend >= 0 ? '#34d399' : '#f87171', fontSize: 10, fontWeight: 700 }}>
-                      {it.trend >= 0 ? '▲' : '▼'}{Math.abs(it.trend)}%
-                    </span>
-                  </div>
-                  <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }}>
-                    <div style={{ width: `${Math.round(it.count / maxC * 100)}%`, height: '100%', borderRadius: 2, background: d.color, opacity: 0.7 }} />
-                  </div>
-                  <div style={{ color: '#475569', fontSize: 9, marginTop: 2 }}>{it.count.toLocaleString()}건</div>
-                </div>
-              ))}
-            </GlassCard>
+            <button key={cat} onClick={() => setSelectedCat(cat)} style={{
+              flexShrink: 0, padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+              border: `1px solid ${isActive ? catColor : 'rgba(255,255,255,0.1)'}`,
+              background: isActive ? `${catColor}22` : 'transparent',
+              color: isActive ? catColor : '#64748b', cursor: 'pointer', whiteSpace: 'nowrap',
+              transition: 'all 0.2s',
+            }}>
+              {cat === '전체' ? '🌐 전체' : `${td[cat]?.icon || ''} ${cat}`}
+            </button>
           )
         })}
       </div>
-      <GlassCard>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 14 }}>
-          🏆 {period === 'weekly' ? '주간' : '월간'} 전체 HOT TOP 10
-        </div>
-        {top10.map((it, i) => (
-          <div key={i} style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: i < 3 ? '#f59e0b' : '#475569', fontSize: 11, fontWeight: 800, minWidth: 18 }}>
-                  {i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}
-                </span>
-                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 8, background: `${it.color}18`, color: it.color, fontWeight: 700 }}>{it.cat}</span>
-                <span style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 700 }}>{it.kw}</span>
+
+      {/* ── 전체 보기: 도넛 + 레이더 인포그래픽 */}
+      {selectedCat === '전체' && (
+        <>
+          {/* 도넛 + 카테고리 범례 */}
+          <GlassCard style={{ marginBottom: 12, padding: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 14 }}>
+              📊 카테고리별 관심도 분포
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <div style={{ flexShrink: 0 }}>
+                <DonutChart segments={donutSegs} size={110} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: it.trend >= 0 ? '#34d399' : '#f87171', fontSize: 10, fontWeight: 700 }}>
-                  {it.trend >= 0 ? '▲' : '▼'}{Math.abs(it.trend)}%
-                </span>
-                <span style={{ color: '#64748b', fontSize: 10 }}>{it.count.toLocaleString()}건</span>
+              <div style={{ flex: 1 }}>
+                {donutSegs.map((sg, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: sg.color, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 700 }}>{sg.label}</span>
+                        <span style={{ color: sg.color, fontSize: 12, fontWeight: 800 }}>
+                          {Math.round(sg.value / totalCount * 100)}%
+                        </span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', marginTop: 4 }}>
+                        <div style={{ width: `${Math.round(sg.value / totalCount * 100)}%`, height: '100%', borderRadius: 2, background: sg.color, transition: 'width 0.8s ease' }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
-              <div style={{ width: `${Math.round(it.count / maxTop * 100)}%`, height: '100%', borderRadius: 3, background: `linear-gradient(90deg,${it.color},${it.color}88)`, transition: 'width 0.8s ease' }} />
+          </GlassCard>
+
+          {/* 레이더 차트 */}
+          <GlassCard style={{ marginBottom: 12, padding: 18, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 8, textAlign: 'left' }}>
+              🕸️ 카테고리 균형 지수
             </div>
-          </div>
-        ))}
-      </GlassCard>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <RadarChart data={radarData} size={190} />
+            </div>
+          </GlassCard>
+
+          {/* 🔥 HOT 키워드 버블 */}
+          {hotItems.length > 0 && (
+            <GlassCard style={{ marginBottom: 12, padding: 18 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>
+                🔥 지금 뜨는 키워드
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {hotItems.map((it, i) => {
+                  const scale = 0.8 + (it.count / (hotItems[0]?.count || 1)) * 0.5
+                  return (
+                    <span key={i} style={{
+                      display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                      padding: '8px 14px', borderRadius: 16, fontSize: Math.round(11 * scale),
+                      fontWeight: 800, background: `${it.color}20`,
+                      border: `1px solid ${it.color}60`, color: it.color,
+                      lineHeight: 1.4,
+                    }}>
+                      {it.kw}
+                      <span style={{ fontSize: 9, fontWeight: 400, color: '#94a3b8', marginTop: 2 }}>
+                        ▲{it.trend}% · {it.count}건
+                      </span>
+                    </span>
+                  )
+                })}
+              </div>
+            </GlassCard>
+          )}
+
+          {/* TOP 10 전체 */}
+          <GlassCard style={{ marginBottom: 12, padding: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 14 }}>
+              🏆 {period === 'weekly' ? '주간' : '월간'} TOP 10
+            </div>
+            {filteredItems.map((it, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: i < 3 ? '#f59e0b' : '#475569', minWidth: 22 }}>
+                    {i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}
+                  </span>
+                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 6, background: `${it.color}20`, color: it.color, fontWeight: 700 }}>
+                    {it.icon} {it.cat}
+                  </span>
+                  <span style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700, flex: 1 }}>{it.kw}</span>
+                  <span style={{ color: it.trend >= 0 ? '#34d399' : '#f87171', fontSize: 11, fontWeight: 800 }}>
+                    {it.trend >= 0 ? '▲' : '▼'}{Math.abs(it.trend)}%
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
+                    <div style={{
+                      width: `${Math.round(it.count / maxCount * 100)}%`, height: '100%', borderRadius: 3,
+                      background: `linear-gradient(90deg,${it.color},${it.color}66)`,
+                      transition: 'width 0.8s ease',
+                    }} />
+                  </div>
+                  <span style={{ color: '#475569', fontSize: 10, minWidth: 32, textAlign: 'right' }}>{it.count}건</span>
+                </div>
+              </div>
+            ))}
+          </GlassCard>
+        </>
+      )}
+
+      {/* ── 특정 카테고리 상세 인포그래픽 */}
+      {selectedCat !== '전체' && filteredCat && (
+        <>
+          {/* 카테고리 헤더 */}
+          <GlassCard style={{ marginBottom: 12, padding: 20, background: `${filteredCat.color}10`, border: `1px solid ${filteredCat.color}30` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 32 }}>{filteredCat.icon}</div>
+              <div>
+                <div style={{ color: filteredCat.color, fontSize: 18, fontWeight: 900 }}>{selectedCat}</div>
+                <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
+                  {filteredCat.items.length}개 키워드 · {period === 'weekly' ? '주간' : '월간'} 트렌드
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                <div style={{ color: filteredCat.color, fontSize: 22, fontWeight: 900 }}>
+                  {filteredCat.items.reduce((s, it) => s + it.count, 0)}건
+                </div>
+                <div style={{ color: '#64748b', fontSize: 10 }}>총 언급량</div>
+              </div>
+            </div>
+
+            {/* 미니 막대 비교 */}
+            {filteredCat.items.map((it, i) => {
+              const maxC = filteredCat.items[0]?.count || 1
+              const pct  = Math.round(it.count / maxC * 100)
+              return (
+                <div key={i} style={{ marginBottom: i < filteredCat.items.length - 1 ? 14 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: '#64748b', fontSize: 10, fontWeight: 700 }}>#{i + 1}</span>
+                      <span style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 800 }}>{it.kw}</span>
+                      {it.hot && <span style={{ fontSize: 12 }}>🔥</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 800,
+                        color: it.trend >= 0 ? '#34d399' : '#f87171',
+                        background: it.trend >= 0 ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)',
+                        padding: '2px 8px', borderRadius: 8,
+                      }}>
+                        {it.trend >= 0 ? '▲' : '▼'} {Math.abs(it.trend)}%
+                      </span>
+                      <span style={{ color: '#475569', fontSize: 11 }}>{it.count}건</span>
+                    </div>
+                  </div>
+                  {/* 이중 레이어 바 */}
+                  <div style={{ position: 'relative', height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0,
+                      width: `${pct}%`, borderRadius: 5,
+                      background: `linear-gradient(90deg, ${filteredCat.color}, ${filteredCat.color}66)`,
+                      transition: 'width 0.8s ease',
+                    }} />
+                    <div style={{
+                      position: 'absolute', left: `${pct - 2}%`, top: '50%', transform: 'translateY(-50%)',
+                      width: 4, height: 4, borderRadius: '50%', background: 'white', opacity: 0.8,
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 3 }}>
+                    <span style={{ fontSize: 9, color: '#475569' }}>{pct}%</span>
+                  </div>
+                </div>
+              )
+            })}
+          </GlassCard>
+
+          {/* 키워드 히트맵 */}
+          <GlassCard style={{ marginBottom: 12, padding: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 14 }}>
+              🗺️ 키워드 히트맵
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+              {filteredCat.items.map((it, i) => {
+                const maxC  = filteredCat.items[0]?.count || 1
+                const alpha = 0.1 + (it.count / maxC) * 0.55
+                return (
+                  <div key={i} style={{
+                    padding: '12px 14px', borderRadius: 14,
+                    background: `${filteredCat.color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`,
+                    border: `1px solid ${filteredCat.color}40`,
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                  }}>
+                    <div style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 800 }}>{it.kw}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: filteredCat.color, fontSize: 16, fontWeight: 900 }}>{it.count}<span style={{ fontSize: 9, marginLeft: 2 }}>건</span></span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6,
+                        color: it.trend >= 0 ? '#34d399' : '#f87171',
+                        background: it.trend >= 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+                      }}>
+                        {it.trend >= 0 ? '▲' : '▼'}{Math.abs(it.trend)}%
+                      </span>
+                    </div>
+                    {it.hot && <span style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700 }}>🔥 HOT</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </GlassCard>
+
+          {/* 다른 카테고리 비교 */}
+          <GlassCard style={{ padding: 18, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>
+              📈 전체 카테고리 비교
+            </div>
+            {donutSegs.map((sg, i) => {
+              const isSelected = sg.label === selectedCat
+              return (
+                <div key={i} style={{ marginBottom: 10, opacity: isSelected ? 1 : 0.5, cursor: 'pointer' }}
+                  onClick={() => setSelectedCat(sg.label)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ color: isSelected ? sg.color : '#94a3b8', fontSize: 12, fontWeight: isSelected ? 800 : 600 }}>
+                      {isSelected ? '▶ ' : ''}{sg.label}
+                    </span>
+                    <span style={{ color: sg.color, fontSize: 11, fontWeight: 700 }}>
+                      {Math.round(sg.value / totalCount * 100)}%
+                    </span>
+                  </div>
+                  <div style={{ height: isSelected ? 8 : 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)', transition: 'height 0.2s' }}>
+                    <div style={{
+                      width: `${Math.round(sg.value / totalCount * 100)}%`, height: '100%', borderRadius: 3,
+                      background: sg.color, transition: 'width 0.8s ease',
+                    }} />
+                  </div>
+                </div>
+              )
+            })}
+          </GlassCard>
+        </>
+      )}
     </>
   )
 }
@@ -256,7 +532,7 @@ function NaverNewsDetail({ keyword, news, loading, error, onBack }) {
 }
 
 // ── 내 키워드 탭
-function MyKeywordsTab({ userKeywords, setUserKeywords }) {
+function MyKeywordsTab({ userKeywords, onAddKeyword, onDeleteKeyword }) {
   const [input, setInput] = useState('')
   const [selectedKw, setSelectedKw] = useState(null)
   const { news, loading, error, fetchNews, clearNews } = useNaverNews()
@@ -274,8 +550,7 @@ function MyKeywordsTab({ userKeywords, setUserKeywords }) {
   function addKeyword() {
     const text = input.trim()
     if (!text) return
-    if (userKeywords.some(k => k.text === text)) return
-    setUserKeywords([...userKeywords, { id: Date.now().toString(), text, ticker: '' }])
+    onAddKeyword(text)
     setInput('')
   }
 
@@ -312,7 +587,7 @@ function MyKeywordsTab({ userKeywords, setUserKeywords }) {
             >
               {k.text}
               <span
-                onClick={e => { e.stopPropagation(); setUserKeywords(userKeywords.filter(u => u.id !== k.id)) }}
+                onClick={e => { e.stopPropagation(); onDeleteKeyword(k.id) }}
                 style={{ color: '#475569', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
               >×</span>
             </span>
@@ -368,7 +643,7 @@ function MyKeywordsTab({ userKeywords, setUserKeywords }) {
 }
 
 // ── 메인 컴포넌트
-export default function KeywordsPage({ userKeywords, setUserKeywords, isPremium, setIsPremium }) {
+export default function KeywordsPage({ userKeywords, onAddKeyword, onDeleteKeyword, isPremium, setIsPremium }) {
   const [mainTab, setMainTab] = useState('trending')
   const [period, setPeriod]   = useState('weekly')
   const { data: trendData, loading: trendLoading, updatedAt: trendUpdatedAt, isLive } = useTrendingData()
@@ -382,7 +657,7 @@ export default function KeywordsPage({ userKeywords, setUserKeywords, isPremium,
 
       {mainTab === 'trending'
         ? <TrendingTab period={period} trendData={trendData} trendLoading={trendLoading} trendUpdatedAt={trendUpdatedAt} isLive={isLive} />
-        : <MyKeywordsTab userKeywords={userKeywords} setUserKeywords={setUserKeywords} />
+        : <MyKeywordsTab userKeywords={userKeywords} onAddKeyword={onAddKeyword} onDeleteKeyword={onDeleteKeyword} />
       }
     </div>
   )

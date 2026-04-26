@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
+import { useKeywords } from './hooks/useKeywords'
 import { useAlarm, playOguSound, speakTime, unlockAudio } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
 import ImmersionPopup from './components/alarm/ImmersionPopup'
@@ -175,6 +176,11 @@ export default function App() {
   const userId = user?.id ?? null
   const { todos, addTodo, toggleTodo, deleteTodo } = useTodos(userId)
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
+  const {
+    keywords: supaKeywords,
+    addKeyword: supaAddKeyword,
+    deleteKeyword: supaDeleteKeyword,
+  } = useKeywords(userId)
 
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
@@ -192,13 +198,36 @@ export default function App() {
     daily: [{ id: 'd1', title: '오늘 러닝 30분', progress: 0, desc: '오늘의 운동' }],
   })
 
-  // 키워드
-  const [userKeywords, setUserKeywords] = useState([
-    { id: 'k1', text: '테슬라',   ticker: 'TSLA'   },
-    { id: 'k2', text: '삼성전자', ticker: '005930' },
-    { id: 'k3', text: '비트코인', ticker: 'BTC'    },
-    { id: 'k4', text: '엔비디아', ticker: 'NVDA'   },
-  ])
+  // 키워드 — 로그인 시 Supabase, 비로그인 시 localStorage
+  const [localKeywords, setLocalKeywords] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ogu_keywords')
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
+
+  // 실제 사용할 키워드 / 추가 / 삭제 (로그인 여부 분기)
+  const userKeywords = userId
+    ? supaKeywords.map(k => ({ id: k.id, text: k.keyword, ticker: k.ticker || '' }))
+    : localKeywords
+
+  const addUserKeyword = userId
+    ? (text) => supaAddKeyword(text)
+    : (text) => {
+        const trimmed = text.trim()
+        if (!trimmed || localKeywords.some(k => k.text === trimmed)) return
+        const updated = [...localKeywords, { id: Date.now().toString(), text: trimmed, ticker: '' }]
+        setLocalKeywords(updated)
+        localStorage.setItem('ogu_keywords', JSON.stringify(updated))
+      }
+
+  const deleteUserKeyword = userId
+    ? (id) => supaDeleteKeyword(id)
+    : (id) => {
+        const updated = localKeywords.filter(k => k.id !== id)
+        setLocalKeywords(updated)
+        localStorage.setItem('ogu_keywords', JSON.stringify(updated))
+      }
 
   // 실제 사용할 todos/goals (로그인 여부에 따라 분기)
   const activeTodos = userId
@@ -308,7 +337,8 @@ export default function App() {
         {activeTab === 'keywords' && (
           <KeywordsPage
             userKeywords={userKeywords}
-            setUserKeywords={setUserKeywords}
+            onAddKeyword={addUserKeyword}
+            onDeleteKeyword={deleteUserKeyword}
             isPremium={isPremium}
             setIsPremium={setIsPremium}
           />
