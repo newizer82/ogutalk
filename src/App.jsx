@@ -149,7 +149,7 @@ export default function App() {
   const [oguTone, _setOguTone]           = useState(() => loadSetting('oguTone', '오구'))
   const [oguRepeat, _setOguRepeat]       = useState(() => loadSetting('oguRepeat', 2))
   const [voiceChar, _setVoiceChar]       = useState(() => loadSetting('voiceChar', 'girl'))
-  const [voiceEnabled, _setVoiceEnabled] = useState(() => loadSetting('voiceEnabled', false))
+  const [voiceEnabled, _setVoiceEnabled] = useState(false)  // 음성 안내 기능 제거됨
   const [alarmMode, _setAlarmMode]       = useState(() => loadSetting('alarmMode', 'both'))
   const [volume, _setVolume]             = useState(() => loadSetting('volume', 0.8))
   const [vibStrength, _setVibStrength]   = useState(() => loadSetting('vibStrength', 'medium'))

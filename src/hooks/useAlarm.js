@@ -138,8 +138,6 @@ useEffect(() => {
       const pat = VIBRATION_PATTERNS[vibStrength]
       navigator.vibrate(pat)
     }
-    // 음성
-    if (voiceEnabled) speakTime(voiceChar, hour, oguRepeat)
     // 브라우저 알림
     sendNotification(hour)
 
@@ -148,7 +146,7 @@ useEffect(() => {
     immersionAlertedRef.current = { m30: false, m60: false }
     setShowAlarmPopup(true)
     setAlarmContent(buildContent())
-  }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, volume, vibStrength])
+  }, [oguTone, oguRepeat, alarmMode, volume, vibStrength])
 
   const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
 
