@@ -288,17 +288,20 @@ export default function SettingsPage({
       </SettingSection>
 
       {/* ── 백그라운드 알람 안내 ── */}
-      {IS_NATIVE && (
-        <SettingSection title="📱 백그라운드 알람">
-          <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.7 }}>
-            앱을 닫아도 아래 설정한 시간의 59분에 알람이 울립니다.<br />
-            기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
-          </div>
-          <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}>
-            <span style={{ color: '#34d399', fontSize: 12, fontWeight: 700 }}>🟢 Capacitor 로컬 알림 활성</span>
-          </div>
-        </SettingSection>
-      )}
+      <SettingSection title="📱 백그라운드 알람">
+        <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.7 }}>
+          앱을 닫아도 아래 설정한 시간의 59분에 알람이 울립니다.<br />
+          기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
+        </div>
+        <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 10,
+          background: IS_NATIVE ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.08)',
+          border: `1px solid ${IS_NATIVE ? 'rgba(52,211,153,0.2)' : 'rgba(99,102,241,0.2)'}`,
+        }}>
+          <span style={{ color: IS_NATIVE ? '#34d399' : '#818cf8', fontSize: 12, fontWeight: 700 }}>
+            {IS_NATIVE ? '🟢 Capacitor 로컬 알림 활성' : '🌐 브라우저 알림 모드 (앱 설치 시 백그라운드 알림 지원)'}
+          </span>
+        </div>
+      </SettingSection>
 
       {/* ── 알람 시간 설정 ── */}
       <SettingSection title="⏰ 알람 시간 설정">
