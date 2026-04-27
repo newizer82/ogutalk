@@ -32,7 +32,7 @@ serve(async (req) => {
     // ── 1. 할일 데이터 ─────────────────────────────────
     const { data: todos } = await supabase
       .from('todos')
-      .select('id, title, completed, is_completed, goal_id, created_at, updated_at')
+      .select('id, title, completed, goal_id, created_at, updated_at')
       .eq('user_id', user_id)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
@@ -40,7 +40,7 @@ serve(async (req) => {
     // ── 2. 체크인 데이터 ───────────────────────────────
     const { data: checkins } = await supabase
       .from('notification_log')
-      .select('activity_type, alarm_hour, created_at')
+      .select('activity_type, created_at')
       .eq('user_id', user_id)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
@@ -49,11 +49,11 @@ serve(async (req) => {
     // ── 3. 목표 데이터 ─────────────────────────────────
     const { data: goals } = await supabase
       .from('goals')
-      .select('id, title, progress, type')
+      .select('id, title, progress, period')
       .eq('user_id', user_id)
 
     // ── 4. 통계 계산 ───────────────────────────────────
-    const todosCompleted = todos?.filter(t => t.completed || t.is_completed).length ?? 0
+    const todosCompleted = todos?.filter(t => t.completed).length ?? 0
     const todosTotal = todos?.length ?? 0
     const completionRate = todosTotal > 0
       ? Math.round((todosCompleted / todosTotal) * 100)
@@ -110,6 +110,8 @@ serve(async (req) => {
     const weekNumber = getWeekNumber(startDate)
     const year = startDate.getFullYear()
 
+    console.log('Upserting report:', { user_id, year, weekNumber, todosCompleted, todosTotal })
+
     const { data, error } = await supabase
       .from('weekly_reports')
       .upsert({
@@ -130,7 +132,10 @@ serve(async (req) => {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('DB upsert 실패:', JSON.stringify(error))
+      throw new Error(`DB 저장 실패: ${error.message} (code: ${error.code})`)
+    }
 
     return new Response(JSON.stringify({ success: true, report: data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -20,11 +20,21 @@ export function useWeeklyReport(userId) {
       .order('week_number', { ascending: false })
       .limit(10)
 
-    if (!error) setReports(data || [])
+    if (error) {
+      console.error('리포트 목록 로딩 실패:', error)
+      if (error.message?.includes('weekly_reports')) {
+        setError('weekly_reports 테이블이 없습니다. Supabase SQL Editor에서 v0.7.0_weekly_reports.sql을 실행해주세요.')
+      }
+      return
+    }
+    setReports(data || [])
   }, [userId])
 
   const generateReport = useCallback(async () => {
-    if (!userId) return null
+    if (!userId) {
+      setError('로그인이 필요합니다.')
+      return null
+    }
     setLoading(true)
     setError(null)
     try {
@@ -33,10 +43,18 @@ export function useWeeklyReport(userId) {
         { body: { user_id: userId } }
       )
       if (error) throw error
+      // Edge Function 자체에서 error 필드 반환하는 경우
+      if (data?.error) throw new Error(data.error)
       await fetchReports()
       return data?.report ?? null
     } catch (err) {
-      const msg = err?.message || '리포트 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
+      const raw = err?.message || ''
+      // 테이블 미생성 오류 감지
+      const msg = raw.includes('weekly_reports')
+        ? 'weekly_reports 테이블이 없습니다. Supabase SQL Editor에서 v0.7.0_weekly_reports.sql을 실행해주세요.'
+        : raw.includes('Failed to fetch') || raw.includes('NetworkError')
+          ? '서버 연결 실패. 인터넷 연결을 확인해주세요.'
+          : raw || '리포트 생성에 실패했어요. 잠시 후 다시 시도해 주세요.'
       console.error('리포트 생성 실패:', err)
       setError(msg)
       return null

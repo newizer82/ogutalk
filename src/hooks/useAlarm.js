@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, VOICE_CHARACTERS, VOICE_TEXTS } from '../data/oguData'
 import { supabase } from '../lib/supabase'
+import {
+  IS_NATIVE,
+  createOguChannel,
+  requestLocalNotifPermission,
+  scheduleOguAlarms,
+} from '../lib/capacitor'
 
 // 진동 세기별 패턴
 export const VIBRATION_PATTERNS = {
@@ -31,12 +37,25 @@ export function useAlarm({
   const lastHourRef        = useRef(-1)
   const immersionAlertedRef = useRef({ m30: false, m60: false })
 
-  // 브라우저 알림 권한 요청
+  // ── 앱 시작 시 초기화 ────────────────────────────────────────
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
+    if (IS_NATIVE) {
+      // Capacitor 네이티브: 채널 생성 + 권한 요청
+      createOguChannel().then(() => requestLocalNotifPermission())
+    } else {
+      // 웹: 브라우저 Notification 권한 요청
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
     }
   }, [])
+
+  // ── 네이티브 알람 스케줄 등록 (alarmHours 변경 시) ─────────
+  useEffect(() => {
+    if (IS_NATIVE) {
+      scheduleOguAlarms(alarmHours)
+    }
+  }, [alarmHours])
 
   // 몰입 시간 카운터 (1초마다 증가 — 이건 유지)
 useEffect(() => {

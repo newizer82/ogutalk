@@ -1,8 +1,21 @@
+import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
-import { OGU_TONES, VOICE_CHARACTERS } from '../data/oguData'
+import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
-import { usePushNotification } from '../hooks/usePushNotification'
+import { IS_NATIVE } from '../lib/capacitor'
+import { useCustomAlarms } from '../hooks/useCustomAlarms'
+
+// 프리셋 알람 템플릿
+const PRESETS = [
+  { icon: '📈', title: '경제 뉴스 브리핑',  message: '오늘의 경제 뉴스를 확인하세요!', hour: 8,  minute: 0  },
+  { icon: '🧘', title: '온몸 스트레칭',      message: '10분 스트레칭으로 몸을 깨워요!', hour: 10, minute: 0  },
+  { icon: '🍱', title: '점심 시간',          message: '맛있는 점심 드세요!',             hour: 12, minute: 0  },
+  { icon: '☕', title: '오후 집중 리셋',      message: '잠깐 쉬고 다시 시작해요!',       hour: 15, minute: 0  },
+  { icon: '📝', title: '하루 마무리 정리',   message: '오늘 하루를 되돌아봐요.',         hour: 22, minute: 0  },
+]
+
+const ICON_OPTIONS = ['🔔','📈','🧘','🍱','☕','📝','💊','💧','🏃','📖','🎯','💡','🌙','⚡','🎵']
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -35,26 +48,48 @@ export default function SettingsPage({
   alarmMode, setAlarmMode,
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,
-  alarmHours, setAlarmHours,
+  alarmHours = {}, setAlarmHours,
   immersionAlerts, setImmersionAlerts,
   immersionSec, onResetImmersion, onTestAlarm,
-  todos = [], goals = {}, userKeywords = [],
   onLoginOpen, onSignOut,
-  playSound, speakTimePreview,
+  playSound,
   userId = null,
 }) {
   const immMins = Math.floor(immersionSec / 60)
   const immSecs = Math.floor(immersionSec % 60)
 
-  const {
-    supported: pushSupported,
-    permission: pushPermission,
-    isSubscribed,
-    loading: pushLoading,
-    error: pushError,
-    subscribe: pushSubscribe,
-    unsubscribe: pushUnsubscribe,
-  } = usePushNotification(userId)
+  // 커스텀 알람
+  const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms()
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [formIcon,    setFormIcon]    = useState('🔔')
+  const [formTitle,   setFormTitle]   = useState('')
+  const [formHour,    setFormHour]    = useState('08')
+  const [formMinute,  setFormMinute]  = useState('00')
+  const [formMessage, setFormMessage] = useState('')
+  const [showIconPicker, setShowIconPicker] = useState(false)
+
+  const resetForm = () => {
+    setFormIcon('🔔'); setFormTitle(''); setFormHour('08')
+    setFormMinute('00'); setFormMessage(''); setShowIconPicker(false)
+  }
+
+  const handleAddPreset = (preset) => {
+    addAlarm({ ...preset, repeatType: 'daily' })
+  }
+
+  const handleAddCustom = () => {
+    if (!formTitle.trim()) return
+    addAlarm({
+      icon: formIcon,
+      title: formTitle.trim(),
+      message: formMessage.trim(),
+      hour: Number(formHour),
+      minute: Number(formMinute),
+      repeatType: 'daily',
+    })
+    resetForm()
+    setShowAddForm(false)
+  }
 
   const fireSignal = (tone, repeat) => {
     if (alarmMode !== 'vibrate') playSound(tone, repeat, volume)
@@ -64,9 +99,9 @@ export default function SettingsPage({
     }
   }
 
-  // 백업 내보내기
+  // 백업 내보내기 (알람 설정만)
   const exportBackup = () => {
-    const data = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), todos, goals, userKeywords, alarmHours, oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, immersionAlerts }, null, 2)
+    const data = JSON.stringify({ version: 4, exportedAt: new Date().toISOString(), alarmHours, oguTone, oguRepeat, alarmMode, immersionAlerts }, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a'); a.href = url
@@ -252,116 +287,18 @@ export default function SettingsPage({
         </SettingRow>
       </SettingSection>
 
-      {/* ── 시간 안내 목소리 ── */}
-      <SettingSection title={
-        <span>🗣️ 시간 안내 목소리 {!isPremium && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: 'linear-gradient(135deg,#f59e0b,#f97316)', color: 'white', marginLeft: 6 }}>PRO</span>}</span>
-      }>
-        <SettingRow label="음성 안내 사용" icon="💬">
-          <Toggle on={voiceEnabled} onToggle={() => setVoiceEnabled(!voiceEnabled)} />
-        </SettingRow>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 12 }}>
-          {VOICE_CHARACTERS.map(vc => {
-            const locked   = vc.premium && !isPremium
-            const selected = voiceChar === vc.id
-            return (
-              <button key={vc.id} onClick={() => { if (locked) return; setVoiceChar(vc.id); if (voiceEnabled) speakTimePreview() }} style={{
-                padding: '10px 8px', borderRadius: 12, textAlign: 'center', position: 'relative',
-                border: `1px solid ${selected ? '#818cf8' : 'rgba(255,255,255,0.08)'}`,
-                background: selected ? 'rgba(99,102,241,0.2)' : locked ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-                color: locked ? '#475569' : selected ? '#818cf8' : '#94a3b8',
-                cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.6 : 1,
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 2 }}>{vc.emoji}</div>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>{vc.name}</div>
-                {locked && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: 9 }}>🔒</div>}
-              </button>
-            )
-          })}
-        </div>
-        {isPremium && (
-          <button style={{ ...S.ghostBtn, width: '100%', marginTop: 10, color: '#818cf8' }} onClick={speakTimePreview}>
-            ▶ 목소리 미리듣기
-          </button>
-        )}
-      </SettingSection>
-
-      {/* ── 백그라운드 푸시 알람 ── */}
-      <SettingSection title="📡 백그라운드 푸시 알람">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12 }}>
-          앱을 닫아도 매시 59분에 알림이 옵니다
-        </div>
-
-        {!pushSupported ? (
-          <div style={{ color: '#f59e0b', fontSize: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-            ⚠️ 이 브라우저는 Web Push를 지원하지 않습니다.<br />
-            <span style={{ color: '#64748b', fontSize: 11 }}>Chrome / Edge / Firefox 최신 버전 또는 iOS 16.4+ PWA를 사용해주세요.</span>
+      {/* ── 백그라운드 알람 안내 ── */}
+      {IS_NATIVE && (
+        <SettingSection title="📱 백그라운드 알람">
+          <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.7 }}>
+            앱을 닫아도 아래 설정한 시간의 59분에 알람이 울립니다.<br />
+            기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
           </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div>
-                <div style={{ color: isSubscribed ? '#34d399' : '#94a3b8', fontSize: 13, fontWeight: 700 }}>
-                  {isSubscribed ? '🟢 활성화됨' : '⚪ 비활성화'}
-                </div>
-                <div style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
-                  {isSubscribed
-                    ? '앱을 닫아도 59분에 알림이 와요'
-                    : '로그인 후 활성화하면 앱 없이도 알람을 받아요'}
-                </div>
-              </div>
-
-              {isSubscribed ? (
-                <button
-                  onClick={pushUnsubscribe}
-                  disabled={pushLoading}
-                  style={{
-                    padding: '7px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)',
-                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                    fontSize: 12, fontWeight: 600, cursor: pushLoading ? 'wait' : 'pointer',
-                    opacity: pushLoading ? 0.6 : 1,
-                  }}
-                >
-                  {pushLoading ? '...' : '해제'}
-                </button>
-              ) : (
-                <button
-                  onClick={pushSubscribe}
-                  disabled={pushLoading || !userId}
-                  style={{
-                    padding: '7px 16px', borderRadius: 10, border: 'none',
-                    background: userId
-                      ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
-                      : 'rgba(255,255,255,0.06)',
-                    color: userId ? 'white' : '#475569',
-                    fontSize: 12, fontWeight: 700, cursor: (pushLoading || !userId) ? 'not-allowed' : 'pointer',
-                    opacity: pushLoading ? 0.6 : 1,
-                  }}
-                >
-                  {pushLoading ? '처리 중...' : userId ? '✨ 활성화' : '로그인 필요'}
-                </button>
-              )}
-            </div>
-
-            {pushError && (
-              <div style={{ color: '#f87171', fontSize: 11, padding: '8px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', marginBottom: 6 }}>
-                ⚠️ {pushError}
-              </div>
-            )}
-
-            {pushPermission === 'denied' && (
-              <div style={{ color: '#f59e0b', fontSize: 11, padding: '8px 10px', borderRadius: 8, background: 'rgba(245,158,11,0.08)' }}>
-                💡 브라우저 설정에서 알림 권한을 허용해주세요
-              </div>
-            )}
-
-            {!userId && (
-              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
-                * 카카오 또는 이메일로 로그인하면 푸시 알람을 사용할 수 있어요
-              </div>
-            )}
-          </>
-        )}
-      </SettingSection>
+          <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}>
+            <span style={{ color: '#34d399', fontSize: 12, fontWeight: 700 }}>🟢 Capacitor 로컬 알림 활성</span>
+          </div>
+        </SettingSection>
+      )}
 
       {/* ── 알람 시간 설정 ── */}
       <SettingSection title="⏰ 알람 시간 설정">
@@ -383,32 +320,169 @@ export default function SettingsPage({
         </div>
       </SettingSection>
 
+      {/* ── 커스텀 알람 ── */}
+      <SettingSection title="➕ 커스텀 알람 설정">
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+          원하는 시간에 알람을 추가하세요. 매일 반복됩니다.
+        </div>
+
+        {/* 프리셋 버튼 */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>⚡ 빠른 추가</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {PRESETS.map((p, i) => {
+              const already = customAlarms.some(a => a.title === p.title)
+              return (
+                <button key={i}
+                  disabled={already}
+                  onClick={() => handleAddPreset(p)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                    cursor: already ? 'default' : 'pointer',
+                    border: `1px solid ${already ? 'rgba(52,211,153,0.3)' : 'rgba(99,102,241,0.3)'}`,
+                    background: already ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.1)',
+                    color: already ? '#34d399' : '#818cf8',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                  {p.icon} {p.title.length > 8 ? p.title.slice(0, 8) + '…' : p.title}
+                  {already && ' ✓'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* 등록된 커스텀 알람 목록 */}
+        {customAlarms.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📋 등록된 알람 ({customAlarms.length})</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {customAlarms.map(alarm => (
+                <div key={alarm.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px', borderRadius: 12,
+                  background: alarm.isEnabled ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${alarm.isEnabled ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                }}>
+                  <span style={{ fontSize: 18 }}>{alarm.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: alarm.isEnabled ? '#e2e8f0' : '#64748b', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {alarm.title}
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: 10, marginTop: 1 }}>
+                      {pad(alarm.hour)}:{pad(alarm.minute)} · 매일
+                    </div>
+                  </div>
+                  <Toggle on={alarm.isEnabled} onToggle={() => toggleAlarm(alarm.id)} />
+                  <button onClick={() => deleteAlarm(alarm.id)} style={{
+                    width: 28, height: 28, borderRadius: 8, border: 'none',
+                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                    fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 직접 추가 폼 */}
+        {!showAddForm ? (
+          <button onClick={() => setShowAddForm(true)} style={{
+            width: '100%', padding: '11px', borderRadius: 12,
+            border: '1px dashed rgba(99,102,241,0.35)', background: 'transparent',
+            color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>+ 직접 추가하기</button>
+        ) : (
+          <div style={{ padding: 14, borderRadius: 14, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>🔔 새 알람 추가</div>
+
+            {/* 아이콘 선택 */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>아이콘</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button onClick={() => setShowIconPicker(!showIconPicker)} style={{
+                  width: 42, height: 42, borderRadius: 10, border: '1px solid rgba(99,102,241,0.3)',
+                  background: 'rgba(99,102,241,0.1)', fontSize: 22, cursor: 'pointer',
+                }}>{formIcon}</button>
+                {showIconPicker && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {ICON_OPTIONS.map(ic => (
+                      <button key={ic} onClick={() => { setFormIcon(ic); setShowIconPicker(false) }} style={{
+                        width: 32, height: 32, borderRadius: 8, border: `1px solid ${formIcon === ic ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
+                        background: formIcon === ic ? 'rgba(99,102,241,0.2)' : 'transparent',
+                        fontSize: 16, cursor: 'pointer',
+                      }}>{ic}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 제목 */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알람 제목 *</div>
+              <input
+                type="text" placeholder="예: 물 마시기" maxLength={20}
+                value={formTitle} onChange={e => setFormTitle(e.target.value)}
+                style={{ ...S.input, marginTop: 0 }}
+              />
+            </div>
+
+            {/* 시간 */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>시간</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select value={formHour} onChange={e => setFormHour(e.target.value)} style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
+                }}>
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <option key={i} value={String(i).padStart(2,'0')}>{pad(i)}시</option>
+                  ))}
+                </select>
+                <select value={formMinute} onChange={e => setFormMinute(e.target.value)} style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
+                }}>
+                  {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => (
+                    <option key={m} value={m}>{m}분</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 메시지 (선택) */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>메시지 (선택)</div>
+              <input
+                type="text" placeholder="알람 메시지를 입력하세요" maxLength={40}
+                value={formMessage} onChange={e => setFormMessage(e.target.value)}
+                style={{ ...S.input, marginTop: 0 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { setShowAddForm(false); resetForm() }} style={{ ...S.ghostBtn, flex: 1 }}>취소</button>
+              <button
+                onClick={handleAddCustom}
+                disabled={!formTitle.trim()}
+                style={{ ...S.primaryBtn, flex: 1, opacity: formTitle.trim() ? 1 : 0.4 }}
+              >추가</button>
+            </div>
+          </div>
+        )}
+      </SettingSection>
+
       {/* ── 알람 테스트 ── */}
       <SettingSection title="🔔 알람 테스트">
         <button style={S.primaryBtn} onClick={onTestAlarm}>오구 테스트 재생</button>
         <div style={{ color: '#64748b', fontSize: 11, textAlign: 'center', marginTop: 8 }}>버튼을 누르면 알람 팝업이 즉시 실행됩니다</div>
       </SettingSection>
 
-      {/* ── 기능 활성화 (프리미엄) ── */}
-      {isPremium && (
-        <SettingSection title="🛠️ 기능 활성화">
-          {[
-            { key: 'todos',          icon: '✅', label: '할일 관리' },
-            { key: 'goals',          icon: '🎯', label: '목표 관리' },
-            { key: 'keywords',       icon: '📈', label: '키워드 & 주식' },
-            { key: 'scheduleAlerts', icon: '🕐', label: '스케줄 알림 (준비중)' },
-          ].map(f => (
-            <SettingRow key={f.key} label={f.label} icon={f.icon}>
-              <Toggle on={premiumFeatures[f.key]} onToggle={() => setPremiumFeatures({ ...premiumFeatures, [f.key]: !premiumFeatures[f.key] })} />
-            </SettingRow>
-          ))}
-        </SettingSection>
-      )}
-
       {/* ── 데이터 백업 & 복원 ── */}
-      <SettingSection title="💾 데이터 백업 & 복원">
+      <SettingSection title="💾 설정 백업 & 복원">
         <div style={{ color: '#64748b', fontSize: 11, marginBottom: 14, lineHeight: 1.6 }}>
-          설정·할일·목표·키워드를 JSON 파일로 저장하고,<br />다른 기기에서 복원해 동일한 환경을 만들 수 있습니다.
+          알람 설정을 JSON 파일로 저장하고,<br />다른 기기에서 복원해 동일한 환경을 만들 수 있습니다.
         </div>
         <button style={{ ...S.primaryBtn, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={exportBackup}>
           📤 백업 내보내기 (JSON 다운로드)
@@ -417,19 +491,6 @@ export default function SettingsPage({
           📥 백업 불러오기 (복원)
           <input type="file" accept=".json" style={{ display: 'none' }} />
         </label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
-          {[
-            { label: '할일',    value: `${todos.length}개`,                              icon: '✅' },
-            { label: '목표',    value: `${Object.values(goals).flat().length}개`,        icon: '🎯' },
-            { label: '키워드',  value: `${userKeywords.length}개`,                       icon: '📌' },
-            { label: '알람',    value: `${Object.values(alarmHours).filter(Boolean).length}시간대`, icon: '⏰' },
-          ].map(item => (
-            <div key={item.label} style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ color: '#475569', fontSize: 10 }}>{item.icon} {item.label}</div>
-              <div style={{ color: '#818cf8', fontSize: 14, fontWeight: 800, marginTop: 2 }}>{item.value}</div>
-            </div>
-          ))}
-        </div>
       </SettingSection>
 
       {isLoggedIn && (

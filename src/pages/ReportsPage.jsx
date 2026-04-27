@@ -24,8 +24,29 @@ export default function ReportsPage({ userId }) {
   const report = reports[selectedIdx] ?? null
 
   const handleGenerate = async () => {
+    if (!userId) return
     const result = await generateReport()
     if (result) setSelectedIdx(0)
+  }
+
+  // ── 비로그인 상태 ──
+  if (!userId) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <div style={{ fontSize: 52, marginBottom: 12 }}>📊</div>
+        <div style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700, marginBottom: 8 }}>주간 리포트</div>
+        <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
+          로그인하면 매주 나의 할일·몰입시간·활동 패턴을<br />자동으로 분석한 리포트를 받을 수 있어요.
+        </div>
+        <div style={{
+          padding: '14px 18px', borderRadius: 14,
+          background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+          color: '#818cf8', fontSize: 13,
+        }}>
+          🔐 설정 탭에서 로그인해주세요
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -34,7 +55,7 @@ export default function ReportsPage({ userId }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>📊 주간 리포트</div>
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>Claude AI가 분석한 나의 한 주</div>
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>나의 한 주를 자동 분석합니다</div>
         </div>
         <button
           onClick={handleGenerate}
@@ -53,13 +74,17 @@ export default function ReportsPage({ userId }) {
 
       {/* ── 에러 메시지 ── */}
       {error && (
-        <GlassCard style={{
-          marginBottom: 12,
-          background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.2)',
+        <div style={{
+          marginBottom: 12, padding: '14px 16px', borderRadius: 14,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
         }}>
-          <div style={{ color: '#f87171', fontSize: 13 }}>⚠️ {error}</div>
-        </GlassCard>
+          <div style={{ color: '#f87171', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ 리포트 생성 실패</div>
+          <div style={{ color: '#fca5a5', fontSize: 12, lineHeight: 1.6 }}>{error}</div>
+          <div style={{ color: '#64748b', fontSize: 11, marginTop: 8, lineHeight: 1.6 }}>
+            💡 Supabase 대시보드 → SQL Editor에서<br />
+            <code style={{ color: '#818cf8', fontSize: 10 }}>v0.7.0_weekly_reports.sql</code> 마이그레이션이 실행됐는지 확인하세요.
+          </div>
+        </div>
       )}
 
       {/* ── 리포트 없을 때 ── */}
