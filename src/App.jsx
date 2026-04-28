@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
-import { useAlarm, playOguSound, speakTime, unlockAudio } from './hooks/useAlarm'
+import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -143,24 +143,20 @@ export default function App() {
     const h = {}; for (let i = 7; i <= 23; i++) h[i] = true; return h
   })()
 
-  const [oguTone, _setOguTone]           = useState(() => loadSetting('oguTone', '오구'))
-  const [oguRepeat, _setOguRepeat]       = useState(() => loadSetting('oguRepeat', 2))
-  const [voiceChar, _setVoiceChar]       = useState(() => loadSetting('voiceChar', 'girl'))
-  const [voiceEnabled, _setVoiceEnabled] = useState(false)  // 음성 안내 기능 제거됨
-  const [alarmMode, _setAlarmMode]       = useState(() => loadSetting('alarmMode', 'both'))
-  const [volume, _setVolume]             = useState(() => loadSetting('volume', 0.8))
-  const [vibStrength, _setVibStrength]   = useState(() => loadSetting('vibStrength', 'medium'))
-  const [alarmHours, _setAlarmHours]     = useState(() => loadSetting('alarmHours', defaultAlarmHours))
+  const [oguTone, _setOguTone]         = useState(() => loadSetting('oguTone', '오구'))
+  const [oguRepeat, _setOguRepeat]     = useState(() => loadSetting('oguRepeat', 2))
+  const [alarmMode, _setAlarmMode]     = useState(() => loadSetting('alarmMode', 'both'))
+  const [volume, _setVolume]           = useState(() => loadSetting('volume', 0.8))
+  const [vibStrength, _setVibStrength] = useState(() => loadSetting('vibStrength', 'medium'))
+  const [alarmHours, _setAlarmHours]   = useState(() => loadSetting('alarmHours', defaultAlarmHours))
 
   // 설정 변경 시 localStorage 자동 저장 래퍼
-  const setOguTone      = v => { _setOguTone(v);      saveSetting('oguTone', v) }
-  const setOguRepeat    = v => { _setOguRepeat(v);    saveSetting('oguRepeat', v) }
-  const setVoiceChar    = v => { _setVoiceChar(v);    saveSetting('voiceChar', v) }
-  const setVoiceEnabled = v => { _setVoiceEnabled(v); saveSetting('voiceEnabled', v) }
-  const setAlarmMode    = v => { _setAlarmMode(v);    saveSetting('alarmMode', v) }
-  const setVolume       = v => { _setVolume(v);       saveSetting('volume', v) }
-  const setVibStrength  = v => { _setVibStrength(v);  saveSetting('vibStrength', v) }
-  const setAlarmHours   = v => { _setAlarmHours(v);   saveSetting('alarmHours', v) }
+  const setOguTone     = v => { _setOguTone(v);     saveSetting('oguTone', v) }
+  const setOguRepeat   = v => { _setOguRepeat(v);   saveSetting('oguRepeat', v) }
+  const setAlarmMode   = v => { _setAlarmMode(v);   saveSetting('alarmMode', v) }
+  const setVolume      = v => { _setVolume(v);      saveSetting('volume', v) }
+  const setVibStrength = v => { _setVibStrength(v); saveSetting('vibStrength', v) }
+  const setAlarmHours  = v => { _setAlarmHours(v);  saveSetting('alarmHours', v) }
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
@@ -203,7 +199,7 @@ export default function App() {
   const {
     alarmCount, showAlarmPopup, alarmContent, closeAlarmPopup, fireAlarm,
     saveCheckin,
-  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, userId, volume, vibStrength })
+  } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
 
   // 모바일 AudioContext unlock — 첫 터치 시 소리 활성화
   useEffect(() => {
@@ -294,10 +290,6 @@ export default function App() {
             setOguTone={setOguTone}
             oguRepeat={oguRepeat}
             setOguRepeat={setOguRepeat}
-            voiceChar={voiceChar}
-            setVoiceChar={setVoiceChar}
-            voiceEnabled={voiceEnabled}
-            setVoiceEnabled={setVoiceEnabled}
             alarmMode={alarmMode}
             setAlarmMode={setAlarmMode}
             volume={volume}
@@ -312,7 +304,6 @@ export default function App() {
             onLoginOpen={() => setLoginOpen(true)}
             onSignOut={handleSignOut}
             playSound={playOguSound}
-            speakTimePreview={() => speakTime(voiceChar, new Date().getHours(), oguRepeat)}
             userId={userId}
           />
         )}

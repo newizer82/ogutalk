@@ -44,7 +44,6 @@ export default function SettingsPage({
   isLoggedIn, displayEmail, isPremium, setIsPremium,
   premiumFeatures, setPremiumFeatures,
   oguTone, setOguTone, oguRepeat, setOguRepeat,
-  voiceChar, setVoiceChar, voiceEnabled, setVoiceEnabled,
   alarmMode, setAlarmMode,
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,

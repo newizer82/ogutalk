@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { TONE_CONFIGS, TONE_DURATION, VOICE_CHARACTERS, VOICE_TEXTS } from '../data/oguData'
+import { TONE_CONFIGS, TONE_DURATION } from '../data/oguData'
 import { supabase } from '../lib/supabase'
 import {
   IS_NATIVE,
@@ -18,8 +18,6 @@ export const VIBRATION_PATTERNS = {
 export function useAlarm({
   oguTone = '유쾌',
   oguRepeat = 2,
-  voiceChar = 'girl',
-  voiceEnabled = false,
   alarmMode = 'both',   // 'sound' | 'vibrate' | 'both'
   alarmHours = {},
   userId = null,
@@ -96,7 +94,7 @@ useEffect(() => {
     if (timeoutId) clearTimeout(timeoutId)
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }
-}, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours])
+}, [oguTone, oguRepeat, alarmMode, alarmHours])
 
   const _fire = useCallback((hour = new Date().getHours()) => {
     // 소리
@@ -215,19 +213,6 @@ export function playOguSound(tone = '유쾌', repeat = 1, volume = 1.0) {
       playNotes()
     }
   } catch (_) {}
-}
-
-export function speakTime(voiceId, alarmHour, repeat = 1) {
-  if (!window.speechSynthesis) return
-  const vc       = VOICE_CHARACTERS.find(v => v.id === voiceId) || VOICE_CHARACTERS[0]
-  const nextHour = (alarmHour + 1) % 24
-  const txt      = (VOICE_TEXTS[voiceId] || VOICE_TEXTS.boy)(nextHour, repeat)
-  const utt      = new SpeechSynthesisUtterance(txt)
-  utt.lang  = 'ko-KR'
-  utt.rate  = vc.rate
-  utt.pitch = vc.pitch
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(utt)
 }
 
 function sendNotification(hour) {

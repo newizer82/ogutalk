@@ -57,32 +57,6 @@ export const TONE_CONFIGS = {
   ],
 }
 
-// ── 음성 캐릭터
-export const VOICE_CHARACTERS = [
-  { id: 'boy',         name: '남자아이', emoji: '👦', rate: 1.3,  pitch: 1.6,  premium: false },
-  { id: 'girl',        name: '여자아이', emoji: '👧', rate: 1.2,  pitch: 1.8,  premium: false },
-  { id: 'girlfriend',  name: '여친',    emoji: '💕', rate: 1.0,  pitch: 1.4,  premium: true  },
-  { id: 'boyfriend',   name: '남친',    emoji: '💙', rate: 0.9,  pitch: 0.8,  premium: true  },
-  { id: 'mom',         name: '엄마',    emoji: '👩', rate: 0.85, pitch: 1.1,  premium: true  },
-  { id: 'grandma',     name: '할머니',  emoji: '👵', rate: 0.75, pitch: 0.9,  premium: true  },
-  { id: 'gyeongsan',   name: '경상도',  emoji: '🗣️', rate: 1.0,  pitch: 1.0,  premium: true  },
-  { id: 'jeolla',      name: '전라도',  emoji: '🗣️', rate: 0.9,  pitch: 1.1,  premium: true  },
-  { id: 'chungcheong', name: '충청도',  emoji: '🗣️', rate: 0.8,  pitch: 0.95, premium: true  },
-]
-
-// ── 캐릭터별 음성 텍스트 (nextHour: 다음 정시, repeat: 오구 반복 횟수)
-export const VOICE_TEXTS = {
-  boy:         (h, n) => `오구! 벌써 ${h}시 59분이에요. 잠깐 쉬고 가요.`,
-  girl:        (h, n) => `오구~ ${h}시 59분! 눈 한번 감고 숨 크게 쉬어요.`,
-  girlfriend:  (h, n) => `있잖아, 벌써 ${h}시 59분이야. 잠깐 나 좀 봐줘.`,
-  boyfriend:   (h, n) => `야, ${h}시 59분이다. 스트레칭 한 번 하고 가자.`,
-  mom:         (h, n) => `${h}시 59분 됐어. 허리 펴고 물 한 잔 마셔.`,
-  grandma:     (h, n) => `아이고, 벌써 ${h}시 59분이구먼. 눈 좀 쉬어야지.`,
-  gyeongsan:   (h, n) => `${h}시 59분 됐다 아이가! 잠깐 쉬어라 카이.`,
-  jeolla:      (h, n) => `아이고메, ${h}시 59분이여! 쉬어부러 얼른.`,
-  chungcheong: (h, n) => `${h}시 59분이 됐유. 쉬어야 쓰것어유~`,
-}
-
 // ── 경제 상식
 export const ECONOMIC_TIPS = [
   { title: '복리의 마법',    content: '매년 7% 수익이면 약 10년 후 원금이 2배. 워런 버핏은 "복리는 세계 8번째 불가사의"라고 했습니다.', category: '투자기초' },
