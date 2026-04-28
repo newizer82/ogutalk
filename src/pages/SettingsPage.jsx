@@ -49,15 +49,11 @@ export default function SettingsPage({
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,
   alarmHours = {}, setAlarmHours,
-  immersionAlerts, setImmersionAlerts,
-  immersionSec, onResetImmersion, onTestAlarm,
+  onTestAlarm,
   onLoginOpen, onSignOut,
   playSound,
   userId = null,
 }) {
-  const immMins = Math.floor(immersionSec / 60)
-  const immSecs = Math.floor(immersionSec % 60)
-
   // 커스텀 알람
   const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms()
   const [showAddForm, setShowAddForm] = useState(false)
@@ -101,7 +97,7 @@ export default function SettingsPage({
 
   // 백업 내보내기 (알람 설정만)
   const exportBackup = () => {
-    const data = JSON.stringify({ version: 4, exportedAt: new Date().toISOString(), alarmHours, oguTone, oguRepeat, alarmMode, immersionAlerts }, null, 2)
+    const data = JSON.stringify({ version: 5, exportedAt: new Date().toISOString(), alarmHours, oguTone, oguRepeat, alarmMode }, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a'); a.href = url
@@ -217,44 +213,6 @@ export default function SettingsPage({
             </div>
           </div>
         )}
-      </SettingSection>
-
-      {/* ── 몰입 시간 경고 ── */}
-      <SettingSection title="⏱️ 몰입 시간 경고 알람">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
-          스마트폰을 일정 시간 이상 사용하면 경고 알람이 울립니다.<br />
-          오구 알람이 울리면 몰입 시간이 자동으로 초기화됩니다.
-        </div>
-        <SettingRow label="30분 경고" icon="🟡">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: immersionAlerts.m30 ? '#f59e0b' : '#475569', fontSize: 11, fontWeight: 700 }}>30분</span>
-            <Toggle on={immersionAlerts.m30} color="#f59e0b"
-              onToggle={() => setImmersionAlerts({ ...immersionAlerts, m30: !immersionAlerts.m30 })} />
-          </div>
-        </SettingRow>
-        <SettingRow label="1시간 경고" icon="🔴">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: immersionAlerts.m60 ? '#ef4444' : '#475569', fontSize: 11, fontWeight: 700 }}>60분</span>
-            <Toggle on={immersionAlerts.m60} color="#ef4444"
-              onToggle={() => setImmersionAlerts({ ...immersionAlerts, m60: !immersionAlerts.m60 })} />
-          </div>
-        </SettingRow>
-        {/* 현재 몰입 시간 */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginTop: 12, padding: '10px 14px', borderRadius: 12,
-          background: immMins >= 60 ? 'rgba(239,68,68,0.08)' : immMins >= 30 ? 'rgba(245,158,11,0.08)' : 'rgba(52,211,153,0.06)',
-          border: `1px solid ${immMins >= 60 ? 'rgba(239,68,68,0.2)' : immMins >= 30 ? 'rgba(245,158,11,0.2)' : 'rgba(52,211,153,0.15)'}`,
-        }}>
-          <div>
-            <div style={{ color: '#94a3b8', fontSize: 10 }}>현재 몰입 시간</div>
-            <div style={{ color: immMins >= 60 ? '#ef4444' : immMins >= 30 ? '#f59e0b' : '#34d399', fontSize: 24, fontWeight: 900, marginTop: 2 }}>
-              {pad(immMins)}:{pad(immSecs)}
-            </div>
-          </div>
-          <button style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-            onClick={onResetImmersion}>🔄 리셋</button>
-        </div>
       </SettingSection>
 
       {/* ── 오구 사운드 톤 ── */}

@@ -1,7 +1,6 @@
 const TABS = [
   { id: 'home',     icon: '🏠', label: '홈',    pro: false },
   { id: 'todos',    icon: '✅', label: '할일',   pro: false },
-  { id: 'keywords', icon: '📈', label: '키워드', pro: false },
   { id: 'reports',  icon: '📊', label: '리포트', pro: false },
   { id: 'settings', icon: '⚙️', label: '설정',  pro: false },
 ]

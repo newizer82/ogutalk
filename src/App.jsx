@@ -2,15 +2,12 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
-import { useKeywords } from './hooks/useKeywords'
 import { useAlarm, playOguSound, speakTime, unlockAudio } from './hooks/useAlarm'
 import Layout from './components/layout/Layout'
-import ImmersionPopup from './components/alarm/ImmersionPopup'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
-import KeywordsPage from './pages/KeywordsPage'
 import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
 import { gradients, S } from './styles/theme'
@@ -154,7 +151,6 @@ export default function App() {
   const [volume, _setVolume]             = useState(() => loadSetting('volume', 0.8))
   const [vibStrength, _setVibStrength]   = useState(() => loadSetting('vibStrength', 'medium'))
   const [alarmHours, _setAlarmHours]     = useState(() => loadSetting('alarmHours', defaultAlarmHours))
-  const [immersionAlerts, _setImmersionAlerts] = useState(() => loadSetting('immersionAlerts', { m30: true, m60: true }))
 
   // 설정 변경 시 localStorage 자동 저장 래퍼
   const setOguTone      = v => { _setOguTone(v);      saveSetting('oguTone', v) }
@@ -165,22 +161,16 @@ export default function App() {
   const setVolume       = v => { _setVolume(v);       saveSetting('volume', v) }
   const setVibStrength  = v => { _setVibStrength(v);  saveSetting('vibStrength', v) }
   const setAlarmHours   = v => { _setAlarmHours(v);   saveSetting('alarmHours', v) }
-  const setImmersionAlerts = v => { _setImmersionAlerts(v); saveSetting('immersionAlerts', v) }
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
-    todos: true, goals: true, keywords: true, scheduleAlerts: false,
+    todos: true, goals: true, scheduleAlerts: false,
   })
 
   // Supabase 훅 (로그인 시)
   const userId = user?.id ?? null
   const { todos, addTodo, toggleTodo, deleteTodo } = useTodos(userId)
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
-  const {
-    keywords: supaKeywords,
-    addKeyword: supaAddKeyword,
-    deleteKeyword: supaDeleteKeyword,
-  } = useKeywords(userId)
 
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
@@ -198,37 +188,6 @@ export default function App() {
     daily: [{ id: 'd1', title: '오늘 러닝 30분', progress: 0, desc: '오늘의 운동' }],
   })
 
-  // 키워드 — 로그인 시 Supabase, 비로그인 시 localStorage
-  const [localKeywords, setLocalKeywords] = useState(() => {
-    try {
-      const saved = localStorage.getItem('ogu_keywords')
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
-
-  // 실제 사용할 키워드 / 추가 / 삭제 (로그인 여부 분기)
-  const userKeywords = userId
-    ? supaKeywords.map(k => ({ id: k.id, text: k.keyword, ticker: k.ticker || '' }))
-    : localKeywords
-
-  const addUserKeyword = userId
-    ? (text) => supaAddKeyword(text)
-    : (text) => {
-        const trimmed = text.trim()
-        if (!trimmed || localKeywords.some(k => k.text === trimmed)) return
-        const updated = [...localKeywords, { id: Date.now().toString(), text: trimmed, ticker: '' }]
-        setLocalKeywords(updated)
-        localStorage.setItem('ogu_keywords', JSON.stringify(updated))
-      }
-
-  const deleteUserKeyword = userId
-    ? (id) => supaDeleteKeyword(id)
-    : (id) => {
-        const updated = localKeywords.filter(k => k.id !== id)
-        setLocalKeywords(updated)
-        localStorage.setItem('ogu_keywords', JSON.stringify(updated))
-      }
-
   // 실제 사용할 todos/goals (로그인 여부에 따라 분기)
   const activeTodos = userId
     ? todos.map(t => ({ ...t, priority: t.priority || 'medium' }))
@@ -242,10 +201,9 @@ export default function App() {
 
   // 알람 훅
   const {
-    alarmCount, immersionSec, showAlarmPopup, alarmContent, closeAlarmPopup,
-    immersionPopup, immersionLevel, closeImmersionPopup, resetImmersion, fireAlarm,
+    alarmCount, showAlarmPopup, alarmContent, closeAlarmPopup, fireAlarm,
     saveCheckin,
-  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, immersionAlerts, userId, volume, vibStrength })
+  } = useAlarm({ oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours, userId, volume, vibStrength })
 
   // 모바일 AudioContext unlock — 첫 터치 시 소리 활성화
   useEffect(() => {
@@ -266,18 +224,6 @@ export default function App() {
 
   const displayEmail = user?.email || localEmail
 
-  // 몰입 경고 팝업 (전체화면)
-  if (immersionPopup) {
-    return (
-      <ImmersionPopup
-        level={immersionLevel}
-        immersionSec={immersionSec}
-        onReset={resetImmersion}
-        onDismiss={closeImmersionPopup}
-      />
-    )
-  }
-
   return (
     <>
       <Layout
@@ -292,7 +238,6 @@ export default function App() {
         {activeTab === 'home' && (
           <HomePage
             alarmCount={alarmCount}
-            immersionSec={immersionSec}
             todos={activeTodos}
             goals={localGoals}
             isPremium={isPremium}
@@ -334,15 +279,6 @@ export default function App() {
             setIsPremium={setIsPremium}
           />
         )}
-        {activeTab === 'keywords' && (
-          <KeywordsPage
-            userKeywords={userKeywords}
-            onAddKeyword={addUserKeyword}
-            onDeleteKeyword={deleteUserKeyword}
-            isPremium={isPremium}
-            setIsPremium={setIsPremium}
-          />
-        )}
         {activeTab === 'reports' && (
           <ReportsPage userId={userId} />
         )}
@@ -370,14 +306,9 @@ export default function App() {
             setVibStrength={setVibStrength}
             alarmHours={alarmHours}
             setAlarmHours={setAlarmHours}
-            immersionAlerts={immersionAlerts}
-            setImmersionAlerts={setImmersionAlerts}
-            immersionSec={immersionSec}
-            onResetImmersion={resetImmersion}
             onTestAlarm={fireAlarm}
             todos={activeTodos}
             goals={localGoals}
-            userKeywords={userKeywords}
             onLoginOpen={() => setLoginOpen(true)}
             onSignOut={handleSignOut}
             playSound={playOguSound}

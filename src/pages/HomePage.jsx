@@ -55,7 +55,6 @@ function AlarmTimeline({ alarmHours = {}, currentHour }) {
 
 export default function HomePage({
   alarmCount = 0,
-  immersionSec = 0,
   todos = [],
   goals = {},
   isPremium = false,
@@ -102,12 +101,6 @@ export default function HomePage({
   const doneTodos    = todos.filter(t => t.completed || t.done)
   const pendingTodos = todos.filter(t => !t.completed && !t.done)
   const todoPct      = todos.length ? Math.round(doneTodos.length / todos.length * 100) : 0
-
-  // 몰입 시간
-  const immMins = Math.floor(immersionSec / 60)
-  const immSecs = Math.floor(immersionSec % 60)
-  const immPct  = Math.min(100, Math.round(immMins / 60 * 100))
-  const immColor = immMins >= 60 ? '#ef4444' : immMins >= 30 ? '#f59e0b' : '#34d399'
 
   // 알람 달성률 (오늘 목표 알람 수 대비)
   const totalActiveHours = Object.values(alarmHours).filter(Boolean).length
@@ -184,8 +177,8 @@ export default function HomePage({
         </div>
       </GlassCard>
 
-      {/* ── 3. 스탯 3링 인포그래픽 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+      {/* ── 3. 스탯 2링 인포그래픽 ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
 
         {/* 알람 링 */}
         <GlassCard style={{ padding: '14px 8px', textAlign: 'center' }}>
@@ -196,22 +189,6 @@ export default function HomePage({
           </div>
           <div style={{ color: '#475569', fontSize: 9, fontWeight: 600 }}>오늘 알람</div>
           <div style={{ color: '#818cf8', fontSize: 9, marginTop: 2 }}>회</div>
-        </GlassCard>
-
-        {/* 몰입 링 */}
-        <GlassCard style={{ padding: '14px 8px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <RingProgress value={immPct} size={60} stroke={6} color={immColor}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: immColor, lineHeight: 1 }}>{pad(immMins)}</div>
-                <div style={{ fontSize: 7, color: '#475569' }}>:{pad(immSecs)}</div>
-              </div>
-            </RingProgress>
-          </div>
-          <div style={{ color: '#475569', fontSize: 9, fontWeight: 600 }}>몰입 시간</div>
-          <div style={{ color: immColor, fontSize: 9, marginTop: 2 }}>
-            {immMins >= 60 ? '⚠️ 과몰입' : immMins >= 30 ? '주의' : '양호'}
-          </div>
         </GlassCard>
 
         {/* 할일 링 */}
@@ -311,7 +288,6 @@ export default function HomePage({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
         {[
           { id: 'todos',    icon: '✅', label: '할일 관리',    desc: `${pendingTodos.length}개 진행 중`,    color: '#34d399' },
-          { id: 'keywords', icon: '📈', label: '트렌딩 분석',  desc: '경제·AI·사회·글로벌',               color: '#818cf8' },
           { id: 'reports',  icon: '📊', label: '주간 리포트',  desc: '성과 돌아보기',                      color: '#a78bfa' },
           { id: 'settings', icon: '⚙️', label: '알람 설정',    desc: `${totalActiveHours}시간대 활성`,     color: '#f59e0b' },
         ].map(item => (

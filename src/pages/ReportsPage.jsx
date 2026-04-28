@@ -36,7 +36,7 @@ export default function ReportsPage({ userId }) {
         <div style={{ fontSize: 52, marginBottom: 12 }}>📊</div>
         <div style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700, marginBottom: 8 }}>주간 리포트</div>
         <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
-          로그인하면 매주 나의 할일·몰입시간·활동 패턴을<br />자동으로 분석한 리포트를 받을 수 있어요.
+          로그인하면 매주 나의 할일·활동 패턴을<br />자동으로 분석한 리포트를 받을 수 있어요.
         </div>
         <div style={{
           padding: '14px 18px', borderRadius: 14,

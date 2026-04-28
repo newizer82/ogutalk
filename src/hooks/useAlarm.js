@@ -22,20 +22,15 @@ export function useAlarm({
   voiceEnabled = false,
   alarmMode = 'both',   // 'sound' | 'vibrate' | 'both'
   alarmHours = {},
-  immersionAlerts = { m30: true, m60: true },
   userId = null,
   volume = 1.0,                // ← 볼륨 (0.0~1.0)
   vibStrength = 'medium',      // ← 진동 세기 'weak' | 'medium' | 'strong'
 } = {}) {
   const [alarmCount, setAlarmCount]         = useState(0)
-  const [immersionSec, setImmersionSec]     = useState(0)
   const [showAlarmPopup, setShowAlarmPopup] = useState(false)
   const [alarmContent, setAlarmContent]     = useState(null)
-  const [immersionPopup, setImmersionPopup] = useState(false)
-  const [immersionLevel, setImmersionLevel] = useState(null)
 
-  const lastHourRef        = useRef(-1)
-  const immersionAlertedRef = useRef({ m30: false, m60: false })
+  const lastHourRef = useRef(-1)
 
   // ── 앱 시작 시 초기화 ────────────────────────────────────────
   useEffect(() => {
@@ -56,14 +51,6 @@ export function useAlarm({
       scheduleOguAlarms(alarmHours)
     }
   }, [alarmHours])
-
-  // 몰입 시간 카운터 (1초마다 증가 — 이건 유지)
-useEffect(() => {
-  const id = setInterval(() => {
-    setImmersionSec(prev => prev + 1)
-  }, 1000)
-  return () => clearInterval(id)
-}, [])
 
 // 59분 알람 스케줄링 (setTimeout 체인 방식)
 useEffect(() => {
@@ -111,25 +98,6 @@ useEffect(() => {
   }
 }, [oguTone, oguRepeat, voiceChar, voiceEnabled, alarmMode, alarmHours])
 
-  // 몰입 경고 체크
-  useEffect(() => {
-    const mins = immersionSec / 60
-    if (immersionAlerts.m30 && mins >= 30 && !immersionAlertedRef.current.m30) {
-      immersionAlertedRef.current.m30 = true
-      setImmersionLevel('30분')
-      setImmersionPopup(true)
-      if (alarmMode !== 'vibrate') playOguSound('화남', 1, volume)
-      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate(VIBRATION_PATTERNS[vibStrength])
-    }
-    if (immersionAlerts.m60 && mins >= 60 && !immersionAlertedRef.current.m60) {
-      immersionAlertedRef.current.m60 = true
-      setImmersionLevel('1시간')
-      setImmersionPopup(true)
-      if (alarmMode !== 'vibrate') playOguSound('화남', 2, volume)
-      if (alarmMode !== 'sound' && navigator.vibrate) navigator.vibrate(VIBRATION_PATTERNS[vibStrength])
-    }
-  }, [immersionSec])
-
   const _fire = useCallback((hour = new Date().getHours()) => {
     // 소리
     if (alarmMode !== 'vibrate') playOguSound(oguTone, oguRepeat, volume)
@@ -142,19 +110,11 @@ useEffect(() => {
     sendNotification(hour)
 
     setAlarmCount(c => c + 1)
-    setImmersionSec(0)
-    immersionAlertedRef.current = { m30: false, m60: false }
     setShowAlarmPopup(true)
     setAlarmContent(buildContent())
   }, [oguTone, oguRepeat, alarmMode, volume, vibStrength])
 
   const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
-
-  const resetImmersion = useCallback(() => {
-    setImmersionSec(0)
-    immersionAlertedRef.current = { m30: false, m60: false }
-    setImmersionPopup(false)
-  }, [])
 
   // ── 체크인 저장 ──
   const saveCheckin = useCallback(async (activityType) => {
@@ -172,15 +132,9 @@ useEffect(() => {
 
   return {
     alarmCount,
-    immersionSec,
-    immersionMinutes: Math.floor(immersionSec / 60),
     showAlarmPopup,
     alarmContent,
     closeAlarmPopup: () => { setShowAlarmPopup(false); setAlarmContent(null) },
-    immersionPopup,
-    immersionLevel,
-    closeImmersionPopup: () => setImmersionPopup(false),
-    resetImmersion,
     fireAlarm,
     saveCheckin,
   }

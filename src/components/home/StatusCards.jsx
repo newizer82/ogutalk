@@ -26,19 +26,12 @@ const styles = {
   },
 }
 
-export default function StatusCards({ alarmCount = 0, immersionMinutes = 0, pendingTodos = 0 }) {
-  const immHH = String(Math.floor(immersionMinutes / 60)).padStart(2, '0')
-  const immMM = String(immersionMinutes % 60).padStart(2, '0')
-
+export default function StatusCards({ alarmCount = 0, pendingTodos = 0 }) {
   return (
     <div style={styles.row}>
       <div style={styles.card}>
         <div style={styles.value}>{alarmCount}</div>
         <div style={styles.label}>오늘 알람 횟수</div>
-      </div>
-      <div style={styles.card}>
-        <div style={styles.value}>{immHH}:{immMM}</div>
-        <div style={styles.label}>몰입 시간</div>
       </div>
       <div style={styles.card}>
         <div style={{ ...styles.value, color: pendingTodos > 0 ? theme.status.warning : theme.status.success }}>
