@@ -102,9 +102,8 @@ export default function HomePage({
   const pendingTodos = todos.filter(t => !t.completed && !t.done)
   const todoPct      = todos.length ? Math.round(doneTodos.length / todos.length * 100) : 0
 
-  // 알람 달성률 (오늘 목표 알람 수 대비)
+  // 알람 활성 시간대 카운트 (타임라인 하단 표기용)
   const totalActiveHours = Object.values(alarmHours).filter(Boolean).length
-  const alarmPct = totalActiveHours ? Math.min(100, Math.round(alarmCount / Math.max(1, H - 6) * 100)) : 0
 
   // 명언
   const quoteObj = QUOTES[Math.floor(now.getTime() / 60000) % QUOTES.length]
@@ -177,35 +176,7 @@ export default function HomePage({
         </div>
       </GlassCard>
 
-      {/* ── 3. 스탯 2링 인포그래픽 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-
-        {/* 알람 링 */}
-        <GlassCard style={{ padding: '14px 8px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <RingProgress value={Math.min(100, alarmCount * 12)} size={60} stroke={6} color="#818cf8">
-              <span style={{ fontSize: 14, fontWeight: 900, color: '#818cf8' }}>{alarmCount}</span>
-            </RingProgress>
-          </div>
-          <div style={{ color: '#475569', fontSize: 9, fontWeight: 600 }}>오늘 알람</div>
-          <div style={{ color: '#818cf8', fontSize: 9, marginTop: 2 }}>회</div>
-        </GlassCard>
-
-        {/* 할일 링 */}
-        <GlassCard style={{ padding: '14px 8px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <RingProgress value={todoPct} size={60} stroke={6} color="#34d399">
-              <span style={{ fontSize: 11, fontWeight: 900, color: '#34d399' }}>{todoPct}%</span>
-            </RingProgress>
-          </div>
-          <div style={{ color: '#475569', fontSize: 9, fontWeight: 600 }}>할일 완료</div>
-          <div style={{ color: '#34d399', fontSize: 9, marginTop: 2 }}>
-            {doneTodos.length}/{todos.length}개
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* ── 4. 오늘의 할일 인포그래픽 ── */}
+      {/* ── 3. 오늘의 할일 인포그래픽 ── */}
       <GlassCard style={{ marginBottom: 14, padding: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -284,26 +255,7 @@ export default function HomePage({
         )}
       </GlassCard>
 
-      {/* ── 5. 빠른 이동 버튼 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-        {[
-          { id: 'todos',    icon: '✅', label: '할일 관리',    desc: `${pendingTodos.length}개 진행 중`,    color: '#34d399' },
-          { id: 'reports',  icon: '📊', label: '주간 리포트',  desc: '성과 돌아보기',                      color: '#a78bfa' },
-          { id: 'settings', icon: '⚙️', label: '알람 설정',    desc: `${totalActiveHours}시간대 활성`,     color: '#f59e0b' },
-        ].map(item => (
-          <button key={item.id} onClick={() => onTabChange(item.id)} style={{
-            padding: '14px', borderRadius: 16, border: `1px solid ${item.color}22`,
-            background: `${item.color}0d`, cursor: 'pointer', textAlign: 'left',
-            transition: 'background 0.2s',
-          }}>
-            <div style={{ fontSize: 20, marginBottom: 6 }}>{item.icon}</div>
-            <div style={{ color: item.color, fontSize: 13, fontWeight: 700 }}>{item.label}</div>
-            <div style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>{item.desc}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* ── 6. 오늘의 명언 ── */}
+      {/* ── 4. 오늘의 명언 ── */}
       <div style={{
         padding: '14px 16px', borderRadius: 16,
         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
