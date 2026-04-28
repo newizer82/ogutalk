@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
 import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
+import { loadSettings, saveSettings } from './lib/settings'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -127,36 +128,26 @@ export default function App() {
   const isPremium    = isLoggedIn
   const setIsPremium = () => {}  // 추후 결제 연동 시 활성화
 
-  // ── localStorage 헬퍼 ─────────────────────────────────
-  const loadSetting = (key, defaultVal) => {
-    try {
-      const v = localStorage.getItem('ogu_' + key)
-      return v !== null ? JSON.parse(v) : defaultVal
-    } catch { return defaultVal }
+  // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
+  const [settings, setSettings] = useState(loadSettings)
+  const { oguTone, oguRepeat, alarmMode, volume, vibStrength, alarmHours } = settings
+
+  // 한 필드만 갱신하면서 localStorage에도 즉시 반영
+  const updateSetting = (key, value) => {
+    setSettings(prev => {
+      const next = { ...prev, [key]: value }
+      saveSettings(next)
+      return next
+    })
   }
-  const saveSetting = (key, val) => {
-    try { localStorage.setItem('ogu_' + key, JSON.stringify(val)) } catch {}
-  }
 
-  // 알람 설정 (전역 상태 — localStorage에서 초기값 로드)
-  const defaultAlarmHours = (() => {
-    const h = {}; for (let i = 7; i <= 23; i++) h[i] = true; return h
-  })()
-
-  const [oguTone, _setOguTone]         = useState(() => loadSetting('oguTone', '오구'))
-  const [oguRepeat, _setOguRepeat]     = useState(() => loadSetting('oguRepeat', 2))
-  const [alarmMode, _setAlarmMode]     = useState(() => loadSetting('alarmMode', 'both'))
-  const [volume, _setVolume]           = useState(() => loadSetting('volume', 0.8))
-  const [vibStrength, _setVibStrength] = useState(() => loadSetting('vibStrength', 'medium'))
-  const [alarmHours, _setAlarmHours]   = useState(() => loadSetting('alarmHours', defaultAlarmHours))
-
-  // 설정 변경 시 localStorage 자동 저장 래퍼
-  const setOguTone     = v => { _setOguTone(v);     saveSetting('oguTone', v) }
-  const setOguRepeat   = v => { _setOguRepeat(v);   saveSetting('oguRepeat', v) }
-  const setAlarmMode   = v => { _setAlarmMode(v);   saveSetting('alarmMode', v) }
-  const setVolume      = v => { _setVolume(v);      saveSetting('volume', v) }
-  const setVibStrength = v => { _setVibStrength(v); saveSetting('vibStrength', v) }
-  const setAlarmHours  = v => { _setAlarmHours(v);  saveSetting('alarmHours', v) }
+  // 개별 setter (SettingsPage 호환을 위해 그대로 유지)
+  const setOguTone     = v => updateSetting('oguTone', v)
+  const setOguRepeat   = v => updateSetting('oguRepeat', v)
+  const setAlarmMode   = v => updateSetting('alarmMode', v)
+  const setVolume      = v => updateSetting('volume', v)
+  const setVibStrength = v => updateSetting('vibStrength', v)
+  const setAlarmHours  = v => updateSetting('alarmHours', v)
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
