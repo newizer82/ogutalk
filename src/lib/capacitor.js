@@ -13,21 +13,40 @@ export const IS_NATIVE = (() => {
   }
 })()
 
-// ── 알림 채널 생성 (Android 8+ 필수) ─────────────────────────
+// ── 알림 채널 생성 (MainActivity.java 가 USAGE_ALARM 채널을 선점 생성)
+// JS 에서는 채널 재생성 없이 권한 요청만 수행
 export async function createOguChannel() {
   if (!IS_NATIVE) return
   try {
+    // MainActivity.java 에서 이미 USAGE_ALARM 채널을 생성했으므로
+    // JS 에서는 채널을 덮어쓰지 않는다 (덮어쓰면 USAGE_NOTIFICATION 으로 degraded)
+    // 알림 수신 리스너만 등록
+    await _setupNotifListeners()
+  } catch (e) {
+    console.warn('[Capacitor] 채널 초기화 실패:', e)
+  }
+}
+
+// ── 포그라운드 알림 리스너 설정 ─────────────────────────────
+// 앱이 열려 있을 때 오구 알림이 수신되면 헤드업 배너를 즉시 제거
+// (앱 내 AlarmPopup 이 대신 표시되므로 중복 방지)
+let _listenerSetup = false
+async function _setupNotifListeners() {
+  if (_listenerSetup) return
+  _listenerSetup = true
+  try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.createChannel({
-      id:          'ogu-alarm',
-      name:        '오구 알람',
-      description: '매시 59분 오구톡 알람',
-      importance:  5,            // IMPORTANCE_HIGH
-      vibration:   true,
-      sound:       'ogu',        // res/raw/ogu.wav (확장자 제외)
+    await LocalNotifications.addListener('localNotificationReceived', async (notif) => {
+      if (notif.id < 1000) {
+        try {
+          await LocalNotifications.removeDeliveredNotifications({
+            notifications: [{ id: notif.id, title: notif.title || '', body: notif.body || '' }],
+          })
+        } catch (_) {}
+      }
     })
   } catch (e) {
-    console.warn('[Capacitor] 채널 생성 실패:', e)
+    console.warn('[Capacitor] 알림 리스너 등록 실패:', e)
   }
 }
 
@@ -44,19 +63,34 @@ export async function requestLocalNotifPermission() {
   }
 }
 
+// ── 전달된 오구 알림 제거 (앱 복귀 시 쌓인 알림 정리) ────────
+export async function clearDeliveredOguNotifs() {
+  if (!IS_NATIVE) return
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    const { notifications: delivered } = await LocalNotifications.getDeliveredNotifications()
+    const oguOnes = delivered.filter(n => n.id >= 1 && n.id < 1000)
+    if (oguOnes.length > 0) {
+      await LocalNotifications.removeDeliveredNotifications({ notifications: oguOnes })
+    }
+  } catch (e) {
+    console.warn('[Capacitor] 전달 알림 정리 실패:', e)
+  }
+}
+
 // ── 알람 스케줄 등록 (alarmHours 변경 시 호출) ───────────────
-// alarmHours: { 7: true, 8: true, ... }  (0~23)
-// 향후 7일치 :59 알람을 한 번에 기기에 등록
 export async function scheduleOguAlarms(alarmHours = {}) {
   if (!IS_NATIVE) return
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
 
-    // 기존 등록 알람 전체 취소
     const { notifications: pending } = await LocalNotifications.getPending()
-    if (pending.length > 0) {
-      await LocalNotifications.cancel({ notifications: pending })
+    const oguPending = pending.filter(n => n.id < 1000)
+    if (oguPending.length > 0) {
+      await LocalNotifications.cancel({ notifications: oguPending })
     }
+
+    await clearDeliveredOguNotifs()
 
     const toSchedule = []
     const now = new Date()
@@ -68,15 +102,15 @@ export async function scheduleOguAlarms(alarmHours = {}) {
         const at = new Date(now)
         at.setDate(at.getDate() + day)
         at.setHours(hour, 59, 0, 0)
-        if (at <= now) continue      // 과거 시각은 스킵
+        if (at <= now) continue
 
         toSchedule.push({
-          id:        (day * 100 + hour) + 1,   // id > 0 필수
+          id:        (day * 100 + hour) + 1,
           title:     '⏱️ 오구!',
           body:      `${hour}시 59분 — 지금 뭐 하고 있나요?`,
           channelId: 'ogu-alarm',
           schedule:  { at, allowWhileIdle: true },
-          extra:     { hour },
+          extra:     { hour, scheduledAt: at.toISOString() },
         })
       }
     }
@@ -99,20 +133,18 @@ export async function cancelOguAlarms() {
     if (pending.length > 0) {
       await LocalNotifications.cancel({ notifications: pending })
     }
+    await clearDeliveredOguNotifs()
   } catch (e) {
     console.warn('[Capacitor] 알람 취소 실패:', e)
   }
 }
 
 // ── 커스텀 알람 스케줄 등록 ───────────────────────────────────
-// customAlarms: [{ _numId, hour, minute, repeatType, isEnabled, title, message, icon }]
-// ID 범위: 1000 + (_numId * 7 + day) — 오구 알람(1~700)과 충돌 없음
 export async function scheduleCustomAlarms(customAlarms = []) {
   if (!IS_NATIVE) return
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
 
-    // 기존 커스텀 알람(ID 1000+) 취소
     const { notifications: pending } = await LocalNotifications.getPending()
     const customPending = pending.filter(n => n.id >= 1000)
     if (customPending.length > 0) {
@@ -130,7 +162,7 @@ export async function scheduleCustomAlarms(customAlarms = []) {
         const at = new Date(now)
         at.setDate(at.getDate() + day)
         at.setHours(alarm.hour, alarm.minute, 0, 0)
-        if (at <= now) continue   // 과거 스킵
+        if (at <= now) continue
 
         toSchedule.push({
           id:        1000 + alarm._numId * 7 + day,

@@ -6,6 +6,7 @@ import {
   createOguChannel,
   requestLocalNotifPermission,
   scheduleOguAlarms,
+  clearDeliveredOguNotifs,
 } from '../lib/capacitor'
 
 // 진동 세기별 패턴
@@ -81,11 +82,13 @@ useEffect(() => {
 
   scheduleNext59()
 
-  // 탭 복귀 시 재예약 (중요!)
+  // 탭/앱 복귀 시 재예약 + 쌓인 알림 정리
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
       if (timeoutId) clearTimeout(timeoutId)
       scheduleNext59()
+      // 백그라운드에서 쌓인 오구 알림 셰이드에서 제거 (pile-up 방지)
+      if (IS_NATIVE) clearDeliveredOguNotifs()
     }
   }
   document.addEventListener('visibilitychange', handleVisibilityChange)

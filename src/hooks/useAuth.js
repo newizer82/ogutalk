@@ -31,9 +31,12 @@ export function useAuth() {
   }
 
   async function signInWithKakao() {
+    const redirectTo = IS_NATIVE
+      ? 'com.ogutalk.app://login-callback'
+      : window.location.origin + '/auth/callback'
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo: window.location.origin + '/auth/callback' },
+      options: { redirectTo },
     })
     if (error) throw error
     return data

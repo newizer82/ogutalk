@@ -1,5 +1,5 @@
 package com.ogutalk.app;
 
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {}
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import androi
