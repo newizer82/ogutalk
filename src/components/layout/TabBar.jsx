@@ -1,17 +1,18 @@
 const TABS = [
-  { id: 'home',     icon: '🏠', label: '홈',    pro: false },
+  { id: 'home',     icon: '⏱️', label: '홈',    pro: false },
   { id: 'todos',    icon: '✅', label: '할일',   pro: false },
+  { id: 'alarms',   icon: '🔔', label: '알람',   pro: false },
   { id: 'reports',  icon: '📊', label: '리포트', pro: false },
   { id: 'settings', icon: '⚙️', label: '설정',  pro: false },
 ]
 
-export default function TabBar({ active, onChange, isPremium }) {
+export default function TabBar({ active, onChange, isPremium, bottomOffset = 0 }) {
   return (
     <nav style={{
-      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      position: 'fixed', bottom: bottomOffset, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 420,
       display: 'flex', justifyContent: 'space-around',
-      padding: '8px 8px 16px',
+      padding: '8px 4px 16px',
       background: 'rgba(8,15,30,0.92)',
       backdropFilter: 'blur(16px)',
       borderTop: '1px solid rgba(255,255,255,0.06)',
@@ -26,16 +27,16 @@ export default function TabBar({ active, onChange, isPremium }) {
             onClick={() => onChange(tab.id)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              padding: '6px 10px', border: 'none', borderRadius: 12,
+              padding: '6px 8px', border: 'none', borderRadius: 12,
               background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
               color: isActive ? '#818cf8' : '#475569',
-              cursor: 'pointer', position: 'relative', minWidth: 48,
+              cursor: 'pointer', position: 'relative', minWidth: 44,
             }}
           >
-            <span style={{ fontSize: 18 }}>{tab.icon}</span>
+            <span style={{ fontSize: 17 }}>{tab.icon}</span>
             <span style={{ fontSize: 9, marginTop: 1 }}>{tab.label}</span>
             {locked && (
-              <span style={{ position: 'absolute', top: 4, right: 8, fontSize: 8 }}>🔒</span>
+              <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 8 }}>🔒</span>
             )}
           </button>
         )

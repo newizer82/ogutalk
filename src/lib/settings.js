@@ -15,12 +15,13 @@ function buildDefaultAlarmHours() {
 }
 
 export const DEFAULT_SETTINGS = {
-  oguTone:     '오구',
-  oguRepeat:   2,
-  alarmMode:   'both',     // 'sound' | 'vibrate' | 'both'
-  volume:      0.8,        // 0.0 ~ 1.0
-  vibStrength: 'medium',   // 'weak' | 'medium' | 'strong'
-  alarmHours:  buildDefaultAlarmHours(),
+  oguTone:       '오구',
+  oguAlarmTone:  '딩동',   // ALARM_TONES 중 하나 — 실제 알람 시 재생 음
+  oguRepeat:     2,
+  alarmMode:     'both',   // 'sound' | 'vibrate' | 'both'
+  volume:        0.8,      // 0.0 ~ 1.0
+  vibStrength:   'medium', // 'weak' | 'medium' | 'strong'
+  alarmHours:    buildDefaultAlarmHours(),
 }
 
 // ── 마이그레이션: 옛 6개 키 → 새 통합 키 ───────────────────────
@@ -37,6 +38,9 @@ function migrateOldKeys() {
       }
     } catch { /* 손상된 값은 기본값 유지 */ }
   }
+
+  // alarmMode는 항상 'both' 고정 (UI 제거됨)
+  merged.alarmMode = 'both'
 
   if (foundOld) {
     // 새 키에 저장
@@ -57,7 +61,13 @@ export function loadSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (raw) {
       const saved = JSON.parse(raw)
-      return { ...DEFAULT_SETTINGS, ...saved }
+      const merged = { ...DEFAULT_SETTINGS, ...saved }
+      // 삭제된 톤('화남')이 남아있으면 기본값으로 교정
+      const validTones = ['오구', '여유', '바쁨', '유쾌']
+      if (!validTones.includes(merged.oguTone)) merged.oguTone = DEFAULT_SETTINGS.oguTone
+      // alarmMode는 항상 'both' 고정 (UI 제거됨)
+      merged.alarmMode = 'both'
+      return merged
     }
   } catch { /* 손상된 새 키는 무시 → 마이그레이션으로 fallback */ }
 

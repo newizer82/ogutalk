@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // 자동 등록 비활성화 — main.jsx 에서 환경별로 직접 처리
+      // (네이티브 Capacitor 에선 SW 미등록, 웹에선 등록)
+      injectRegister: false,
 
       // injectManifest: 커스텀 SW에 Workbox 캐시 목록 자동 주입
       strategies: 'injectManifest',

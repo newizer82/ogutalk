@@ -3,7 +3,10 @@ import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
 import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
+import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { loadSettings, saveSettings } from './lib/settings'
+import { IS_NATIVE } from './lib/capacitor'
+import { initAdMob, showBanner, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -11,6 +14,7 @@ import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
 import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
+import AlarmsPage from './pages/AlarmsPage'
 import { gradients, S } from './styles/theme'
 
 // ── 로그인 모달 (바텀시트)
@@ -130,7 +134,7 @@ export default function App() {
 
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
-  const { oguTone, oguRepeat, alarmMode, volume, vibStrength, alarmHours } = settings
+  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, volume, vibStrength, alarmHours } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -142,8 +146,9 @@ export default function App() {
   }
 
   // 개별 setter (SettingsPage 호환을 위해 그대로 유지)
-  const setOguTone     = v => updateSetting('oguTone', v)
-  const setOguRepeat   = v => updateSetting('oguRepeat', v)
+  const setOguTone      = v => updateSetting('oguTone', v)
+  const setOguAlarmTone = v => updateSetting('oguAlarmTone', v)
+  const setOguRepeat    = v => updateSetting('oguRepeat', v)
   const setAlarmMode   = v => updateSetting('alarmMode', v)
   const setVolume      = v => updateSetting('volume', v)
   const setVibStrength = v => updateSetting('vibStrength', v)
@@ -158,6 +163,9 @@ export default function App() {
   const userId = user?.id ?? null
   const { todos, addTodo, toggleTodo, deleteTodo } = useTodos(userId)
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
+
+  // 커스텀 알람 (앱 최상위에서 관리 — 로그인 시 Supabase 동기화)
+  const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms(userId)
 
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
@@ -199,6 +207,22 @@ export default function App() {
     return () => document.removeEventListener('touchstart', handler)
   }, [])
 
+  // AdMob 배너 표시 여부 (실제 로드 완료 후 true)
+  const [bannerVisible, setBannerVisible] = useState(false)
+
+  // AdMob 초기화 + 배너 표시 (네이티브 전용)
+  useEffect(() => {
+    if (!IS_NATIVE) return
+    initAdMob()
+      .then(() => showBanner(() => setBannerVisible(true)))
+      .catch(() => {})
+  }, [])
+
+  // 로그인 성공 시 모달 자동 닫기 (카카오 OAuth 딥링크 콜백 케이스)
+  useEffect(() => {
+    if (isLoggedIn && loginOpen) setLoginOpen(false)
+  }, [isLoggedIn, loginOpen])
+
   const handleLogin = useCallback((email) => {
     setLocalEmail(email)
   }, [])
@@ -221,6 +245,7 @@ export default function App() {
         isPremium={isPremium}
         onLoginOpen={() => setLoginOpen(true)}
         onSignOut={handleSignOut}
+        bannerHeight={bannerVisible ? BANNER_HEIGHT_PX : 0}
       >
         {activeTab === 'home' && (
           <HomePage
@@ -234,6 +259,7 @@ export default function App() {
             alarmHours={alarmHours}
             oguTone={oguTone}
             onTestAlarm={fireAlarm}
+            customAlarms={customAlarms}
           />
         )}
         {activeTab === 'todos' && (
@@ -264,6 +290,17 @@ export default function App() {
             setGoals={setLocalGoals}
             isPremium={isPremium}
             setIsPremium={setIsPremium}
+          />
+        )}
+        {activeTab === 'alarms' && (
+          <AlarmsPage
+            alarmMode={alarmMode}
+            vibStrength={vibStrength}
+            volume={volume}
+            customAlarms={customAlarms}
+            onAddAlarm={addAlarm}
+            onToggleAlarm={toggleAlarm}
+            onDeleteAlarm={deleteAlarm}
           />
         )}
         {activeTab === 'reports' && (
@@ -306,7 +343,7 @@ export default function App() {
           alarmContent={alarmContent}
           pendingCount={activeTodosForAlarm}
           oguTone={oguTone}
-          onClose={closeAlarmPopup}
+          onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
           onCheckin={saveCheckin}
         />
       )}

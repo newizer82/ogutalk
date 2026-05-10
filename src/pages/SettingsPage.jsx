@@ -1,21 +1,8 @@
-import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
 import { IS_NATIVE } from '../lib/capacitor'
-import { useCustomAlarms } from '../hooks/useCustomAlarms'
-
-// 프리셋 알람 템플릿
-const PRESETS = [
-  { icon: '📈', title: '경제 뉴스 브리핑',  message: '오늘의 경제 뉴스를 확인하세요!', hour: 8,  minute: 0  },
-  { icon: '🧘', title: '온몸 스트레칭',      message: '10분 스트레칭으로 몸을 깨워요!', hour: 10, minute: 0  },
-  { icon: '🍱', title: '점심 시간',          message: '맛있는 점심 드세요!',             hour: 12, minute: 0  },
-  { icon: '☕', title: '오후 집중 리셋',      message: '잠깐 쉬고 다시 시작해요!',       hour: 15, minute: 0  },
-  { icon: '📝', title: '하루 마무리 정리',   message: '오늘 하루를 되돌아봐요.',         hour: 22, minute: 0  },
-]
-
-const ICON_OPTIONS = ['🔔','📈','🧘','🍱','☕','📝','💊','💧','🏃','📖','🎯','💡','🌙','⚡','🎵']
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -48,60 +35,16 @@ export default function SettingsPage({
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,
   alarmHours = {}, setAlarmHours,
-  onTestAlarm,
   onLoginOpen, onSignOut,
   playSound,
   userId = null,
 }) {
-  // 커스텀 알람
-  const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms()
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [formIcon,    setFormIcon]    = useState('🔔')
-  const [formTitle,   setFormTitle]   = useState('')
-  const [formHour,    setFormHour]    = useState('08')
-  const [formMinute,  setFormMinute]  = useState('00')
-  const [formMessage, setFormMessage] = useState('')
-  const [showIconPicker, setShowIconPicker] = useState(false)
-
-  const resetForm = () => {
-    setFormIcon('🔔'); setFormTitle(''); setFormHour('08')
-    setFormMinute('00'); setFormMessage(''); setShowIconPicker(false)
-  }
-
-  const handleAddPreset = (preset) => {
-    addAlarm({ ...preset, repeatType: 'daily' })
-  }
-
-  const handleAddCustom = () => {
-    if (!formTitle.trim()) return
-    addAlarm({
-      icon: formIcon,
-      title: formTitle.trim(),
-      message: formMessage.trim(),
-      hour: Number(formHour),
-      minute: Number(formMinute),
-      repeatType: 'daily',
-    })
-    resetForm()
-    setShowAddForm(false)
-  }
-
   const fireSignal = (tone, repeat) => {
     if (alarmMode !== 'vibrate') playSound(tone, repeat, volume)
     if (alarmMode !== 'sound' && navigator.vibrate) {
       const pats = { weak: [80,60,80], medium: [250,120,250], strong: [400,150,400,150,600] }
       navigator.vibrate(pats[vibStrength] || pats.medium)
     }
-  }
-
-  // 백업 내보내기 (알람 설정만)
-  const exportBackup = () => {
-    const data = JSON.stringify({ version: 5, exportedAt: new Date().toISOString(), alarmHours, oguTone, oguRepeat, alarmMode }, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a'); a.href = url
-    const d    = new Date(); a.download = `ogutalk-backup-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`
-    a.click(); URL.revokeObjectURL(url)
   }
 
   return (
@@ -135,87 +78,59 @@ export default function SettingsPage({
 
       {/* 프리미엄 배너 — 추후 활성화 예정 */}
 
-      {/* ── 알람 출력 방식 ── */}
-      <SettingSection title="🔔 알람 출력 방식">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-          {[
-            { id: 'sound',   emoji: '🔊', label: '알람음만',  desc: '소리로만' },
-            { id: 'vibrate', emoji: '📳', label: '진동만',    desc: '무음 진동' },
-            { id: 'both',    emoji: '🔔', label: '소리+진동', desc: '모두 사용' },
-          ].map(m => (
-            <button key={m.id} onClick={() => setAlarmMode(m.id)} style={{
-              padding: '10px 4px', borderRadius: 14, textAlign: 'center', cursor: 'pointer',
-              border: `1px solid ${alarmMode === m.id ? '#818cf8' : 'rgba(255,255,255,0.08)'}`,
-              background: alarmMode === m.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-              color: alarmMode === m.id ? '#818cf8' : '#94a3b8',
-            }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{m.emoji}</div>
-              <div style={{ fontSize: 11, fontWeight: 700 }}>{m.label}</div>
-              <div style={{ fontSize: 9, opacity: 0.55, marginTop: 2 }}>{m.desc}</div>
-            </button>
+      {/* ── 오구톡 알람 시간 ── */}
+      <SettingSection title="⏱️ 오구톡 알람 시간 (매 정각 1분 전)">
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+          선택한 시간 직전(×시 59분)에 알람이 울립니다.<br />
+          <span style={{ color: '#475569' }}>예: 7 선택 → 6:59에 "곧 7시!" 알림</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 5, marginBottom: 10 }}>
+          {Array.from({ length: 24 }, (_, i) => i).map(h => (
+            <button key={h}
+              onClick={() => setAlarmHours({ ...alarmHours, [h]: !alarmHours[h] })}
+              style={{
+                padding: '7px 2px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                border: `1px solid ${alarmHours[h] ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
+                background: alarmHours[h] ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
+                color: alarmHours[h] ? '#818cf8' : '#64748b',
+              }}
+            >{pad(h)}</button>
           ))}
         </div>
-        <SettingRow label="알람 소리" icon="🔊">
-          <Toggle on={alarmMode !== 'vibrate'} onToggle={() => setAlarmMode(alarmMode === 'vibrate' ? 'both' : 'vibrate')} />
-        </SettingRow>
-        <SettingRow label="진동" icon="📳">
-          <Toggle on={alarmMode !== 'sound'} onToggle={() => setAlarmMode(alarmMode === 'sound' ? 'both' : 'sound')} />
-        </SettingRow>
-
-        {/* 볼륨 슬라이더 */}
-        {alarmMode !== 'vibrate' && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ color: '#e2e8f0', fontSize: 13 }}>🔊 소리 크기</span>
-              <span style={{ color: '#818cf8', fontSize: 13, fontWeight: 700 }}>{Math.round(volume * 100)}%</span>
-            </div>
-            <input
-              type="range" min="0" max="1" step="0.05"
-              value={volume}
-              onChange={e => setVolume(parseFloat(e.target.value))}
-              onMouseUp={() => playSound(oguTone, 1, volume)}
-              onTouchEnd={() => playSound(oguTone, 1, volume)}
-              style={{ width: '100%', accentColor: '#6366f1', height: 4, cursor: 'pointer' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: 10, marginTop: 4 }}>
-              <span>🔇 작게</span><span>🔊 크게</span>
-            </div>
-          </div>
-        )}
-
-        {/* 진동 세기 */}
-        {alarmMode !== 'sound' && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ color: '#e2e8f0', fontSize: 13, marginBottom: 8 }}>📳 진동 세기</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              {[
-                { id: 'weak',   label: '약하게', desc: '짧고 부드럽게' },
-                { id: 'medium', label: '보통',   desc: '기본 진동' },
-                { id: 'strong', label: '강하게', desc: '길고 강하게' },
-              ].map(v => (
-                <button key={v.id} onClick={() => {
-                  setVibStrength(v.id)
-                  if (navigator.vibrate) {
-                    const pats = { weak: [80,60,80], medium: [250,120,250], strong: [400,150,400,150,600] }
-                    navigator.vibrate(pats[v.id])
-                  }
-                }} style={{
-                  padding: '10px 4px', borderRadius: 12, textAlign: 'center', cursor: 'pointer',
-                  border: `1px solid ${vibStrength === v.id ? '#818cf8' : 'rgba(255,255,255,0.08)'}`,
-                  background: vibStrength === v.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-                  color: vibStrength === v.id ? '#818cf8' : '#94a3b8',
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 700 }}>{v.label}</div>
-                  <div style={{ fontSize: 9, opacity: 0.6, marginTop: 2 }}>{v.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i=7;i<=22;i++) h[i]=true; setAlarmHours(h) }}>주간</button>
+          <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i=0;i<24;i++) h[i]=true; setAlarmHours(h) }}>전체</button>
+          <button style={S.ghostBtn} onClick={() => setAlarmHours({})}>초기화</button>
+          <span style={{ color: '#64748b', fontSize: 11, alignSelf: 'center', marginLeft: 4 }}>
+            {Object.values(alarmHours).filter(Boolean).length}개 활성
+          </span>
+        </div>
       </SettingSection>
 
-      {/* ── 오구 사운드 톤 ── */}
-      <SettingSection title="🎵 오구 사운드 톤">
+      {/* ── 모바일 알람 사운드 톤 ── */}
+      {IS_NATIVE && (
+        <SettingSection title="📱 모바일 알람 사운드 톤">
+          <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+            앱(Android) 백그라운드 알람 시 재생되는 mp3 사운드입니다. 카드를 눌러 미리 들어보세요.
+          </div>
+          <button
+            onClick={() => { const a = new Audio('/sounds/ogu.mp3'); a.play().catch(() => {}) }}
+            style={{
+              padding: '14px 12px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+              border: '2px solid rgba(192,132,252,0.5)',
+              background: 'rgba(192,132,252,0.12)',
+              color: '#c084fc', width: '100%',
+            }}
+          >
+            <div style={{ fontSize: 24, marginBottom: 4 }}>📳</div>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>오구 오구~~</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>▶ 눌러서 앱 알람음 재생</div>
+          </button>
+        </SettingSection>
+      )}
+
+      {/* ── 웹용 오구 사운드 톤 ── */}
+      <SettingSection title="🎵 웹용 오구 사운드 톤">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
           {Object.entries(OGU_TONES).map(([key, t]) => (
             <button key={key} onClick={() => { setOguTone(key); fireSignal(key, oguRepeat) }} style={{
@@ -231,14 +146,14 @@ export default function SettingsPage({
           ))}
         </div>
         <SettingRow label="오구 반복 횟수" icon="🔁">
-          <div style={{ display: 'flex', gap: 6 }}>
-            {[1, 2, 3].map(n => (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map(n => (
               <button key={n} onClick={() => { setOguRepeat(n); fireSignal(oguTone, n) }} style={{
-                width: 36, height: 36, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                width: 32, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
                 border: `1px solid ${oguRepeat === n ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
                 background: oguRepeat === n ? 'rgba(99,102,241,0.25)' : 'transparent',
                 color: oguRepeat === n ? '#818cf8' : '#64748b',
-              }}>{n}회</button>
+              }}>{n}</button>
             ))}
           </div>
         </SettingRow>
@@ -247,10 +162,10 @@ export default function SettingsPage({
       {/* ── 백그라운드 알람 안내 ── */}
       <SettingSection title="📱 백그라운드 알람">
         <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.7 }}>
-          앱을 닫아도 아래 설정한 시간의 59분에 알람이 울립니다.<br />
+          앱을 닫아도 설정한 시간의 59분에 알람이 울립니다.<br />
           기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
         </div>
-        <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 10,
+        <div style={{ marginTop: 10, marginBottom: 12, padding: '8px 12px', borderRadius: 10,
           background: IS_NATIVE ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.08)',
           border: `1px solid ${IS_NATIVE ? 'rgba(52,211,153,0.2)' : 'rgba(99,102,241,0.2)'}`,
         }}>
@@ -258,199 +173,7 @@ export default function SettingsPage({
             {IS_NATIVE ? '🟢 Capacitor 로컬 알림 활성' : '🌐 브라우저 알림 모드 (앱 설치 시 백그라운드 알림 지원)'}
           </span>
         </div>
-      </SettingSection>
 
-      {/* ── 알람 시간 설정 ── */}
-      <SettingSection title="⏰ 알람 시간 설정">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12 }}>선택한 시간의 59분에 알람이 울립니다</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
-          {Array.from({ length: 24 }, (_, i) => i).map(h => (
-            <button key={h} onClick={() => setAlarmHours({ ...alarmHours, [h]: !alarmHours[h] })} style={{
-              padding: '7px 2px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-              border: `1px solid ${alarmHours[h] ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
-              background: alarmHours[h] ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-              color: alarmHours[h] ? '#818cf8' : '#64748b',
-            }}>{pad(h)}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-          <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i = 7; i <= 22; i++) h[i] = true; setAlarmHours(h) }}>주간</button>
-          <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i = 0; i < 24; i++) h[i] = true; setAlarmHours(h) }}>전체</button>
-          <button style={S.ghostBtn} onClick={() => setAlarmHours({})}>초기화</button>
-        </div>
-      </SettingSection>
-
-      {/* ── 커스텀 알람 ── */}
-      <SettingSection title="➕ 커스텀 알람 설정">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
-          원하는 시간에 알람을 추가하세요. 매일 반복됩니다.
-        </div>
-
-        {/* 프리셋 버튼 */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>⚡ 빠른 추가</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {PRESETS.map((p, i) => {
-              const already = customAlarms.some(a => a.title === p.title)
-              return (
-                <button key={i}
-                  disabled={already}
-                  onClick={() => handleAddPreset(p)}
-                  style={{
-                    padding: '6px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600,
-                    cursor: already ? 'default' : 'pointer',
-                    border: `1px solid ${already ? 'rgba(52,211,153,0.3)' : 'rgba(99,102,241,0.3)'}`,
-                    background: already ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.1)',
-                    color: already ? '#34d399' : '#818cf8',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                  }}>
-                  {p.icon} {p.title.length > 8 ? p.title.slice(0, 8) + '…' : p.title}
-                  {already && ' ✓'}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 등록된 커스텀 알람 목록 */}
-        {customAlarms.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📋 등록된 알람 ({customAlarms.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {customAlarms.map(alarm => (
-                <div key={alarm.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 12px', borderRadius: 12,
-                  background: alarm.isEnabled ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${alarm.isEnabled ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                }}>
-                  <span style={{ fontSize: 18 }}>{alarm.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: alarm.isEnabled ? '#e2e8f0' : '#64748b', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {alarm.title}
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: 10, marginTop: 1 }}>
-                      {pad(alarm.hour)}:{pad(alarm.minute)} · 매일
-                    </div>
-                  </div>
-                  <Toggle on={alarm.isEnabled} onToggle={() => toggleAlarm(alarm.id)} />
-                  <button onClick={() => deleteAlarm(alarm.id)} style={{
-                    width: 28, height: 28, borderRadius: 8, border: 'none',
-                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                    fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>✕</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 직접 추가 폼 */}
-        {!showAddForm ? (
-          <button onClick={() => setShowAddForm(true)} style={{
-            width: '100%', padding: '11px', borderRadius: 12,
-            border: '1px dashed rgba(99,102,241,0.35)', background: 'transparent',
-            color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>+ 직접 추가하기</button>
-        ) : (
-          <div style={{ padding: 14, borderRadius: 14, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>🔔 새 알람 추가</div>
-
-            {/* 아이콘 선택 */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>아이콘</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button onClick={() => setShowIconPicker(!showIconPicker)} style={{
-                  width: 42, height: 42, borderRadius: 10, border: '1px solid rgba(99,102,241,0.3)',
-                  background: 'rgba(99,102,241,0.1)', fontSize: 22, cursor: 'pointer',
-                }}>{formIcon}</button>
-                {showIconPicker && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {ICON_OPTIONS.map(ic => (
-                      <button key={ic} onClick={() => { setFormIcon(ic); setShowIconPicker(false) }} style={{
-                        width: 32, height: 32, borderRadius: 8, border: `1px solid ${formIcon === ic ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
-                        background: formIcon === ic ? 'rgba(99,102,241,0.2)' : 'transparent',
-                        fontSize: 16, cursor: 'pointer',
-                      }}>{ic}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 제목 */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알람 제목 *</div>
-              <input
-                type="text" placeholder="예: 물 마시기" maxLength={20}
-                value={formTitle} onChange={e => setFormTitle(e.target.value)}
-                style={{ ...S.input, marginTop: 0 }}
-              />
-            </div>
-
-            {/* 시간 */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>시간</div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <select value={formHour} onChange={e => setFormHour(e.target.value)} style={{
-                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
-                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
-                }}>
-                  {Array.from({ length: 24 }, (_, i) => (
-                    <option key={i} value={String(i).padStart(2,'0')}>{pad(i)}시</option>
-                  ))}
-                </select>
-                <select value={formMinute} onChange={e => setFormMinute(e.target.value)} style={{
-                  flex: 1, padding: '10px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
-                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
-                }}>
-                  {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => (
-                    <option key={m} value={m}>{m}분</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 메시지 (선택) */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>메시지 (선택)</div>
-              <input
-                type="text" placeholder="알람 메시지를 입력하세요" maxLength={40}
-                value={formMessage} onChange={e => setFormMessage(e.target.value)}
-                style={{ ...S.input, marginTop: 0 }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setShowAddForm(false); resetForm() }} style={{ ...S.ghostBtn, flex: 1 }}>취소</button>
-              <button
-                onClick={handleAddCustom}
-                disabled={!formTitle.trim()}
-                style={{ ...S.primaryBtn, flex: 1, opacity: formTitle.trim() ? 1 : 0.4 }}
-              >추가</button>
-            </div>
-          </div>
-        )}
-      </SettingSection>
-
-      {/* ── 알람 테스트 ── */}
-      <SettingSection title="🔔 알람 테스트">
-        <button style={S.primaryBtn} onClick={onTestAlarm}>오구 테스트 재생</button>
-        <div style={{ color: '#64748b', fontSize: 11, textAlign: 'center', marginTop: 8 }}>버튼을 누르면 알람 팝업이 즉시 실행됩니다</div>
-      </SettingSection>
-
-      {/* ── 데이터 백업 & 복원 ── */}
-      <SettingSection title="💾 설정 백업 & 복원">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 14, lineHeight: 1.6 }}>
-          알람 설정을 JSON 파일로 저장하고,<br />다른 기기에서 복원해 동일한 환경을 만들 수 있습니다.
-        </div>
-        <button style={{ ...S.primaryBtn, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={exportBackup}>
-          📤 백업 내보내기 (JSON 다운로드)
-        </button>
-        <label style={{ width: '100%', padding: '13px', borderRadius: 14, border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(99,102,241,0.08)', boxSizing: 'border-box' }}>
-          📥 백업 불러오기 (복원)
-          <input type="file" accept=".json" style={{ display: 'none' }} />
-        </label>
       </SettingSection>
 
       {isLoggedIn && (

@@ -29,26 +29,47 @@ function RingProgress({ value = 0, size = 72, stroke = 7, color = '#818cf8', bg 
   )
 }
 
-// ── 알람 활성 시간대 바 (24칸 히트맵)
-function AlarmTimeline({ alarmHours = {}, currentHour }) {
+// ── 단일 행 24칸 바
+function TimelineRow({ hours, currentHour, activeColor, activeHeight = 14, showCurrentHour = true, dimColor = 'rgba(255,255,255,0.05)' }) {
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 24 }}>
+    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: activeHeight + 4 }}>
       {Array.from({ length: 24 }, (_, h) => {
-        const active = alarmHours[h]
-        const isCur  = h === currentHour
+        const isActive = hours.has ? hours.has(h) : !!hours[h]
+        const isCur    = showCurrentHour && h === currentHour
         return (
           <div key={h} style={{
             flex: 1, borderRadius: 2,
-            height: isCur ? 24 : active ? 14 : 6,
+            height: isCur ? activeHeight + 4 : isActive ? activeHeight : 6,
             background: isCur
               ? 'linear-gradient(180deg,#818cf8,#6366f1)'
-              : active
-                ? 'rgba(99,102,241,0.45)'
-                : 'rgba(255,255,255,0.05)',
+              : isActive ? activeColor : dimColor,
             transition: 'height 0.3s ease',
           }} />
         )
       })}
+    </div>
+  )
+}
+
+// ── 오구 + 커스텀 2행 타임라인
+function AlarmTimeline({ alarmHours = {}, customAlarmHours = new Set(), currentHour }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {/* 1행: 오구 알람 (보라) — 현재 시각 하이라이트 포함 */}
+      <TimelineRow hours={alarmHours} currentHour={currentHour} activeColor="rgba(99,102,241,0.55)" activeHeight={14} showCurrentHour={true} />
+      {/* 2행: 커스텀 알람 (주황) — 현재 시각 하이라이트 없음 */}
+      <TimelineRow hours={customAlarmHours} currentHour={currentHour} activeColor="rgba(251,146,60,0.75)" activeHeight={14} showCurrentHour={false} />
+      {/* 하단 범례 */}
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(99,102,241,0.55)' }} />
+          <span style={{ color: '#6366f1', fontSize: 9, fontWeight: 700 }}>오구 알람</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(251,146,60,0.75)' }} />
+          <span style={{ color: '#fb923c', fontSize: 9, fontWeight: 700 }}>커스텀 알람</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -64,12 +85,33 @@ export default function HomePage({
   alarmHours = {},
   oguTone = '오구',
   onTestAlarm,
+  customAlarms = [],
 }) {
   const [now, setNow] = useState(new Date())
+  const [todayCheckins, setTodayCheckins] = useState([])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
+  }, [])
+
+  // 오늘 체크인 로컬 읽기 (마운트 + 포커스 복귀 시)
+  useEffect(() => {
+    const readCheckins = () => {
+      try {
+        const raw  = localStorage.getItem('ogu_local_checkins')
+        const list = raw ? JSON.parse(raw) : []
+        const todayStr = new Date().toISOString().slice(0, 10)
+        setTodayCheckins(list.filter(c => c.created_at?.slice(0, 10) === todayStr))
+      } catch {}
+    }
+    readCheckins()
+    window.addEventListener('focus',       readCheckins)
+    window.addEventListener('ogu:checkin', readCheckins)
+    return () => {
+      window.removeEventListener('focus',       readCheckins)
+      window.removeEventListener('ogu:checkin', readCheckins)
+    }
   }, [])
 
   const H = now.getHours(), M = now.getMinutes(), Sec = now.getSeconds()
@@ -108,8 +150,14 @@ export default function HomePage({
   // 명언
   const quoteObj = QUOTES[Math.floor(now.getTime() / 60000) % QUOTES.length]
 
-  // 우선순위 할일 (상위 3개)
-  const topTodos = pendingTodos.slice(0, 3)
+  // 커스텀 알람 — 활성화된 것만, 시간 순 정렬
+  const activeCustomAlarms = customAlarms
+    .filter(a => a.isEnabled)
+    .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
+
+  // 커스텀 알람이 설정된 시(hour) 집합 — 타임라인 주황 표시용
+  const customAlarmHours = new Set(activeCustomAlarms.map(a => a.hour))
+
 
   return (
     <div>
@@ -169,11 +217,37 @@ export default function HomePage({
             <span style={{ color: '#818cf8', fontSize: 9, fontWeight: 700 }}>현재 {HH}시</span>
             <span style={{ color: '#475569', fontSize: 9 }}>23시</span>
           </div>
-          <AlarmTimeline alarmHours={alarmHours} currentHour={H} />
-          <div style={{ color: '#334155', fontSize: 9, marginTop: 5, textAlign: 'center' }}>
+          <AlarmTimeline alarmHours={alarmHours} customAlarmHours={customAlarmHours} currentHour={H} />
+          <div style={{ color: '#334155', fontSize: 9, marginTop: 6, textAlign: 'center' }}>
             오늘 활성 알람 {totalActiveHours}시간대 · {alarmCount}회 울림
           </div>
         </div>
+
+        {/* 오늘 체크인 미니 요약 */}
+        {todayCheckins.length > 0 && (() => {
+          const EMOJI = { goal_work: '🎯', study: '📚', sns: '📱', rest: '😴' }
+          const counts = todayCheckins.reduce((acc, c) => {
+            acc[c.activity_type] = (acc[c.activity_type] || 0) + 1
+            return acc
+          }, {})
+          return (
+            <div style={{
+              marginTop: 10, paddingTop: 10,
+              borderTop: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ color: '#475569', fontSize: 9 }}>오늘 체크인</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {Object.entries(counts).map(([type, cnt]) => (
+                  <span key={type} style={{ fontSize: 10, color: '#64748b' }}>
+                    {EMOJI[type] || '?'}{cnt > 1 ? `×${cnt}` : ''}
+                  </span>
+                ))}
+                <span style={{ color: '#334155', fontSize: 9 }}>({todayCheckins.length}회)</span>
+              </div>
+            </div>
+          )
+        })()}
       </GlassCard>
 
       {/* ── 3. 오늘의 할일 인포그래픽 ── */}
@@ -225,11 +299,11 @@ export default function HomePage({
             🎉 모든 할일 완료!
           </div>
         ) : (
-          topTodos.map((t, i) => (
+          pendingTodos.map((t, i) => (
             <div key={t.id || i} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '9px 0',
-              borderBottom: i < topTodos.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              borderBottom: i < pendingTodos.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
             }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
@@ -245,13 +319,6 @@ export default function HomePage({
               )}
             </div>
           ))
-        )}
-
-        {pendingTodos.length > 3 && (
-          <div style={{ color: '#475569', fontSize: 11, textAlign: 'center', marginTop: 10, cursor: 'pointer' }}
-            onClick={() => onTabChange('todos')}>
-            + {pendingTodos.length - 3}개 더 보기
-          </div>
         )}
       </GlassCard>
 

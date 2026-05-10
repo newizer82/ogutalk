@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
-import { gradients, S } from '../../styles/theme'
+import { gradients } from '../../styles/theme'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -25,7 +25,7 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
     setSelected(activityId)
     setCheckedIn(true)
     if (onCheckin) onCheckin(activityId)
-    setTimeout(onClose, 1200)
+    setTimeout(onClose, 2000)
   }
 
   return (
@@ -70,28 +70,6 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
           {OGU_TONES[oguTone]?.emoji} 오구! 정각이 다가옵니다
         </div>
 
-        {alarmContent?.quote && (
-          <GlassCard style={{ marginBottom: 10, textAlign: 'left' }}>
-            <div style={{ color: '#818cf8', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>💬 오늘의 명언</div>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14, lineHeight: 1.4 }}>
-              "{alarmContent.quote.text}"
-            </div>
-            <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>— {alarmContent.quote.author}</div>
-          </GlassCard>
-        )}
-
-        {alarmContent?.tip && (
-          <GlassCard style={{ marginBottom: 10, textAlign: 'left' }}>
-            <div style={{ color: '#f59e0b', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>
-              📈 {alarmContent.tip.category}
-            </div>
-            <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{alarmContent.tip.title}</div>
-            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
-              {alarmContent.tip.content}
-            </div>
-          </GlassCard>
-        )}
-
         {pendingCount > 0 && (
           <GlassCard style={{
             marginBottom: 10, textAlign: 'left',
@@ -103,40 +81,37 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
           </GlassCard>
         )}
 
-        <GlassCard style={{
-          marginBottom: 14, textAlign: 'left',
-          background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.15)',
-        }}>
-          <div style={{ color: '#fbbf24', fontSize: 12 }}>
-            💡 잠깐 스트레칭하고 눈도 쉬어주세요!
-          </div>
-        </GlassCard>
-
         {/* ── 체크인 섹션 ── */}
         <div style={{
           marginBottom: 20,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 16, padding: '14px 12px',
+          background: 'rgba(99,102,241,0.08)',
+          border: '1px solid rgba(99,102,241,0.35)',
+          borderRadius: 20, padding: '18px 14px',
+          boxShadow: '0 0 24px rgba(99,102,241,0.12)',
         }}>
-          <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 10, textAlign: 'left' }}>
+          <div style={{
+            fontSize: 15, fontWeight: 800, color: '#e2e8f0',
+            marginBottom: 4, textAlign: 'center',
+          }}>
             ⏱️ 이번 시간 뭐 하셨어요?
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ color: '#475569', fontSize: 11, marginBottom: 14, textAlign: 'center' }}>
+            선택하면 알람이 종료됩니다
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {ACTIVITIES.map(a => (
               <button
                 key={a.id}
                 onClick={() => handleCheckin(a.id)}
                 style={{
-                  padding: '10px 6px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 600, lineHeight: 1.3,
-                  background: selected === a.id
-                    ? `${a.color}33`
-                    : 'rgba(255,255,255,0.04)',
-                  color: selected === a.id ? a.color : '#94a3b8',
-                  outline: selected === a.id ? `1.5px solid ${a.color}` : '1.5px solid rgba(255,255,255,0.08)',
+                  padding: '14px 6px', borderRadius: 14, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, lineHeight: 1.3,
+                  background: selected === a.id ? `${a.color}33` : 'rgba(255,255,255,0.06)',
+                  color: selected === a.id ? a.color : '#cbd5e1',
+                  outline: selected === a.id ? `2px solid ${a.color}` : '1.5px solid rgba(255,255,255,0.1)',
                   transition: 'all 0.15s ease',
-                  transform: selected === a.id ? 'scale(1.04)' : 'scale(1)',
+                  transform: selected === a.id ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: selected === a.id ? `0 0 16px ${a.color}44` : 'none',
                 }}
               >
                 {a.label}
@@ -144,15 +119,11 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
             ))}
           </div>
           {checkedIn && (
-            <div style={{ marginTop: 10, color: '#34d399', fontSize: 12, fontWeight: 700, textAlign: 'center' }}>
-              ✓ 체크인 완료! 기록됐어요
+            <div style={{ marginTop: 12, color: '#34d399', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+              ✓ 기록됐어요! 잠시 후 닫힙니다
             </div>
           )}
         </div>
-
-        <button style={S.primaryBtn} onClick={onClose}>
-          {checkedIn ? '✓ 닫기' : '확인했어요! 👍'}
-        </button>
       </div>
     </div>
   )

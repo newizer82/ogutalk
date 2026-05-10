@@ -6,7 +6,11 @@ export default function Layout({
   children, activeTab, onTabChange,
   isLoggedIn, displayEmail, isPremium,
   onLoginOpen, onSignOut,
+  bannerHeight = 0,
 }) {
+  // 탭바 높이 ~74px + 배너 높이
+  const bottomPad = 90 + bannerHeight
+
   return (
     <div style={{
       maxWidth: 420, margin: '0 auto', minHeight: '100vh',
@@ -22,10 +26,15 @@ export default function Layout({
         onSignOut={onSignOut}
         onSettingsClick={() => onTabChange('settings')}
       />
-      <main style={{ padding: '16px 18px 90px' }}>
+      <main style={{ padding: `16px 18px ${bottomPad}px` }}>
         {children}
       </main>
-      <TabBar active={activeTab} onChange={onTabChange} isPremium={isPremium} />
+      <TabBar
+        active={activeTab}
+        onChange={onTabChange}
+        isPremium={isPremium}
+        bottomOffset={bannerHeight}
+      />
     </div>
   )
 }

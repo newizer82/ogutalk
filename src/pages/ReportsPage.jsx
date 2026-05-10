@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import { useWeeklyReport } from '../hooks/useWeeklyReport'
+import { useCheckinReport } from '../hooks/useCheckinReport'
 import { S, gradients } from '../styles/theme'
 
 const ACTIVITY_LABEL = {
@@ -17,8 +18,18 @@ const ACTIVITY_COLOR = {
   rest:      '#10b981',
 }
 
+const ACTIVITY_EMOJI = {
+  goal_work: '🎯',
+  study:     '📚',
+  sns:       '📱',
+  rest:      '😴',
+}
+
+const pad = n => String(n).padStart(2, '0')
+
 export default function ReportsPage({ userId }) {
   const { reports, loading, error, generateReport } = useWeeklyReport(userId)
+  const { checkins, todayCheckins, activityCount, hourCount, loading: checkinLoading } = useCheckinReport(userId)
   const [selectedIdx, setSelectedIdx] = useState(0)
 
   const report = reports[selectedIdx] ?? null
@@ -29,21 +40,29 @@ export default function ReportsPage({ userId }) {
     if (result) setSelectedIdx(0)
   }
 
-  // ── 비로그인 상태 ──
+  // ── 비로그인: 체크인 리포트만 표시 ──
   if (!userId) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <div style={{ fontSize: 52, marginBottom: 12 }}>📊</div>
-        <div style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700, marginBottom: 8 }}>주간 리포트</div>
-        <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
-          로그인하면 매주 나의 할일·활동 패턴을<br />자동으로 분석한 리포트를 받을 수 있어요.
-        </div>
+      <div>
+        <CheckinReport
+          checkins={checkins}
+          todayCheckins={todayCheckins}
+          activityCount={activityCount}
+          hourCount={hourCount}
+          loading={checkinLoading}
+        />
         <div style={{
-          padding: '14px 18px', borderRadius: 14,
-          background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-          color: '#818cf8', fontSize: 13,
+          marginTop: 8, padding: '14px 18px', borderRadius: 14, textAlign: 'center',
+          background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)',
         }}>
-          🔐 설정 탭에서 로그인해주세요
+          <div style={{ fontSize: 24, marginBottom: 8 }}>📊</div>
+          <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>주간 리포트</div>
+          <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}>
+            로그인하면 할일·활동 패턴을<br />자동 분석한 주간 리포트를 받을 수 있어요.
+          </div>
+          <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 700 }}>
+            🔐 설정 탭에서 로그인해주세요
+          </div>
         </div>
       </div>
     )
@@ -51,7 +70,16 @@ export default function ReportsPage({ userId }) {
 
   return (
     <div>
-      {/* ── 헤더 ── */}
+      {/* ── 오구 체크인 리포트 ── */}
+      <CheckinReport
+        checkins={checkins}
+        todayCheckins={todayCheckins}
+        activityCount={activityCount}
+        hourCount={hourCount}
+        loading={checkinLoading}
+      />
+
+      {/* ── 주간 리포트 헤더 ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>📊 주간 리포트</div>
@@ -245,6 +273,149 @@ function StatBox({ label, value, color }) {
     <GlassCard style={{ textAlign: 'center', padding: 14 }}>
       <div style={{ color: '#475569', fontSize: 10, marginBottom: 6 }}>{label}</div>
       <div style={{ color, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{value}</div>
+    </GlassCard>
+  )
+}
+
+// ── 오구 체크인 리포트 컴포넌트 ──────────────────────────────────
+function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, loading }) {
+  const total = checkins.length
+  const todayTotal = todayCheckins.length
+
+  // 활동별 비율 계산
+  const activities = Object.entries(ACTIVITY_LABEL).map(([key, label]) => ({
+    key, label,
+    count: activityCount[key] || 0,
+    color: ACTIVITY_COLOR[key],
+    emoji: ACTIVITY_EMOJI[key],
+  })).sort((a, b) => b.count - a.count)
+
+  // 최근 체크인 5건
+  const recent = checkins.slice(0, 5)
+
+  // 24시간 시간대 활동 맵
+  const maxHourCount = Math.max(...Object.values(hourCount), 1)
+
+  return (
+    <GlassCard style={{ marginBottom: 14, padding: 18 }}>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>⏱️ 오구 체크인 기록</div>
+          <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 30일)</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#818cf8', lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: 9, color: '#475569', marginTop: 2 }}>총 체크인</div>
+        </div>
+      </div>
+
+      {loading && (
+        <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, padding: '20px 0' }}>⏳ 불러오는 중...</div>
+      )}
+
+      {!loading && total === 0 && (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>⏱️</div>
+          <div style={{ color: '#475569', fontSize: 12 }}>
+            아직 체크인 기록이 없어요.<br />
+            알람이 울릴 때 활동을 선택해보세요!
+          </div>
+        </div>
+      )}
+
+      {!loading && total > 0 && (
+        <>
+          {/* 오늘 요약 */}
+          {todayTotal > 0 && (
+            <div style={{
+              marginBottom: 14, padding: '8px 12px', borderRadius: 10,
+              background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 18 }}>📅</span>
+              <div>
+                <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 700 }}>오늘 체크인 {todayTotal}회</div>
+                <div style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>
+                  {todayCheckins.map(c => ACTIVITY_EMOJI[c.activity_type] || '?').join('  ')}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 활동 분포 바 */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동별 분포</div>
+            {activities.map(a => {
+              const pct = total > 0 ? Math.round(a.count / total * 100) : 0
+              return (
+                <div key={a.key} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ color: '#cbd5e1', fontSize: 11 }}>{a.emoji} {a.label.replace(/^[^\s]+ /, '')}</span>
+                    <span style={{ color: '#64748b', fontSize: 10 }}>{a.count}회 ({pct}%)</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{
+                      width: `${pct}%`, height: '100%', borderRadius: 3,
+                      background: a.color,
+                      transition: 'width 0.6s ease',
+                    }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* 시간대별 히트맵 (6~23시) */}
+          {Object.keys(hourCount).length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>🕐 시간대별 알람 활동</div>
+              <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 28 }}>
+                {Array.from({ length: 24 }, (_, h) => {
+                  const cnt = hourCount[h] || 0
+                  const heightPct = cnt > 0 ? Math.max(0.25, cnt / maxHourCount) : 0
+                  return (
+                    <div key={h} title={`${pad(h)}시 ${cnt}회`} style={{
+                      flex: 1, borderRadius: 2,
+                      height: cnt > 0 ? `${Math.round(heightPct * 24)}px` : '4px',
+                      background: cnt > 0
+                        ? `rgba(129,140,248,${0.3 + heightPct * 0.7})`
+                        : 'rgba(255,255,255,0.04)',
+                      transition: 'height 0.3s ease',
+                    }} />
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155', fontSize: 8, marginTop: 3 }}>
+                <span>00시</span><span>12시</span><span>23시</span>
+              </div>
+            </div>
+          )}
+
+          {/* 최근 체크인 목록 */}
+          <div>
+            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>🕘 최근 기록</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {recent.map((c, i) => {
+                const dt = new Date(c.created_at)
+                const dateStr = `${dt.getMonth()+1}/${dt.getDate()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`
+                const label = ACTIVITY_LABEL[c.activity_type] || c.activity_type
+                const color = ACTIVITY_COLOR[c.activity_type] || '#64748b'
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '6px 8px', borderRadius: 8,
+                    background: 'rgba(255,255,255,0.03)',
+                  }}>
+                    <span style={{ color, fontSize: 12, fontWeight: 600 }}>{label}</span>
+                    <span style={{ color: '#475569', fontSize: 10 }}>{dateStr}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </GlassCard>
   )
 }
