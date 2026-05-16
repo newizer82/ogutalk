@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 // 최근 30일 notification_log 를 가져와서 집계
@@ -6,7 +6,8 @@ export function useCheckinReport(userId) {
   const [checkins, setCheckins] = useState([])
   const [loading,  setLoading]  = useState(false)
 
-  useEffect(() => {
+  // 데이터 로드를 별도 함수로 추출 (이벤트 리스너에서도 재호출 가능)
+  const reload = useCallback(() => {
     if (userId) {
       // 로그인: Supabase에서 최근 30일 가져오기
       setLoading(true)
@@ -33,6 +34,24 @@ export function useCheckinReport(userId) {
       }
     }
   }, [userId])
+
+  // 마운트 + userId 변경 시 로드
+  useEffect(() => { reload() }, [reload])
+
+  // 새 체크인 발생 시 실시간 갱신 (saveCheckin에서 CustomEvent 발사)
+  // - detail이 있으면 state에 직접 append (즉시 반영, Supabase 비동기 race 회피)
+  // - 없으면 fallback으로 reload()
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail) {
+        setCheckins(prev => [e.detail, ...prev])
+      } else {
+        reload()
+      }
+    }
+    window.addEventListener('ogu:checkin', handler)
+    return () => window.removeEventListener('ogu:checkin', handler)
+  }, [reload])
 
   // ── 집계 ──
   const now = new Date()

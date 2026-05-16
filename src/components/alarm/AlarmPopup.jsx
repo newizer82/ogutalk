@@ -25,7 +25,8 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
     setSelected(activityId)
     setCheckedIn(true)
     if (onCheckin) onCheckin(activityId)
-    setTimeout(onClose, 2000)
+    // 선택 즉시 닫기 (피드백을 위한 짧은 200ms만 유지)
+    setTimeout(onClose, 200)
   }
 
   return (
@@ -90,13 +91,16 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
           boxShadow: '0 0 24px rgba(99,102,241,0.12)',
         }}>
           <div style={{
-            fontSize: 15, fontWeight: 800, color: '#e2e8f0',
-            marginBottom: 4, textAlign: 'center',
+            fontSize: 19, fontWeight: 900, color: '#f1f5f9',
+            marginBottom: 6, textAlign: 'center', letterSpacing: '-0.5px',
           }}>
             ⏱️ 이번 시간 뭐 하셨어요?
           </div>
-          <div style={{ color: '#475569', fontSize: 11, marginBottom: 14, textAlign: 'center' }}>
-            선택하면 알람이 종료됩니다
+          <div style={{
+            color: '#fb923c', fontSize: 13, fontWeight: 700,
+            marginBottom: 14, textAlign: 'center',
+          }}>
+            👇 선택해야 알람이 종료됩니다
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {ACTIVITIES.map(a => (
@@ -119,8 +123,8 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
             ))}
           </div>
           {checkedIn && (
-            <div style={{ marginTop: 12, color: '#34d399', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
-              ✓ 기록됐어요! 잠시 후 닫힙니다
+            <div style={{ marginTop: 10, color: '#34d399', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+              ✓ 기록 완료!
             </div>
           )}
         </div>

@@ -37,7 +37,7 @@ export async function showBanner(onLoaded) {
       adSize:    BannerAdSize.BANNER,       // 고정 320×50
       position:  BannerAdPosition.BOTTOM_CENTER,
       margin:    0,
-      isTesting: true,   // 테스트 광고 (실제 게시 전엔 true 유지)
+      isTesting: false,  // 실서비스 광고 (테스트 시 true로 변경)
     })
   } catch (e) {
     console.warn('[AdMob] 배너 표시 실패:', e)

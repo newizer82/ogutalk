@@ -6,7 +6,7 @@ import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { loadSettings, saveSettings } from './lib/settings'
 import { IS_NATIVE } from './lib/capacitor'
-import { initAdMob, showBanner, BANNER_HEIGHT_PX } from './lib/admob'
+import { initAdMob, showBanner, hideBanner, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -210,13 +210,22 @@ export default function App() {
   // AdMob 배너 표시 여부 (실제 로드 완료 후 true)
   const [bannerVisible, setBannerVisible] = useState(false)
 
-  // AdMob 초기화 + 배너 표시 (네이티브 전용)
+  // AdMob 초기화 (앱 시작 시 1회만)
   useEffect(() => {
     if (!IS_NATIVE) return
-    initAdMob()
-      .then(() => showBanner(() => setBannerVisible(true)))
-      .catch(() => {})
+    initAdMob().catch(() => {})
   }, [])
+
+  // AdMob 배너: 비프리미엄(비로그인)만 표시 / 프리미엄(로그인)이면 숨김
+  useEffect(() => {
+    if (!IS_NATIVE) return
+    if (isPremium) {
+      hideBanner().catch(() => {})
+      setBannerVisible(false)
+    } else {
+      showBanner(() => setBannerVisible(true)).catch(() => {})
+    }
+  }, [isPremium])
 
   // 로그인 성공 시 모달 자동 닫기 (카카오 OAuth 딥링크 콜백 케이스)
   useEffect(() => {

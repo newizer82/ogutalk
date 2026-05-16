@@ -2,7 +2,8 @@ import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
-import { IS_NATIVE } from '../lib/capacitor'
+import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm } from '../lib/capacitor'
+import { supabase } from '../lib/supabase'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -129,35 +130,25 @@ export default function SettingsPage({
         </SettingSection>
       )}
 
-      {/* ── 웹용 오구 사운드 톤 ── */}
-      <SettingSection title="🎵 웹용 오구 사운드 톤">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-          {Object.entries(OGU_TONES).map(([key, t]) => (
-            <button key={key} onClick={() => { setOguTone(key); fireSignal(key, oguRepeat) }} style={{
-              padding: '10px 12px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-              border: `1px solid ${oguTone === key ? t.color : 'rgba(255,255,255,0.08)'}`,
-              background: oguTone === key ? `${t.color}22` : 'rgba(255,255,255,0.03)',
-              color: oguTone === key ? t.color : '#94a3b8',
-            }}>
-              <div style={{ fontSize: 18, marginBottom: 2 }}>{t.emoji}</div>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{t.label}</div>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>{t.desc}</div>
-            </button>
-          ))}
-        </div>
-        <SettingRow label="오구 반복 횟수" icon="🔁">
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} onClick={() => { setOguRepeat(n); fireSignal(oguTone, n) }} style={{
-                width: 32, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                border: `1px solid ${oguRepeat === n ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
-                background: oguRepeat === n ? 'rgba(99,102,241,0.25)' : 'transparent',
-                color: oguRepeat === n ? '#818cf8' : '#64748b',
-              }}>{n}</button>
+      {/* ── 웹용 오구 사운드 톤 (웹에서만 표시 — 폰은 mp3 고정) ── */}
+      {!IS_NATIVE && (
+        <SettingSection title="🎵 웹용 오구 사운드 톤">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {Object.entries(OGU_TONES).map(([key, t]) => (
+              <button key={key} onClick={() => { setOguTone(key); fireSignal(key, 1) }} style={{
+                padding: '10px 12px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+                border: `1px solid ${oguTone === key ? t.color : 'rgba(255,255,255,0.08)'}`,
+                background: oguTone === key ? `${t.color}22` : 'rgba(255,255,255,0.03)',
+                color: oguTone === key ? t.color : '#94a3b8',
+              }}>
+                <div style={{ fontSize: 18, marginBottom: 2 }}>{t.emoji}</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{t.label}</div>
+                <div style={{ fontSize: 10, opacity: 0.7 }}>{t.desc}</div>
+              </button>
             ))}
           </div>
-        </SettingRow>
-      </SettingSection>
+        </SettingSection>
+      )}
 
       {/* ── 백그라운드 알람 안내 ── */}
       <SettingSection title="📱 백그라운드 알람">
@@ -165,6 +156,111 @@ export default function SettingsPage({
           앱을 닫아도 설정한 시간의 59분에 알람이 울립니다.<br />
           기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
         </div>
+        {IS_NATIVE && (
+          <>
+            <button
+              onClick={() => scheduleTestNotification()}
+              style={{
+                marginTop: 10, width: '100%', padding: '10px', borderRadius: 12,
+                border: '1px solid rgba(99,102,241,0.3)', cursor: 'pointer',
+                background: 'rgba(99,102,241,0.1)', color: '#818cf8',
+                fontSize: 12, fontWeight: 700,
+              }}
+            >
+              🧪 30초 뒤 테스트 알림 받기
+            </button>
+            <button
+              onClick={async () => {
+                const d = await diagnoseOguAlarm()
+                const enabledHours = Object.entries(alarmHours).filter(([_, v]) => v).map(([k]) => k).join(', ') || '(없음!)'
+                alert(
+                  `🔍 오구 알람 진단\n\n` +
+                  `알림 권한: ${d.permission}\n` +
+                  `활성 시간대: ${enabledHours}\n\n` +
+                  `대기중 오구 알람: ${d.totalOguPending}개\n` +
+                  `대기중 커스텀 알람: ${d.customCount}개\n\n` +
+                  `다음 3개 오구 알람:\n${(d.next3 || []).join('\n') || '(없음 — 등록 실패)'}\n\n` +
+                  (d.error ? `❌ 에러: ${d.error}` : '')
+                )
+              }}
+              style={{
+                marginTop: 8, width: '100%', padding: '10px', borderRadius: 12,
+                border: '1px solid rgba(251,146,60,0.3)', cursor: 'pointer',
+                background: 'rgba(251,146,60,0.1)', color: '#fb923c',
+                fontSize: 12, fontWeight: 700,
+              }}
+            >
+              🔍 오구 알람 진단 (대기중 알람 확인)
+            </button>
+            <button
+              onClick={async () => {
+                // 로컬 체크인 분석
+                let localCount = 0, localToday = 0, localRecent = []
+                try {
+                  const raw = localStorage.getItem('ogu_local_checkins')
+                  const list = raw ? JSON.parse(raw) : []
+                  localCount = list.length
+                  const todayStr = new Date().toISOString().slice(0, 10)
+                  localToday = list.filter(c => c.created_at?.slice(0, 10) === todayStr).length
+                  localRecent = list.slice(0, 3).map(c => {
+                    const dt = new Date(c.created_at)
+                    return `   ${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())} - ${c.activity_type}`
+                  })
+                } catch (e) {
+                  localRecent = [`   ❌ 로컬 읽기 실패: ${e.message}`]
+                }
+
+                // Supabase 분석
+                let supaResult = '(비로그인 — Supabase 미사용)'
+                let supaRecent = []
+                if (userId) {
+                  const since = new Date(); since.setDate(since.getDate() - 30)
+                  const { data, error } = await supabase
+                    .from('notification_log')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .gte('created_at', since.toISOString())
+                    .order('created_at', { ascending: false })
+                  if (error) {
+                    supaResult = `❌ Supabase 에러:\n   ${error.message}\n   코드: ${error.code || '?'}`
+                  } else {
+                    const todayStr = new Date().toISOString().slice(0, 10)
+                    const today = (data || []).filter(c => c.created_at?.slice(0, 10) === todayStr).length
+                    supaResult = `✓ Supabase 30일: ${data?.length || 0}개 (오늘 ${today}개)`
+                    supaRecent = (data || []).slice(0, 3).map(c => {
+                      const dt = new Date(c.created_at)
+                      return `   ${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())} - ${c.activity_type}`
+                    })
+                  }
+                }
+
+                alert(
+                  `💾 체크인 저장 진단\n\n` +
+                  `로그인: ${userId ? userId.slice(0,8) + '...' : '비로그인'}\n` +
+                  `현재시각: ${new Date().toLocaleString('ko-KR')}\n\n` +
+                  `📱 로컬(localStorage) 30일: ${localCount}개 (오늘 ${localToday}개)\n` +
+                  (localRecent.length ? `   최근 3개:\n${localRecent.join('\n')}\n` : '') +
+                  `\n☁️ ${supaResult}\n` +
+                  (supaRecent.length ? `   최근 3개:\n${supaRecent.join('\n')}\n` : '') +
+                  `\n💡 진단:\n` +
+                  (userId
+                    ? (localCount > 0 && supaRecent.length === 0
+                        ? '⚠️ 로컬엔 있는데 Supabase에 없음 → INSERT 실패\n   → SQL Editor에서 RLS 정책 확인 필요'
+                        : '리포트가 비어보이면 리포트 탭 다시 들어가보세요 (재로드)')
+                    : '비로그인은 로컬만 사용. 로컬에 있으면 리포트에 나와야 함.')
+                )
+              }}
+              style={{
+                marginTop: 8, width: '100%', padding: '10px', borderRadius: 12,
+                border: '1px solid rgba(52,211,153,0.3)', cursor: 'pointer',
+                background: 'rgba(52,211,153,0.1)', color: '#34d399',
+                fontSize: 12, fontWeight: 700,
+              }}
+            >
+              💾 체크인 저장 진단 (로컬/Supabase 비교)
+            </button>
+          </>
+        )}
         <div style={{ marginTop: 10, marginBottom: 12, padding: '8px 12px', borderRadius: 10,
           background: IS_NATIVE ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.08)',
           border: `1px solid ${IS_NATIVE ? 'rgba(52,211,153,0.2)' : 'rgba(99,102,241,0.2)'}`,

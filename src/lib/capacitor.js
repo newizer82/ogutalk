@@ -173,7 +173,7 @@ export async function scheduleOguAlarms(alarmHours = {}) {
           id:        day * 24 + targetHour + 1,
           title:     '⏱️ 오구!',
           body:      `곧 ${targetHour}시입니다! 잠깐 쉬어가세요.`,
-          channelId: 'ogu-hourly-v2',
+          channelId: 'ogu-hourly-v4',
           schedule:  { at, allowWhileIdle: true },
           extra:     { targetHour, scheduledAt: at.toISOString() },
         })
@@ -182,12 +182,34 @@ export async function scheduleOguAlarms(alarmHours = {}) {
 
     if (toSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: toSchedule })
-      console.log(`[Capacitor] ${toSchedule.length}개 알람 등록 완료`)
+      const first = toSchedule[0]
+      console.log(`[Capacitor] 오구 알람 ${toSchedule.length}개 등록 완료. 첫 번째: ${new Date(first.schedule.at).toLocaleString('ko-KR')} [id:${first.id}]`)
+    } else {
+      console.warn(`[Capacitor] 오구 알람 등록 0개! alarmHours 비어있음? 활성 시간: ${Object.entries(alarmHours).filter(([_, v]) => v).map(([k]) => k).join(',') || '(없음)'}`)
     }
     return { ok: true, scheduled: toSchedule.length }
   } catch (e) {
     console.warn('[Capacitor] 알람 등록 실패:', e)
     return { ok: false, reason: 'exception', error: String(e?.message || e) }
+  }
+}
+
+// ── 오디오 포커스 요청 (다른 앱 일시정지) ─────────────────────
+// 알람 발동 시 YouTube/음악 앱을 강제로 일시정지시키기 위함
+// AudioFocusPlugin (Android) 사용. duration ms 후 자동 release
+let _audioFocusPlugin = null
+export async function requestAudioFocus(duration = 6000) {
+  if (!IS_NATIVE) return { granted: false, reason: 'not-native' }
+  try {
+    if (!_audioFocusPlugin) {
+      const { registerPlugin } = await import('@capacitor/core')
+      _audioFocusPlugin = registerPlugin('AudioFocus')
+    }
+    const result = await _audioFocusPlugin.request({ duration })
+    return result
+  } catch (e) {
+    console.warn('[AudioFocus] 요청 실패:', e)
+    return { granted: false, error: String(e?.message || e) }
   }
 }
 
@@ -240,7 +262,39 @@ export async function diagnoseNotifications() {
   }
 }
 
-// ── 1분 뒤 테스트 알람 ───────────────────────────────────────
+// ── 오구 알람 진단 (대기중 알람 정보 반환) ─────────────────────
+// 어떤 알람이 언제 등록되어 있는지 정확히 보여주는 진단용
+export async function diagnoseOguAlarm() {
+  if (!IS_NATIVE) return { native: false }
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    const perm = await LocalNotifications.checkPermissions()
+    const { notifications: pending } = await LocalNotifications.getPending()
+    const oguPending = pending
+      .filter(n => n.id < 1000 && n.id !== 999)
+      .sort((a, b) => {
+        const aT = new Date(a.schedule?.at || 0).getTime()
+        const bT = new Date(b.schedule?.at || 0).getTime()
+        return aT - bT
+      })
+    const next3 = oguPending.slice(0, 3).map(n => {
+      const at = new Date(n.schedule?.at || 0)
+      return `${at.toLocaleString('ko-KR')} [id:${n.id}]`
+    })
+    const customCount = pending.filter(n => n.id >= 1000).length
+    return {
+      native:          true,
+      permission:      perm.display,
+      totalOguPending: oguPending.length,
+      customCount,
+      next3,
+    }
+  } catch (e) {
+    return { native: true, error: String(e?.message || e) }
+  }
+}
+
+// ── 30초 뒤 테스트 알람 ──────────────────────────────────────
 // 스케줄링이 정상 작동하는지 즉시 확인용
 export async function scheduleTestNotification() {
   if (!IS_NATIVE) {
@@ -260,13 +314,13 @@ export async function scheduleTestNotification() {
       }
     }
 
-    const at = new Date(Date.now() + 60_000)
+    const at = new Date(Date.now() + 30_000)
     await LocalNotifications.schedule({
       notifications: [{
         id:        999,                // 오구 영역(< 1000) 마지막 ID
         title:     '🧪 오구 채널 테스트',
         body:      '오구 알람 채널이 정상 작동합니다!',
-        channelId: 'ogu-hourly-v2',
+        channelId: 'ogu-hourly-v4',
         schedule:  { at, allowWhileIdle: true },
       }],
     })
@@ -276,7 +330,7 @@ export async function scheduleTestNotification() {
       `✅ 테스트 알람 등록 완료\n\n` +
       `예정 시각: ${at.toLocaleTimeString('ko-KR')}\n` +
       `대기중 알람: ${pending.notifications.length}개\n\n` +
-      `1분 뒤에 알림이 울리는지 확인해주세요.\n` +
+      `30초 뒤에 알림이 울리는지 확인해주세요.\n` +
       `(앱을 닫아도 OK)`
     )
   } catch (e) {
@@ -339,7 +393,7 @@ export async function scheduleCustomAlarms(customAlarms = []) {
           id:        1000 + alarmIdx * 7 + day,   // alarmIdx 로 NaN 방지
           title:     `${alarm.icon || '🔔'} ${alarm.title}`,
           body:      alarm.message || `${alarm.hour}시 ${String(alarm.minute).padStart(2, '0')}분 알람`,
-          channelId: 'ogu-custom-v2',
+          channelId: 'ogu-custom-v3',
           schedule:  { at, allowWhileIdle: true },
         })
       }

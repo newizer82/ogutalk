@@ -10,6 +10,7 @@ import {
   triggerHaptics,
   setOguAlarmHandler,
   setCustomAlarmHandler,
+  requestAudioFocus,
 } from '../lib/capacitor'
 
 // 진동 세기별 패턴
@@ -93,12 +94,11 @@ export function useAlarm({
       const s = now.getSeconds()
       const h = now.getHours()
       if (m === 59 && s < 30) {
-        // h:59 → 다음 시간(h+1)을 위한 알람
-        // 예: 6:59에 울려서 "곧 7시" 알림
         const targetHour = (h + 1) % 24
         if (alarmHours[targetHour] && lastHourRef.current !== h) {
           lastHourRef.current = h
-          _fire(targetHour)
+          // 네이티브: 시스템 알림이 사운드 담당 → 팝업만 / 웹: 풀 효과
+          _fire(targetHour, { silent: IS_NATIVE })
         }
       }
     }
@@ -143,12 +143,20 @@ export function useAlarm({
     }
   }, [oguTone, oguRepeat, alarmMode, alarmHours, volume, vibStrength]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const _fire = useCallback((hour = new Date().getHours()) => {
-    if (alarmMode !== 'vibrate') {
-      unlockAudio()  // AudioContext가 suspended면 resume 후 재생
-      playOguSound(oguTone, oguRepeat, volume)
+  // silent=true: 시스템 알림이 이미 사운드/진동 처리 → 팝업만 표시
+  const _fire = useCallback((hour = new Date().getHours(), opts = {}) => {
+    const { silent = false } = opts
+    if (!silent && alarmMode !== 'vibrate') {
+      if (IS_NATIVE) {
+        // 테스트 버튼 등 JS 자체 사운드 재생 시에도 다른 앱 일시정지
+        requestAudioFocus(4000)
+        playMp3Repeat('/sounds/ogu.mp3', volume, 1)
+      } else {
+        unlockAudio()
+        playOguSound(oguTone, 1, volume)
+      }
     }
-    if (alarmMode !== 'sound') {
+    if (!silent && alarmMode !== 'sound') {
       triggerHaptics(vibStrength)
     }
     sendNotification(hour)
@@ -164,11 +172,14 @@ export function useAlarm({
   useEffect(() => {
     if (!IS_NATIVE) return
     setOguAlarmHandler((targetHour) => {
+      // 알람 발동: 다른 앱(YouTube 등) 강제 일시정지 (6초간)
+      requestAudioFocus(6000)
       // JS 타이머와 중복 방지: fireHour = targetHour - 1
       const fireHour = (targetHour - 1 + 24) % 24
       if (lastHourRef.current !== fireHour) {
         lastHourRef.current = fireHour
-        _fire(targetHour)
+        // 시스템 알림이 이미 사운드/진동 처리 → 팝업만
+        _fire(targetHour, { silent: true })
       }
     })
     return () => setOguAlarmHandler(null)
@@ -178,22 +189,10 @@ export function useAlarm({
   // localStorage에서 직접 읽어 최신 tone/repeat 반영
   useEffect(() => {
     if (!IS_NATIVE) return
-    setCustomAlarmHandler((notifId) => {
-      try {
-        const raw     = localStorage.getItem('ogu_custom_alarms')
-        const alarms  = raw ? JSON.parse(raw) : []
-        // notifId = 1000 + alarmIdx*7 + day (capacitor.js scheduleCustomAlarms)
-        const alarmIdx = Math.floor((notifId - 1000) / 7)
-        const enabled  = alarms.filter(a => a.isEnabled !== false)
-        const alarm    = enabled[alarmIdx]
-        const tone   = alarm?.tone   || '딩동'
-        const repeat = Math.max(1, alarm?.repeat || 1)
-        unlockAudio()
-        playAlarmTone(tone, volume)
-        for (let i = 1; i < repeat; i++) {
-          setTimeout(() => playAlarmTone(tone, volume), i * 900)
-        }
-      } catch (_) {}
+    setCustomAlarmHandler(() => {
+      // 알람 발동: 다른 앱(YouTube 등) 강제 일시정지 (6초간)
+      requestAudioFocus(6000)
+      // 시스템 알림 채널이 ogu_custom.mp3 재생 → JS 추가 재생 안 함 (이중 사운드 방지)
     })
     return () => setCustomAlarmHandler(null)
   }, [volume])
@@ -213,8 +212,8 @@ export function useAlarm({
       const trimmed = list.filter(c => new Date(c.created_at) >= cutoff)
       trimmed.unshift(entry)
       localStorage.setItem('ogu_local_checkins', JSON.stringify(trimmed))
-      // 홈 미니 요약 즉시 갱신 트리거
-      window.dispatchEvent(new Event('ogu:checkin'))
+      // 새 체크인 entry를 detail에 실어 발사 — 리포트/홈이 즉시 반영 (Supabase 비동기 대기 불필요)
+      window.dispatchEvent(new CustomEvent('ogu:checkin', { detail: entry }))
     } catch {}
 
     // 로그인 시 Supabase에도 저장
@@ -222,7 +221,15 @@ export function useAlarm({
     const { error } = await supabase
       .from('notification_log')
       .insert({ user_id: userId, ...entry })
-    if (error) console.error('체크인 저장 실패:', error)
+    if (error) {
+      console.error('[체크인] Supabase 저장 실패:', error)
+      // 사용자가 인지하도록 이벤트 발사 (UI에서 토스트 등으로 표시 가능)
+      window.dispatchEvent(new CustomEvent('ogu:checkin-error', {
+        detail: { message: error.message, code: error.code },
+      }))
+    } else {
+      console.log('[체크인] Supabase 저장 성공:', entry)
+    }
   }, [userId])
 
   return {
@@ -254,6 +261,25 @@ function buildContent() {
     quote: QUOTES[Math.floor(Math.random() * QUOTES.length)],
     tip:   TIPS[Math.floor(Math.random() * TIPS.length)],
   }
+}
+
+// ── mp3 반복 재생 (네이티브용) ─────────────────────────────────
+// 한 번 끝날 때마다 currentTime 리셋 후 다시 재생 → 잘림/겹침 없이 N회
+export function playMp3Repeat(src, volume = 1.0, repeat = 1) {
+  try {
+    const audio = new Audio(src)
+    audio.volume = Math.max(0.01, Math.min(1.0, volume))
+    const target = Math.max(1, Math.min(5, repeat))
+    let count = 0
+    audio.onended = () => {
+      count++
+      if (count < target) {
+        audio.currentTime = 0
+        audio.play().catch(() => {})
+      }
+    }
+    audio.play().catch(() => {})
+  } catch (_) {}
 }
 
 let _audioCtx = null

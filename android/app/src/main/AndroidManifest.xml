@@ -62,8 +62,6 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <!-- 진동 사용 (Haptics 플러그인 필수) -->
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- 음성 인식 (Web Speech API) -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- 재부팅 후 알람 자동 복원 (Capacitor LocalNotifications BootReceiver 동작 필수) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Doze Mode에서 AlarmManager 깨우기 -->
