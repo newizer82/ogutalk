@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import Toggle from '../components/common/Toggle'
 import { ALARM_TONES } from '../data/oguData'
-import { PRESET_CATEGORIES } from '../data/quickAddPresets'
+import { PRESET_CATEGORIES, DEFAULT_CATEGORY, FREQ_OPTIONS, DEFAULT_FREQ } from '../data/quickAddPresets'
 import { IS_NATIVE } from '../lib/capacitor'
 import { S } from '../styles/theme'
 import { playAlarmTone, unlockAudio } from '../hooks/useAlarm'
-import { useUserPresets } from '../hooks/useUserPresets'
+import { useUserPresets, canCustomizePresets } from '../hooks/useUserPresets'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -116,15 +116,22 @@ export default function AlarmsPage({
   const [formHour,    setFormHour]    = useState('08')
   const [formMinute,  setFormMinute]  = useState('00')
   const [formTone,    setFormTone]    = useState(IS_NATIVE ? 'mobile-mp3' : '딩동')
+  const [formCategory, setFormCategory] = useState(DEFAULT_CATEGORY)
+  const [formFreq,     setFormFreq]     = useState(DEFAULT_FREQ)
   const [saveAsPreset, setSaveAsPreset] = useState(false)
+  const [editingPresetId, setEditingPresetId] = useState(null)   // null=신규, id=수정모드
 
   // 빠른 추가 시간 편집 모달 상태
   const [quickEdit,       setQuickEdit]       = useState(null)
   const [quickEditHour,   setQuickEditHour]   = useState('00')
   const [quickEditMinute, setQuickEditMinute] = useState('00')
 
+  // 빠른 추가 카테고리 펼침/접힘 상태 (key별 true/false, 기본: 전부 접힘)
+  const [openCategories, setOpenCategories] = useState({})
+  const toggleCategory = (key) => setOpenCategories(prev => ({ ...prev, [key]: !prev[key] }))
+
   // 사용자 정의 프리셋 (localStorage)
-  const { userPresets, saveUserPreset, deleteUserPreset } = useUserPresets()
+  const { userPresets, saveUserPreset, updateUserPreset, deleteUserPreset } = useUserPresets()
 
   // 빠른 추가 카드 탭 시 디폴트 시·분 채우기
   useEffect(() => {
@@ -138,7 +145,24 @@ export default function AlarmsPage({
     setFormTitle(''); setFormMessage('')
     setFormHour('08'); setFormMinute('00')
     setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
+    setFormCategory(DEFAULT_CATEGORY)
+    setFormFreq(DEFAULT_FREQ)
     setSaveAsPreset(false)
+    setEditingPresetId(null)
+  }
+
+  // 사용자 항목 편집 모드 진입
+  const startEditPreset = (preset) => {
+    setEditingPresetId(preset.id)
+    setFormTitle(preset.title || '')
+    setFormMessage(preset.message || '')
+    setFormHour(pad(preset.hour ?? 8))
+    setFormMinute(pad(preset.minute ?? 30))
+    setFormCategory(preset.category || DEFAULT_CATEGORY)
+    setFormFreq(preset.freq || DEFAULT_FREQ)
+    setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
+    setSaveAsPreset(false)
+    setShowAddForm(true)
   }
 
   // 빠른 추가 모달에서 "추가" 누름 → 실제 알람 등록
@@ -161,6 +185,23 @@ export default function AlarmsPage({
     if (!formTitle.trim()) return
     const hour   = Number(formHour)
     const minute = Number(formMinute)
+
+    // 편집 모드: 사용자 프리셋만 수정 (실제 알람 등록은 안 함)
+    if (editingPresetId) {
+      updateUserPreset(editingPresetId, {
+        icon:     autoIcon(hour),
+        title:    formTitle.trim(),
+        message:  formMessage.trim(),
+        hour, minute,
+        category: formCategory,
+        freq:     formFreq,
+      })
+      resetForm()
+      setShowAddForm(false)
+      return
+    }
+
+    // 신규: 실제 알람 등록
     addAlarm({
       icon: autoIcon(hour),
       title: formTitle.trim(),
@@ -171,12 +212,14 @@ export default function AlarmsPage({
       repeat: 1,
     })
     // 체크박스 켜져있으면 빠른 추가에도 저장
-    if (saveAsPreset) {
+    if (saveAsPreset && canCustomizePresets()) {
       saveUserPreset({
-        icon:    autoIcon(hour),
-        title:   formTitle.trim(),
-        message: formMessage.trim(),
+        icon:     autoIcon(hour),
+        title:    formTitle.trim(),
+        message:  formMessage.trim(),
         hour, minute,
+        category: formCategory,
+        freq:     formFreq,
       })
     }
     resetForm()
@@ -257,7 +300,9 @@ export default function AlarmsPage({
           }}>+ 직접 추가하기</button>
         ) : (
           <div style={{ padding: 14, borderRadius: 14, marginBottom: 14, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>🔔 새 알람 추가</div>
+            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
+              {editingPresetId ? '✎ 내 빠른 추가 항목 편집' : '🔔 새 알람 추가'}
+            </div>
 
             {/* 알람 제목 */}
             <div style={{ marginBottom: 10 }}>
@@ -318,56 +363,140 @@ export default function AlarmsPage({
               </div>
             )}
 
-            {/* 빠른 추가에도 저장 옵션 */}
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
-              padding: '10px 12px', borderRadius: 10,
-              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-              color: '#94a3b8', fontSize: 12, cursor: 'pointer',
-            }}>
-              <input type="checkbox" checked={saveAsPreset}
-                onChange={e => setSaveAsPreset(e.target.checked)}
-                style={{ accentColor: '#fbbf24', width: 16, height: 16 }} />
-              <span>⭐ 이 알람을 <b style={{ color: '#fbbf24' }}>빠른 추가에도 저장</b></span>
-            </label>
+            {/* 빠른 추가에도 저장 옵션 — 신규일 때만 표시 (편집 모드는 자동) */}
+            {!editingPresetId && (
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+                padding: '10px 12px', borderRadius: 10,
+                background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
+                color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+              }}>
+                <input type="checkbox" checked={saveAsPreset}
+                  onChange={e => setSaveAsPreset(e.target.checked)}
+                  style={{ accentColor: '#fbbf24', width: 16, height: 16 }} />
+                <span>⭐ 이 알람을 <b style={{ color: '#fbbf24' }}>빠른 추가에도 저장</b></span>
+              </label>
+            )}
+
+            {/* 카테고리 + 주기(freq) 선택 — 편집 모드 또는 "빠른 추가에 저장" 체크 시 노출 */}
+            {(editingPresetId || saveAsPreset) && (
+              <>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>빠른 추가 카테고리</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {PRESET_CATEGORIES.map(cat => {
+                      const active = formCategory === cat.key
+                      return (
+                        <button key={cat.key} onClick={() => setFormCategory(cat.key)}
+                          style={{
+                            padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
+                            border: `1px solid ${active ? cat.color : 'rgba(255,255,255,0.1)'}`,
+                            background: active ? `${cat.color}22` : 'rgba(255,255,255,0.03)',
+                            color: active ? cat.color : '#94a3b8',
+                            fontSize: 12, fontWeight: 700,
+                          }}>
+                          {cat.icon} {cat.label.replace(/^[^\s]+\s/, '')}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>
+                    주기 (라벨로 표시됨)
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {FREQ_OPTIONS.map(f => {
+                      const active = formFreq === f
+                      return (
+                        <button key={f} onClick={() => setFormFreq(f)}
+                          style={{
+                            padding: '6px 12px', borderRadius: 10, cursor: 'pointer',
+                            border: `1px solid ${active ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
+                            background: active ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
+                            color: active ? '#818cf8' : '#94a3b8',
+                            fontSize: 12, fontWeight: 700,
+                          }}>
+                          {f}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => { setShowAddForm(false); resetForm() }} style={{ ...S.ghostBtn, flex: 1 }}>취소</button>
               <button onClick={handleAddCustom} disabled={!formTitle.trim()}
-                style={{ ...S.primaryBtn, flex: 1, opacity: formTitle.trim() ? 1 : 0.4 }}>추가</button>
+                style={{ ...S.primaryBtn, flex: 1, opacity: formTitle.trim() ? 1 : 0.4 }}>
+                {editingPresetId ? '저장' : '추가'}
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── 빠른 추가 (카테고리별) ── */}
+        {/* ── 빠른 추가 (카테고리별 아코디언) ── */}
         <div>
-          <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>⚡ 빠른 추가</div>
+          <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
+            ⚡ 빠른 추가 <span style={{ color: '#475569', fontWeight: 500 }}>· 카테고리를 탭하면 펼쳐져요</span>
+          </div>
 
-          {PRESET_CATEGORIES.map(cat => (
-            <div key={cat.key} style={{ marginBottom: 14 }}>
-              <div style={{ color: cat.color, fontSize: 10, fontWeight: 700, marginBottom: 6 }}>{cat.label}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {cat.items.map((p, i) => (
-                  <PresetCard key={i} preset={p} color={cat.color}
-                    onClick={() => setQuickEdit(p)} />
-                ))}
-              </div>
-            </div>
-          ))}
+          {PRESET_CATEGORIES.map(cat => {
+            const myItems = userPresets.filter(p => p.category === cat.key)
+            const totalCount = cat.items.length + myItems.length
+            const isOpen = !!openCategories[cat.key]
+            return (
+              <div key={cat.key} style={{ marginBottom: 8 }}>
+                {/* 카테고리 헤더 (탭하면 토글) */}
+                <button onClick={() => toggleCategory(cat.key)} style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                  border: `1px solid ${isOpen ? cat.color + '66' : 'rgba(255,255,255,0.08)'}`,
+                  background: isOpen ? `${cat.color}14` : 'rgba(255,255,255,0.03)',
+                  color: cat.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  fontSize: 13, fontWeight: 700, textAlign: 'left',
+                  transition: 'all 0.15s ease',
+                }}>
+                  <span>{cat.label}</span>
+                  <span style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    color: '#94a3b8', fontSize: 11, fontWeight: 600,
+                  }}>
+                    <span style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      padding: '2px 8px', borderRadius: 10,
+                    }}>{totalCount}개</span>
+                    <span style={{
+                      display: 'inline-block',
+                      transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.15s ease',
+                      fontSize: 14, color: cat.color,
+                    }}>▶</span>
+                  </span>
+                </button>
 
-          {/* 사용자 정의 프리셋 */}
-          {userPresets.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>⭐ 내 빠른 추가</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {userPresets.map(p => (
-                  <PresetCard key={p.id} preset={p} color="#fbbf24"
-                    onClick={() => setQuickEdit(p)}
-                    onDelete={() => deleteUserPreset(p.id)} />
-                ))}
+                {/* 펼쳐진 항목 그리드 */}
+                {isOpen && (
+                  <div style={{
+                    marginTop: 8,
+                    display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6,
+                  }}>
+                    {cat.items.map((p, i) => (
+                      <PresetCard key={`base-${i}`} preset={p} color={cat.color}
+                        onClick={() => setQuickEdit(p)} />
+                    ))}
+                    {myItems.map(p => (
+                      <PresetCard key={p.id} preset={p} color={cat.color}
+                        onClick={() => setQuickEdit(p)}
+                        onEdit={() => startEditPreset(p)}
+                        onDelete={() => deleteUserPreset(p.id)} />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })}
         </div>
       </Section>
 
@@ -429,7 +558,7 @@ export default function AlarmsPage({
 }
 
 // ── 빠른 추가 카드 컴포넌트 ─────────────────────────────────────
-function PresetCard({ preset, color, onClick, onDelete }) {
+function PresetCard({ preset, color, onClick, onDelete, onEdit }) {
   return (
     <button onClick={onClick} style={{
       padding: '10px 12px', borderRadius: 12, textAlign: 'left',
@@ -444,6 +573,27 @@ function PresetCard({ preset, color, onClick, onDelete }) {
       <span style={{ fontSize: 10, color, fontWeight: 600 }}>
         🕐 {pad(preset.hour)}:{pad(preset.minute)}
       </span>
+      {/* freq 배지 — 표시 전용 (알람 발동 로직에 영향 없음) */}
+      {preset.freq && (
+        <span style={{
+          position: 'absolute', bottom: 6, right: 8,
+          fontSize: 9, fontWeight: 700,
+          color: '#cbd5e1',
+          background: 'rgba(255,255,255,0.08)',
+          padding: '2px 6px', borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}>{preset.freq}</span>
+      )}
+      {onEdit && (
+        <span onClick={(e) => { e.stopPropagation(); onEdit() }}
+          style={{
+            position: 'absolute', top: 4, right: 28,
+            width: 18, height: 18, borderRadius: 9,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, color: '#94a3b8',
+            background: 'rgba(0,0,0,0.3)',
+          }}>✎</span>
+      )}
       {onDelete && (
         <span onClick={(e) => { e.stopPropagation(); onDelete() }}
           style={{

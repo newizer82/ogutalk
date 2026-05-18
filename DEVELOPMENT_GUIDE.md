@@ -367,7 +367,16 @@ Remove-Item .git\refs\heads\master.lock -ErrorAction SilentlyContinue
 
 > 새 작업 후 여기에 한 줄 추가하세요. 최신이 위로.
 
+### 2026-05-18
+- **빠른 추가 아코디언 UI** — 4 카테고리 헤더 탭으로 펼침/접힘
+- **사용자 프리셋 주기(freq) 선택 UI** — 폼에 5개 칩 추가 (매일/평일/주말/주1회/주2회)
+- ⚠️ freq는 여전히 표시 전용. 실제 요일별 알람 동작은 미구현 (B안 보류 중)
+
 ### 2026-05-16
+- **빠른 추가 4 카테고리 개편** (v0.6.x) — 22 프리셋, 모든 `HH:30`, `freq` 배지
+  - 사용자 항목 카테고리 선택 + 편집 기능 추가
+  - 유료화 게이트 seam (`canCustomizePresets`, `FREE_PRESET_LIMIT = Infinity`) 마련
+  - `useUserPresets.js`에 `updateUserPreset` + 마이그레이션 로직 추가
 - `DEVELOPMENT_GUIDE.md` 작성 (이 파일) — 프로젝트 지침서 추가
 - `SettingsPage.jsx` 진단 버튼 강화: 최근 3개 entry 표시 + 자동 진단 메시지
 
@@ -418,7 +427,8 @@ Remove-Item .git\refs\heads\master.lock -ErrorAction SilentlyContinue
 - [ ] 앱 아이콘 재디자인 (모던/트렌디)
 
 ### 기능 개선 (Medium)
-- [ ] 사용자 빠른 추가 편집 기능 (현재는 추가/삭제만)
+- [x] ~~사용자 빠른 추가 편집 기능~~ — 2026-05-16 완료 (v0.6.x)
+- [ ] 진짜 요일별 알람 (B안) — 현재는 `freq` 라벨 표시만, 실제 발동 로직은 매일
 - [ ] 체크인 활동 종류 사용자 커스터마이징
 - [ ] 주간 리포트에 빠른 추가 통계 포함
 - [ ] 푸시 알림 (FCM) — 백그라운드 안정성 향상

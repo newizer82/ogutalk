@@ -4,6 +4,36 @@
 
 ---
 
+## [0.6.x] — 2026-05-18
+
+### Added
+- **빠른 추가 아코디언 UI** — 4 카테고리 헤더 탭 시 펼침/접힘, 헤더에 항목 수 배지 표시
+- **사용자 프리셋 주기(freq) 선택** — 직접 추가 폼에 매일/평일/주말/주1회/주2회 칩
+  - `FREQ_OPTIONS`, `DEFAULT_FREQ` export 추가 (`src/data/quickAddPresets.js`)
+  - `useUserPresets.js` 마이그레이션에 freq 기본값 채움
+  - ⚠️ **현재 freq는 표시 전용 라벨**. 실제 요일별 알람 발동은 향후 B안에서 구현 예정
+
+---
+
+## [0.6.x] — 2026-05-16
+
+### Changed
+- **빠른 추가 4 카테고리 개편** (건강 / 자기계발 / 생활 / 계획 & 일) — 총 22개 프리셋, 모든 시각 `HH:30` 통일
+  - `src/data/quickAddPresets.js` 전면 재작성, `freq` 필드 신규 추가 (매일·평일·주말·주1회·주2회)
+  - `CATEGORY_KEYS`, `DEFAULT_CATEGORY` export 추가
+- **`freq` 주기 배지 표시** — `PresetCard`에 회색 pill 라벨 추가 (표시 전용, 알람 로직 무관)
+
+### Added
+- **사용자 프리셋 카테고리 선택** — 직접 추가 폼에 4개 카테고리 칩 (빠른 추가 저장 체크 시 노출)
+- **사용자 프리셋 편집 모드** — ✎ 버튼 → 폼 재사용으로 수정 가능
+  - `useUserPresets.js`에 `updateUserPreset` 추가
+- **유료화 게이트 seam** — `canCustomizePresets()` / `FREE_PRESET_LIMIT` 미리 자리 마련 (현재 무제한)
+
+### Migration
+- 기존 `ogu_user_presets` 항목에 `category` 없으면 `'life'`(생활)로 자동 채움 (DEVELOPMENT_GUIDE 시행착오 #7 패턴)
+
+---
+
 ## [0.7.0] — 2026-04-25
 
 ### Added
