@@ -61,6 +61,17 @@ user_preferences  — 사용자 환경설정
 | 네이버 데이터랩 | 검색어 트렌드 분석 | Client ID + Secret (Edge Function 환경변수) |
 | Kakao OAuth | 소셜 로그인 | Supabase OAuth provider |
 
+## 광고 (AdMob)
+
+| 항목 | 내용 |
+|---|---|
+| 플러그인 | `@capacitor-community/admob` v8 (네이티브 전용) |
+| 형태 | 하단 배너 (BANNER 320×50, BOTTOM_CENTER) |
+| 표시 조건 | `isAdFree(isPremium)` 단일 판단 — **비로그인 사용자에게만 표시** |
+| 광고 제거 | 로그인 시 제거 (향후 RevenueCat 연동 시 유료 구독 상태로 판단 기준 교체) |
+| 앱 ID | `AndroidManifest.xml`의 `com.google.android.gms.ads.APPLICATION_ID` |
+| 배너 단위 ID | `src/lib/admob.js`의 `BANNER_AD_ID` |
+
 ## 배포 & 인프라
 
 | 항목 | 내용 |
