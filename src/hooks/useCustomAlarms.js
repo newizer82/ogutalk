@@ -31,7 +31,7 @@ function fromDB(row) {
     minute:     row.minute,
     tone:       row.tone        || '딩동',
     repeat:     row.repeat      || 1,
-    repeatType: row.repeat_type || 'daily',
+    repeatType: row.repeat_type || '매일',   // 매일/평일/주말 (요일 필터)
     isEnabled:  row.is_enabled  ?? true,
     createdAt:  row.created_at,
   }
@@ -47,7 +47,7 @@ function toDB(alarm, userId) {
     minute:      Number(alarm.minute),
     tone:        alarm.tone        || '딩동',
     repeat:      alarm.repeat      || 1,
-    repeat_type: alarm.repeatType  || 'daily',
+    repeat_type: alarm.repeatType  || '매일',
     is_enabled:  alarm.isEnabled   ?? true,
   }
 }
@@ -111,7 +111,7 @@ export function useCustomAlarms(userId = null) {
 
   const addAlarm = useCallback(async ({
     icon = '🔔', title, message = '',
-    hour, minute, repeatType = 'daily', tone = '딩동', repeat = 1,
+    hour, minute, repeatType = '매일', tone = '딩동', repeat = 1,
   }) => {
     const base = {
       icon, title, message, tone,

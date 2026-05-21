@@ -18,6 +18,12 @@ export function canCustomizePresets(/* isPremium */) {
   return true
 }
 
+// 옛 freq('주1회'/'주2회')는 '주말'로 환산. 그 외 유효성 검사 후 기본값 보정.
+function migrateFreq(freq) {
+  if (freq === '주1회' || freq === '주2회') return '주말'
+  return FREQ_OPTIONS.includes(freq) ? freq : DEFAULT_FREQ
+}
+
 // ── 저장된 데이터 로드 + 마이그레이션 ────────────────────────────
 function load() {
   try {
@@ -26,7 +32,7 @@ function load() {
     return list.map(p => ({
       ...p,
       category: CATEGORY_KEYS.includes(p.category) ? p.category : DEFAULT_CATEGORY,
-      freq:     FREQ_OPTIONS.includes(p.freq)     ? p.freq     : DEFAULT_FREQ,
+      freq:     migrateFreq(p.freq),
     }))
   } catch { return [] }
 }
@@ -43,7 +49,7 @@ export function useUserPresets() {
       ...preset,
       id: `up_${Date.now()}`,
       category: CATEGORY_KEYS.includes(preset.category) ? preset.category : DEFAULT_CATEGORY,
-      freq:     FREQ_OPTIONS.includes(preset.freq)     ? preset.freq     : DEFAULT_FREQ,
+      freq:     migrateFreq(preset.freq),
     }
     setUserPresets(prev => {
       const next = [...prev, newP]
@@ -61,7 +67,7 @@ export function useUserPresets() {
         return {
           ...p, ...updates,
           category: CATEGORY_KEYS.includes(nextCategory) ? nextCategory : DEFAULT_CATEGORY,
-          freq:     FREQ_OPTIONS.includes(nextFreq)     ? nextFreq     : DEFAULT_FREQ,
+          freq:     migrateFreq(nextFreq),
         }
       })
       save(next)

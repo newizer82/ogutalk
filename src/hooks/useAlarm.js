@@ -171,9 +171,17 @@ export function useAlarm({
   // localNotificationReceived / localNotificationActionPerformed → 인앱 팝업 + 사운드
   useEffect(() => {
     if (!IS_NATIVE) return
-    setOguAlarmHandler((targetHour) => {
+    setOguAlarmHandler((payload) => {
+      // payload: { targetHour, isTest } — capacitor.js _dispatchOgu 에서 전달
+      const targetHour = payload?.targetHour ?? new Date().getHours()
+      const isTest     = !!payload?.isTest
       // 알람 발동: 다른 앱(YouTube 등) 강제 일시정지 (6초간)
       requestAudioFocus(6000)
+      // 테스트 알림은 중복방지(dedup) 우회 → 항상 팝업 표시
+      if (isTest) {
+        _fire(targetHour, { silent: true })
+        return
+      }
       // JS 타이머와 중복 방지: fireHour = targetHour - 1
       const fireHour = (targetHour - 1 + 24) % 24
       if (lastHourRef.current !== fireHour) {
@@ -217,10 +225,17 @@ export function useAlarm({
     } catch {}
 
     // 로그인 시 Supabase에도 저장
+    // notification_log 테이블의 NOT NULL 컬럼(notification_type/title/body)을 함께 채움
     if (!userId) return
     const { error } = await supabase
       .from('notification_log')
-      .insert({ user_id: userId, ...entry })
+      .insert({
+        user_id:           userId,
+        notification_type: 'checkin',
+        title:             '오구 체크인',
+        body:              `이번 시간 활동: ${activityType}`,
+        ...entry,
+      })
     if (error) {
       console.error('[체크인] Supabase 저장 실패:', error)
       // 사용자가 인지하도록 이벤트 발사 (UI에서 토스트 등으로 표시 가능)

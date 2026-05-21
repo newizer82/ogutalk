@@ -53,10 +53,43 @@ export async function createOguChannel() {
 
 // ── 포그라운드 알람 콜백 핸들러 ────────────────────────────────
 // useAlarm.js 에서 등록 → 항상 활성 (탭 이동과 무관)
+// 버퍼: 콜드 스타트 시 알림 이벤트가 핸들러 등록보다 먼저 도착하면
+//       이벤트를 잃지 않도록 보관했다가 핸들러 등록 시 즉시 flush
 let _oguAlarmHandler    = null
 let _customAlarmHandler = null
-export function setOguAlarmHandler(fn)    { _oguAlarmHandler    = fn }
-export function setCustomAlarmHandler(fn) { _customAlarmHandler = fn }
+let _pendingOguAlarm    = null   // { targetHour, isTest }
+let _pendingCustomAlarm = null   // notifId
+
+export function setOguAlarmHandler(fn) {
+  _oguAlarmHandler = fn
+  if (fn && _pendingOguAlarm) {
+    const p = _pendingOguAlarm
+    _pendingOguAlarm = null
+    fn(p)
+  }
+}
+export function setCustomAlarmHandler(fn) {
+  _customAlarmHandler = fn
+  if (fn && _pendingCustomAlarm != null) {
+    const id = _pendingCustomAlarm
+    _pendingCustomAlarm = null
+    fn(id)
+  }
+}
+
+// 알림 → 핸들러 디스패치 (핸들러 없으면 버퍼에 보관)
+function _dispatchOgu(notif) {
+  const payload = {
+    targetHour: notif.extra?.targetHour ?? ((notif.id - 1) % 24),
+    isTest:     !!notif.extra?.isTest,
+  }
+  if (_oguAlarmHandler) _oguAlarmHandler(payload)
+  else _pendingOguAlarm = payload
+}
+function _dispatchCustom(notifId) {
+  if (_customAlarmHandler) _customAlarmHandler(notifId)
+  else _pendingCustomAlarm = notifId
+}
 
 // ── 포그라운드 / 백그라운드 알림 리스너 설정 ─────────────────
 let _listenerSetup = false
@@ -66,29 +99,18 @@ async function _setupNotifListeners() {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
 
-    // 앱이 포그라운드일 때 알림 수신
-    // 시스템 배너는 그대로 두고 인앱 핸들러만 추가 호출 (웹 오디오 실패해도 시스템 사운드는 울림)
+    // 앱이 포그라운드일 때 알림 수신 → 인앱 팝업
     await LocalNotifications.addListener('localNotificationReceived', async (notif) => {
-      if (notif.id < 1000) {
-        // 오구 알람: 인앱 팝업 + Web Audio 보조
-        const targetHour = notif.extra?.targetHour ?? ((notif.id - 1) % 24)
-        if (_oguAlarmHandler) _oguAlarmHandler(targetHour)
-      } else {
-        // 커스텀 알람: Web Audio 보조
-        if (_customAlarmHandler) _customAlarmHandler(notif.id)
-      }
+      if (notif.id < 1000) _dispatchOgu(notif)
+      else                 _dispatchCustom(notif.id)
     })
 
     // 백그라운드 알람 → 유저가 알림을 탭해서 앱 열 때
     await LocalNotifications.addListener('localNotificationActionPerformed', async (action) => {
       const notif = action.notification
       if (!notif) return
-      if (notif.id < 1000) {
-        const targetHour = notif.extra?.targetHour ?? ((notif.id - 1) % 24)
-        if (_oguAlarmHandler) _oguAlarmHandler(targetHour)
-      } else {
-        if (_customAlarmHandler) _customAlarmHandler(notif.id)
-      }
+      if (notif.id < 1000) _dispatchOgu(notif)
+      else                 _dispatchCustom(notif.id)
     })
   } catch (e) {
     console.warn('[Capacitor] 알림 리스너 등록 실패:', e)
@@ -241,6 +263,24 @@ export async function triggerHaptics(strength = 'medium') {
   }
 }
 
+// ── 외부 URL 열기 ──────────────────────────────────────────────
+// 네이티브: Capacitor Browser (인앱 브라우저) / 웹: 새 탭
+export async function openUrl(url) {
+  if (!url) return
+  // 스킴 없으면 https 보정
+  const safeUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`
+  try {
+    if (IS_NATIVE) {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url: safeUrl })
+    } else {
+      window.open(safeUrl, '_blank', 'noopener,noreferrer')
+    }
+  } catch (e) {
+    console.warn('[openUrl] 실패:', e)
+  }
+}
+
 // ── 진단: 권한/대기중 알람 상태 확인 ─────────────────────────
 export async function diagnoseNotifications() {
   if (!IS_NATIVE) return { native: false }
@@ -322,6 +362,7 @@ export async function scheduleTestNotification() {
         body:      '오구 알람 채널이 정상 작동합니다!',
         channelId: 'ogu-hourly-v4',
         schedule:  { at, allowWhileIdle: true },
+        extra:     { isTest: true },   // 중복방지(dedup) 우회용 — 핸들러에서 항상 팝업
       }],
     })
 
@@ -352,6 +393,15 @@ export async function cancelOguAlarms() {
   } catch (e) {
     console.warn('[Capacitor] 알람 취소 실패:', e)
   }
+}
+
+// ── 요일 필터: 알람의 freq(repeatType)에 해당 날짜가 맞는지 ──────
+// '평일' = 월~금 / '주말' = 토·일 / 그 외('매일'·'daily'·미지정) = 모든 요일
+function _dayMatchesFreq(date, freq) {
+  const dow = date.getDay()   // 0=일 … 6=토
+  if (freq === '평일') return dow >= 1 && dow <= 5
+  if (freq === '주말') return dow === 0 || dow === 6
+  return true
 }
 
 // ── 커스텀 알람 스케줄 등록 ───────────────────────────────────
@@ -388,6 +438,8 @@ export async function scheduleCustomAlarms(customAlarms = []) {
         at.setDate(at.getDate() + day)
         at.setHours(alarm.hour, alarm.minute, 0, 0)
         if (at <= now) continue
+        // freq(repeatType) 요일 필터 — 평일/주말 알람은 해당 요일에만 등록
+        if (!_dayMatchesFreq(at, alarm.repeatType)) continue
 
         toSchedule.push({
           id:        1000 + alarmIdx * 7 + day,   // alarmIdx 로 NaN 방지

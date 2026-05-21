@@ -2,7 +2,7 @@ import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
-import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm } from '../lib/capacitor'
+import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm, openUrl } from '../lib/capacitor'
 import { supabase } from '../lib/supabase'
 
 const pad = n => String(n).padStart(2, '0')
@@ -213,6 +213,7 @@ export default function SettingsPage({
                 // Supabase 분석
                 let supaResult = '(비로그인 — Supabase 미사용)'
                 let supaRecent = []
+                let insertResult = ''
                 if (userId) {
                   const since = new Date(); since.setDate(since.getDate() - 30)
                   const { data, error } = await supabase
@@ -222,7 +223,7 @@ export default function SettingsPage({
                     .gte('created_at', since.toISOString())
                     .order('created_at', { ascending: false })
                   if (error) {
-                    supaResult = `❌ Supabase 에러:\n   ${error.message}\n   코드: ${error.code || '?'}`
+                    supaResult = `❌ SELECT 에러:\n   ${error.message}\n   코드: ${error.code || '?'}`
                   } else {
                     const todayStr = new Date().toISOString().slice(0, 10)
                     const today = (data || []).filter(c => c.created_at?.slice(0, 10) === todayStr).length
@@ -231,6 +232,30 @@ export default function SettingsPage({
                       const dt = new Date(c.created_at)
                       return `   ${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())} - ${c.activity_type}`
                     })
+                  }
+
+                  // INSERT 실제 테스트 — 정확한 실패 원인 확인
+                  const testRow = {
+                    user_id:           userId,
+                    notification_type: 'checkin',
+                    title:             '오구 체크인',
+                    body:              '진단 테스트',
+                    activity_type:     'study',
+                    alarm_hour:        new Date().getHours(),
+                    created_at:        new Date().toISOString(),
+                  }
+                  const { data: insData, error: insErr } = await supabase
+                    .from('notification_log')
+                    .insert(testRow)
+                    .select()
+                  if (insErr) {
+                    insertResult = `❌ INSERT 실패:\n   ${insErr.message}\n   코드: ${insErr.code || '?'}`
+                  } else {
+                    insertResult = '✓ INSERT 성공! (테스트 행 정리됨)'
+                    // 테스트 행 정리 (best effort)
+                    if (insData?.[0]?.id) {
+                      await supabase.from('notification_log').delete().eq('id', insData[0].id)
+                    }
                   }
                 }
 
@@ -242,12 +267,13 @@ export default function SettingsPage({
                   (localRecent.length ? `   최근 3개:\n${localRecent.join('\n')}\n` : '') +
                   `\n☁️ ${supaResult}\n` +
                   (supaRecent.length ? `   최근 3개:\n${supaRecent.join('\n')}\n` : '') +
+                  (insertResult ? `\n🧪 INSERT 테스트:\n${insertResult}\n` : '') +
                   `\n💡 진단:\n` +
                   (userId
-                    ? (localCount > 0 && supaRecent.length === 0
-                        ? '⚠️ 로컬엔 있는데 Supabase에 없음 → INSERT 실패\n   → SQL Editor에서 RLS 정책 확인 필요'
-                        : '리포트가 비어보이면 리포트 탭 다시 들어가보세요 (재로드)')
-                    : '비로그인은 로컬만 사용. 로컬에 있으면 리포트에 나와야 함.')
+                    ? (insertResult.startsWith('❌')
+                        ? '⚠️ INSERT 실패 — 위 에러 메시지를 그대로 알려주세요.\n   (RLS 정책 또는 컬럼 제약조건 문제)'
+                        : '✓ 저장 정상. 리포트가 비어보이면 리포트 탭 재진입.')
+                    : '비로그인은 로컬만 사용. 로컬에 있으면 리포트에 나옴.')
                 )
               }}
               style={{
@@ -270,6 +296,25 @@ export default function SettingsPage({
           </span>
         </div>
 
+      </SettingSection>
+
+      {/* ── 약관·정보 ── */}
+      <SettingSection title="ℹ️ 약관 및 정보">
+        <button
+          onClick={() => openUrl('https://ogutalk.vercel.app/privacy.html')}
+          style={{
+            width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+            color: '#94a3b8', fontSize: 13, textAlign: 'left',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}
+        >
+          <span>🔒 개인정보 처리방침</span>
+          <span style={{ color: '#475569' }}>›</span>
+        </button>
+        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
+          오구톡 v0.6 · 주식회사 지성엔테크
+        </div>
       </SettingSection>
 
       {isLoggedIn && (

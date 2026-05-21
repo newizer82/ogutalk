@@ -72,6 +72,20 @@ export function useTodos(userId) {
     if (todo?.goal_id) await syncGoalProgress(todo.goal_id)
   }
 
+  // 할일 내용 수정 (제목·타입·마감일 등)
+  async function updateTodo(id, updates) {
+    const { error } = await supabase
+      .from('todos')
+      .update(updates)
+      .eq('id', id)
+    if (error) {
+      console.error('할일 수정 실패:', error)
+      return false
+    }
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+    return true
+  }
+
   async function deleteTodo(id) {
     const todo = todos.find(t => t.id === id)
     const { error } = await supabase
@@ -86,5 +100,5 @@ export function useTodos(userId) {
     if (todo?.goal_id) await syncGoalProgress(todo.goal_id)
   }
 
-  return { todos, loading, addTodo, toggleTodo, deleteTodo, refresh: fetchTodos }
+  return { todos, loading, addTodo, toggleTodo, updateTodo, deleteTodo, refresh: fetchTodos }
 }

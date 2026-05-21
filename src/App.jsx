@@ -6,7 +6,7 @@ import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { loadSettings, saveSettings } from './lib/settings'
 import { IS_NATIVE } from './lib/capacitor'
-import { initAdMob, showBanner, hideBanner, BANNER_HEIGHT_PX } from './lib/admob'
+import { initAdMob, showBanner, hideBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -161,7 +161,7 @@ export default function App() {
 
   // Supabase 훅 (로그인 시)
   const userId = user?.id ?? null
-  const { todos, addTodo, toggleTodo, deleteTodo } = useTodos(userId)
+  const { todos, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(userId)
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
 
   // 커스텀 알람 (앱 최상위에서 관리 — 로그인 시 Supabase 동기화)
@@ -207,8 +207,10 @@ export default function App() {
     return () => document.removeEventListener('touchstart', handler)
   }, [])
 
-  // AdMob 배너 표시 여부 (실제 로드 완료 후 true)
-  const [bannerVisible, setBannerVisible] = useState(false)
+  // 배너가 표시될 환경이면 하단 공간을 항상 예약 (탭바 침범 방지)
+  // bannerAdLoaded 이벤트 누락 시에도 레이아웃이 어긋나지 않도록 로드 이벤트에 의존하지 않음
+  // 로그인(isPremium) 사용자는 광고 제거 → 공간 예약 안 함
+  const showAdBanner = IS_NATIVE && !isAdFree(isPremium)
 
   // AdMob 초기화 (앱 시작 시 1회만)
   useEffect(() => {
@@ -216,16 +218,21 @@ export default function App() {
     initAdMob().catch(() => {})
   }, [])
 
-  // AdMob 배너: 비프리미엄(비로그인)만 표시 / 프리미엄(로그인)이면 숨김
+  // AdMob 배너: isAdFree() 단일 판단 지점 — 로그인 시 광고 제거
   useEffect(() => {
     if (!IS_NATIVE) return
-    if (isPremium) {
-      hideBanner().catch(() => {})
-      setBannerVisible(false)
-    } else {
-      showBanner(() => setBannerVisible(true)).catch(() => {})
-    }
+    if (isAdFree(isPremium)) hideBanner().catch(() => {})
+    else                     showBanner().catch(() => {})
   }, [isPremium])
+
+  // 팝업/모달이 떠 있는 동안엔 배너 숨김 (네이티브 배너는 항상 최상단 레이어라
+  // 인앱 팝업 위에 겹쳐 보임 → 모달 동안 숨기고 닫히면 다시 표시)
+  useEffect(() => {
+    if (!IS_NATIVE || isAdFree(isPremium)) return
+    const modalOpen = showAlarmPopup || loginOpen
+    if (modalOpen) hideBanner().catch(() => {})
+    else           resumeBanner().catch(() => {})
+  }, [showAlarmPopup, loginOpen, isPremium])
 
   // 로그인 성공 시 모달 자동 닫기 (카카오 OAuth 딥링크 콜백 케이스)
   useEffect(() => {
@@ -254,7 +261,7 @@ export default function App() {
         isPremium={isPremium}
         onLoginOpen={() => setLoginOpen(true)}
         onSignOut={handleSignOut}
-        bannerHeight={bannerVisible ? BANNER_HEIGHT_PX : 0}
+        bannerHeight={showAdBanner ? BANNER_HEIGHT_PX : 0}
       >
         {activeTab === 'home' && (
           <HomePage
@@ -289,6 +296,10 @@ export default function App() {
                 }, ...p])
             }
             onToggle={userId ? toggleTodo : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
+            onUpdate={userId
+              ? updateTodo
+              : (id, updates) => setLocalTodos(p => p.map(t => t.id === id ? { ...t, ...updates } : t))
+            }
             onDelete={userId ? deleteTodo : id => setLocalTodos(p => p.filter(t => t.id !== id))}
           />
     

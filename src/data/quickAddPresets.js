@@ -1,9 +1,9 @@
 // 빠른 추가용 프리셋 데이터 — 4 카테고리 × 22 항목
 // 항목 추가/수정은 이 파일만 고치면 됩니다.
 //
-// freq: '매일' | '평일' | '주말' | '주1회' | '주2회'
-//   ⚠️ 표시 전용 라벨입니다. 알람 발동 로직과 무관.
-//      진짜 요일별 알람은 향후 B안에서 별도 구현 예정.
+// freq: '매일' | '평일' | '주말'
+//   ✅ 실제 알람 발동에 반영됩니다 (capacitor.js scheduleCustomAlarms 의 요일 필터).
+//      평일 = 월~금, 주말 = 토·일.
 
 export const PRESET_CATEGORIES = [
   {
@@ -40,11 +40,11 @@ export const PRESET_CATEGORIES = [
     color: '#f59e0b',
     items: [
       { icon: '💊', title: '약 먹기',      message: '약 챙겨 드실 시간이에요',   hour: 9,  minute: 30, freq: '매일' },
-      { icon: '🪴', title: '화분 물주기',  message: '식물에 물을 줄 시간이에요', hour: 8,  minute: 30, freq: '주2회' },
-      { icon: '🧺', title: '빨래',         message: '빨래를 돌려볼까요',         hour: 10, minute: 30, freq: '주2회' },
+      { icon: '🪴', title: '화분 물주기',  message: '식물에 물을 줄 시간이에요', hour: 8,  minute: 30, freq: '주말' },
+      { icon: '🧺', title: '빨래',         message: '빨래를 돌려볼까요',         hour: 10, minute: 30, freq: '주말' },
       { icon: '🧹', title: '청소하기',     message: '잠깐 주변을 정리해요',      hour: 10, minute: 30, freq: '주말' },
-      { icon: '🛒', title: '장보기',       message: '필요한 걸 챙겨 장 봐요',    hour: 11, minute: 30, freq: '주1회' },
-      { icon: '💛', title: '안부 전하기',  message: '소중한 사람에게 연락해요',  hour: 19, minute: 30, freq: '주1회' },
+      { icon: '🛒', title: '장보기',       message: '필요한 걸 챙겨 장 봐요',    hour: 11, minute: 30, freq: '주말' },
+      { icon: '💛', title: '안부 전하기',  message: '소중한 사람에게 연락해요',  hour: 19, minute: 30, freq: '주말' },
     ],
   },
   {
@@ -55,9 +55,9 @@ export const PRESET_CATEGORIES = [
     items: [
       { icon: '📅', title: '오늘 일정 확인', message: '오늘 할 일을 점검해요',     hour: 8,  minute: 30, freq: '매일' },
       { icon: '🎯', title: '프로젝트 점검',  message: '프로젝트 진행 상황을 봐요', hour: 9,  minute: 30, freq: '평일' },
-      { icon: '📋', title: '주간 계획',      message: '이번 주 계획을 세워요',     hour: 9,  minute: 30, freq: '주1회' },
-      { icon: '🔁', title: '주간 회고',      message: '한 주를 돌아봐요',          hour: 18, minute: 30, freq: '주1회' },
-      { icon: '👥', title: '모임 챙기기',    message: '모임 일정을 챙겨요',        hour: 19, minute: 30, freq: '주1회' },
+      { icon: '📋', title: '주간 계획',      message: '이번 주 계획을 세워요',     hour: 9,  minute: 30, freq: '주말' },
+      { icon: '🔁', title: '주간 회고',      message: '한 주를 돌아봐요',          hour: 18, minute: 30, freq: '주말' },
+      { icon: '👥', title: '모임 챙기기',    message: '모임 일정을 챙겨요',        hour: 19, minute: 30, freq: '주말' },
     ],
   },
 ]
@@ -67,6 +67,6 @@ export const CATEGORY_KEYS = PRESET_CATEGORIES.map(c => c.key)
 export const DEFAULT_CATEGORY = 'life'   // 기존 사용자 프리셋 마이그레이션 시 기본값
 
 // freq 선택지 (UI 드롭다운/칩에서 재사용)
-// ⚠️ 현재는 표시 전용 라벨. 실제 요일별 알람 동작은 향후 B안에서 구현 예정.
-export const FREQ_OPTIONS = ['매일', '평일', '주말', '주1회', '주2회']
+// ✅ 실제 알람 발동에 반영됨 — 평일(월~금) / 주말(토·일) / 매일.
+export const FREQ_OPTIONS = ['매일', '평일', '주말']
 export const DEFAULT_FREQ = '매일'

@@ -174,7 +174,7 @@ export default function AlarmsPage({
       title:      quickEdit.title,
       message:    quickEdit.message,
       hour, minute,
-      repeatType: 'daily',
+      repeatType: quickEdit.freq || DEFAULT_FREQ,   // 매일/평일/주말 — 요일 필터에 사용
       tone:       IS_NATIVE ? 'mobile-mp3' : '딩동',
       repeat:     1,
     })
@@ -207,7 +207,7 @@ export default function AlarmsPage({
       title: formTitle.trim(),
       message: formMessage.trim(),
       hour, minute,
-      repeatType: 'daily',
+      repeatType: formFreq || DEFAULT_FREQ,   // 매일/평일/주말 — 요일 필터에 사용
       tone: formTone,
       repeat: 1,
     })

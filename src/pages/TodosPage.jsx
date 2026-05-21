@@ -1,6 +1,34 @@
 import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import { S } from '../styles/theme'
+import { openUrl } from '../lib/capacitor'
+
+// 텍스트 안의 URL을 감지해 클릭 가능한 링크로 렌더
+// (http(s):// 로 시작하거나 www. 로 시작하는 토큰)
+const URL_RE = /((?:https?:\/\/|www\.)[^\s]+)/gi
+
+function TextWithLinks({ text }) {
+  const str = String(text || '')
+  const parts = str.split(URL_RE)
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (URL_RE.test(part)) {
+          URL_RE.lastIndex = 0   // split 후 test용 lastIndex 리셋
+          return (
+            <span
+              key={i}
+              onClick={(e) => { e.stopPropagation(); openUrl(part) }}
+              style={{ color: '#818cf8', textDecoration: 'underline', cursor: 'pointer', wordBreak: 'break-all' }}
+            >{part}</span>
+          )
+        }
+        URL_RE.lastIndex = 0
+        return part
+      })}
+    </>
+  )
+}
 
 function PremiumLock({ onUnlock }) {
   return (
@@ -31,7 +59,7 @@ function formatDue(dateStr) {
   return { label: `D-${diff}`, color: '#94a3b8' }
 }
 
-function TodoItem({ todo, onToggle, onDelete }) {
+function TodoItem({ todo, onToggle, onEdit, onDelete }) {
   const due    = formatDue(todo.due_date)
   const isDone = todo.completed || todo.done
   return (
@@ -57,7 +85,7 @@ function TodoItem({ todo, onToggle, onDelete }) {
             fontSize: 14, fontWeight: 500,
             textDecoration: isDone ? 'line-through' : 'none',
           }}>
-            {todo.title || todo.text}
+            <TextWithLinks text={todo.title || todo.text} />
           </div>
           {due && !isDone && (
             <div style={{ fontSize: 11, color: due.color, marginTop: 3, fontWeight: 600 }}>
@@ -65,6 +93,14 @@ function TodoItem({ todo, onToggle, onDelete }) {
             </div>
           )}
         </div>
+
+        {/* 수정 (onEdit 전달된 경우만 — 완료 목록은 제외) */}
+        {onEdit && (
+          <span
+            onClick={() => onEdit(todo)}
+            style={{ color: '#475569', fontSize: 15, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+          >✎</span>
+        )}
 
         {/* 삭제 */}
         <span
@@ -76,11 +112,12 @@ function TodoItem({ todo, onToggle, onDelete }) {
   )
 }
 
-export default function TodosPage({ todos = [], userId, isPremium, setIsPremium, onAdd, onToggle, onDelete }) {
+export default function TodosPage({ todos = [], userId, isPremium, setIsPremium, onAdd, onToggle, onUpdate, onDelete }) {
   const [showForm, setShowForm]   = useState(false)
   const [todoType, setTodoType]   = useState('weekly')  // 'weekly' | 'task'
   const [input, setInput]         = useState('')
   const [dueDate, setDueDate]     = useState('')
+  const [editingId, setEditingId] = useState(null)      // null=추가 / id=수정
 
   if (!isPremium) return <PremiumLock onUnlock={() => setIsPremium(true)} />
 
@@ -94,12 +131,41 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
     })
   const completed = todos.filter(t => t.completed || t.done)
 
-  const handleAdd = () => {
+  const resetForm = () => {
+    setInput(''); setDueDate(''); setEditingId(null)
+  }
+
+  // 기존 할일 편집 시작 → 폼을 수정 모드로 열기
+  const startEdit = (todo) => {
+    setEditingId(todo.id)
+    setInput(todo.title || todo.text || '')
+    const isTask = todo.todo_type === 'task' || !!todo.due_date
+    setTodoType(isTask ? 'task' : 'weekly')
+    setDueDate(todo.due_date || '')
+    setShowForm(true)
+  }
+
+  const handleSave = () => {
     if (!input.trim()) return
-    onAdd(input.trim(), todoType, todoType === 'task' ? dueDate || null : null)
-    setInput('')
-    setDueDate('')
+    if (editingId) {
+      // 수정 모드
+      onUpdate(editingId, {
+        title:     input.trim(),
+        todo_type: todoType,
+        due_date:  todoType === 'task' ? (dueDate || null) : null,
+      })
+    } else {
+      // 추가 모드
+      onAdd(input.trim(), todoType, todoType === 'task' ? dueDate || null : null)
+    }
+    resetForm()
     setShowForm(false)
+  }
+
+  // 헤더 "+ 추가" 토글 — 새로 열 땐 항상 추가 모드로 초기화
+  const toggleForm = () => {
+    if (showForm) { setShowForm(false); resetForm() }
+    else          { resetForm(); setShowForm(true) }
   }
 
   return (
@@ -107,12 +173,15 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>✅ 할일 관리</div>
-        <button style={S.accentSmallBtn} onClick={() => setShowForm(!showForm)}>+ 추가</button>
+        <button style={S.accentSmallBtn} onClick={toggleForm}>+ 추가</button>
       </div>
 
-      {/* 추가 폼 */}
+      {/* 추가/수정 폼 */}
       {showForm && (
         <GlassCard style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 10 }}>
+            {editingId ? '✎ 할일 수정' : '+ 새 할일'}
+          </div>
           {/* 타입 선택 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             {[
@@ -136,7 +205,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
           <input
             type="text" placeholder="할일을 입력하세요"
             value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            onKeyDown={e => e.key === 'Enter' && handleSave()}
             style={S.input} autoFocus
           />
 
@@ -154,8 +223,8 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
           )}
 
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button style={S.accentSmallBtn} onClick={handleAdd}>저장</button>
-            <button style={S.ghostBtn} onClick={() => setShowForm(false)}>취소</button>
+            <button style={S.accentSmallBtn} onClick={handleSave}>{editingId ? '수정 완료' : '저장'}</button>
+            <button style={S.ghostBtn} onClick={() => { setShowForm(false); resetForm() }}>취소</button>
           </div>
         </GlassCard>
       )}
@@ -192,7 +261,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
             </div>
           ) : (
             weekly.map(t => (
-              <TodoItem key={t.id} todo={t} onToggle={onToggle} onDelete={onDelete} />
+              <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
             ))
           )}
         </>
@@ -206,7 +275,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
             <span style={{ color: '#334155', fontWeight: 400 }}>({tasks.length})</span>
           </div>
           {tasks.map(t => (
-            <TodoItem key={t.id} todo={t} onToggle={onToggle} onDelete={onDelete} />
+            <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
           ))}
         </>
       )}

@@ -15,6 +15,53 @@
 
 ---
 
+## [0.6.x] — 2026-05-21
+
+### Added
+- **개인정보 처리방침** — `public/privacy.html` 작성 (Vercel 자동 호스팅: `/privacy.html`)
+  - 설정 화면에 "🔒 개인정보 처리방침" 인앱 링크 추가 (`openUrl`)
+  - 처리자: 주식회사 지성엔테크 / 문의: newizer.dev@gmail.com
+
+### Changed
+- **요일별 알람 실제 구현** — `freq`가 표시 전용 라벨 → 실제 발동에 반영
+  - `매일` / `평일`(월~금) / `주말`(토·일) 3종. 옛 `주1회`·`주2회`는 `주말`로 환산
+  - `repeat_type` 컬럼 재활용 (SQL 마이그레이션 불필요)
+  - `scheduleCustomAlarms`에 `_dayMatchesFreq` 요일 필터 추가
+
+---
+
+## [0.6.x] — 2026-05-20
+
+### Changed
+- **광고 정책: 로그인 시 광고 제거** — 비로그인 사용자만 배너 표시
+  - `isAdFree(isPremium)` 단일 판단 함수 — 로그인(isPremium) 시 `true`
+  - 팝업/모달(알람 팝업·로그인) 동안 배너 숨김 → 닫히면 `resumeBanner()`로 복귀
+  - `BANNER_HEIGHT_PX` 60 → 100 (배너+내비바가 탭바 침범하던 문제 수정)
+
+### Added
+- **할일 수정 기능** — 할일 카드 ✎ 버튼 → 폼 재사용 수정 (`useTodos.updateTodo`)
+- **할일 URL 바로가기** — 제목 내 URL 자동 링크화, 탭하면 인앱 브라우저로 열림 (`openUrl`)
+
+### Fixed
+- **체크인 Supabase 저장 실패** — `notification_log`의 NOT NULL 컬럼(`notification_type`/`title`/`body`) 누락
+  - `saveCheckin` INSERT에 해당 컬럼 값 추가 (코드 수정만, SQL 불필요)
+
+---
+
+## [0.6.x] — 2026-05-18
+
+### Changed
+- (취소됨) ~~광고 수익 모델 변경 — 로그인 사용자에게도 배너 표시~~ → 2026-05-20 "로그인 시 광고 제거"로 환원
+
+### Fixed
+- **체크인 리포트 미표시 버그** — `notification_log.created_at` 컬럼 누락(42703)으로 Supabase 조회/저장 전부 실패
+  - 마이그레이션 `supabase/migrations/v0.6.1_checkin_schema_fix.sql` (컬럼 4개 + RLS + 인덱스)
+  - `useCheckinReport`에 Supabase 실패 시 localStorage fallback 추가 (DB 오류에도 리포트 표시)
+- **알람 팝업 미표시 버그** — 알림 이벤트가 핸들러 등록 전 도착 시 소실 → `capacitor.js`에 이벤트 버퍼링
+  - 30초 테스트 알림이 dedup에 걸리던 문제 → `isTest` 플래그로 중복방지 우회
+
+---
+
 ## [0.6.x] — 2026-05-16
 
 ### Changed

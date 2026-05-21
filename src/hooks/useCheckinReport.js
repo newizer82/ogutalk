@@ -6,6 +6,14 @@ export function useCheckinReport(userId) {
   const [checkins, setCheckins] = useState([])
   const [loading,  setLoading]  = useState(false)
 
+  // localStorage 체크인 읽기 (fallback 공용)
+  const loadLocal = () => {
+    try {
+      const raw = localStorage.getItem('ogu_local_checkins')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  }
+
   // 데이터 로드를 별도 함수로 추출 (이벤트 리스너에서도 재호출 가능)
   const reload = useCallback(() => {
     if (userId) {
@@ -20,18 +28,18 @@ export function useCheckinReport(userId) {
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
-          if (!error && data) setCheckins(data)
+          if (!error && data) {
+            setCheckins(data)
+          } else {
+            // Supabase 실패(컬럼 누락·RLS·네트워크 등) → localStorage fallback
+            if (error) console.warn('[체크인 리포트] Supabase 조회 실패 → 로컬 fallback:', error.message)
+            setCheckins(loadLocal())
+          }
           setLoading(false)
         })
     } else {
       // 비로그인: localStorage에서 읽기
-      try {
-        const raw  = localStorage.getItem('ogu_local_checkins')
-        const list = raw ? JSON.parse(raw) : []
-        setCheckins(list)
-      } catch {
-        setCheckins([])
-      }
+      setCheckins(loadLocal())
     }
   }, [userId])
 
