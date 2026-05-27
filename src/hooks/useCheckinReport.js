@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// 최근 30일 notification_log 를 가져와서 집계
+// 최근 7일(1주일) notification_log 를 가져와서 집계
 export function useCheckinReport(userId) {
   const [checkins, setCheckins] = useState([])
   const [loading,  setLoading]  = useState(false)
@@ -17,10 +17,10 @@ export function useCheckinReport(userId) {
   // 데이터 로드를 별도 함수로 추출 (이벤트 리스너에서도 재호출 가능)
   const reload = useCallback(() => {
     if (userId) {
-      // 로그인: Supabase에서 최근 30일 가져오기
+      // 로그인: Supabase에서 최근 7일(1주일) 가져오기
       setLoading(true)
       const since = new Date()
-      since.setDate(since.getDate() - 30)
+      since.setDate(since.getDate() - 7)
       supabase
         .from('notification_log')
         .select('*')

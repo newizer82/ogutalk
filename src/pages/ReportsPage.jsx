@@ -299,7 +299,7 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>⏱️ 오구 체크인 기록</div>
-          <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 30일)</div>
+          <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 1주일)</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#818cf8', lineHeight: 1 }}>{total}</div>

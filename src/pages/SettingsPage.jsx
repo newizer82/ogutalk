@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES } from '../data/oguData'
@@ -40,6 +41,8 @@ export default function SettingsPage({
   playSound,
   userId = null,
 }) {
+  // 프로필 카드 클릭 시 로그아웃 메뉴 토글
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const fireSignal = (tone, repeat) => {
     if (alarmMode !== 'vibrate') playSound(tone, repeat, volume)
     if (alarmMode !== 'sound' && navigator.vibrate) {
@@ -52,21 +55,50 @@ export default function SettingsPage({
     <div>
       {/* ── 프로필 카드 ── */}
       <GlassCard style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: isLoggedIn ? 0 : 12 }}>
+        <div
+          onClick={() => isLoggedIn && setProfileMenuOpen(v => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            cursor: isLoggedIn ? 'pointer' : 'default',
+          }}
+        >
           <div style={{ width: 52, height: 52, borderRadius: 26, background: gradients.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: 'white', fontWeight: 700, flexShrink: 0 }}>
             {isLoggedIn && displayEmail ? displayEmail[0].toUpperCase() : '🐾'}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>{isLoggedIn ? displayEmail : '비로그인 사용자'}</div>
-            <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{isLoggedIn ? '✨ 로그인 회원 — 전체 기능 사용 중' : '🔓 비로그인 — 기본 기능만 사용 가능'}</div>
+            <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{isLoggedIn ? '✨ 로그인 회원 — 탭하면 계정 메뉴' : '🔓 비로그인 — 기본 기능만 사용 가능'}</div>
           </div>
-          {!isLoggedIn && <button style={S.loginBtn} onClick={onLoginOpen}>로그인</button>}
+          {!isLoggedIn && <button style={S.loginBtn} onClick={(e) => { e.stopPropagation(); onLoginOpen() }}>로그인</button>}
+          {isLoggedIn && (
+            <span style={{ color: '#475569', fontSize: 16, transition: 'transform 0.15s', transform: profileMenuOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+              ▼
+            </span>
+          )}
         </div>
 
-        {/* 카카오 로그인 버튼 */}
+        {/* 로그인 사용자 — 펼침 메뉴 */}
+        {isLoggedIn && profileMenuOpen && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <button
+              onClick={onSignOut}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                border: '1px solid rgba(239,68,68,0.3)',
+                background: 'rgba(239,68,68,0.08)',
+                color: '#ef4444', fontSize: 13, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <span>🚪</span> 로그아웃
+            </button>
+          </div>
+        )}
+
+        {/* 카카오 로그인 버튼 — 비로그인 시만 */}
         {!isLoggedIn && (
           <button
-            style={{ width: '100%', marginTop: 10, padding: '12px', borderRadius: 14, border: 'none', background: '#FEE500', color: '#3A1D1D', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            style={{ width: '100%', marginTop: 12, padding: '12px', borderRadius: 14, border: 'none', background: '#FEE500', color: '#3A1D1D', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onClick={onLoginOpen}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -317,11 +349,56 @@ export default function SettingsPage({
         </div>
       </SettingSection>
 
+      {/* ── 안정적 사용 가이드 ── */}
+      <SettingSection title="📲 안정적인 알람을 위한 권한 안내">
+        <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.7, marginBottom: 10 }}>
+          오구톡 알람이 정확한 시각에 울리려면 아래 권한이 필요합니다.<br />
+          <span style={{ color: '#475569' }}>휴대폰 설정 → 앱 → 오구톡 에서 확인하세요.</span>
+        </div>
+
+        {[
+          {
+            icon: '🔔', title: '알림 허용',
+            desc: '알람을 화면에 표시하기 위해 필수입니다. (설정 → 앱 → 오구톡 → 알림 → 허용)',
+          },
+          {
+            icon: '🔋', title: '배터리 최적화 제외',
+            desc: '잠자기 모드에서도 알람이 정확히 울리도록 합니다. (설정 → 배터리 → 오구톡 → 최적화 안 함)',
+          },
+          {
+            icon: '🪟', title: '다른 앱 위에 표시 (오버레이)',
+            desc: '다른 앱 사용 중에도 알람 팝업을 띄울 수 있습니다. (설정 → 앱 → 오구톡 → 다른 앱 위에 표시 → 허용)',
+          },
+          {
+            icon: '🌙', title: '방해 금지 우회',
+            desc: '방해 금지 모드에서도 알람이 울릴 수 있도록 합니다. (설정 → 알림 → 방해 금지 → 예외 → 오구톡)',
+          },
+          {
+            icon: '⏰', title: '알람 및 리마인더 (Android 12+)',
+            desc: '정확한 시각 알람을 위해 필요합니다. (설정 → 앱 → 특수 액세스 → 알람 및 리마인더 → 오구톡 허용)',
+          },
+        ].map(p => (
+          <div key={p.title} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start',
+            padding: '10px 12px', marginBottom: 6, borderRadius: 10,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            <span style={{ fontSize: 18, lineHeight: 1.2 }}>{p.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: '#cbd5e1', fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{p.title}</div>
+              <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.6 }}>{p.desc}</div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
+          💡 일부 항목은 기기/제조사(Samsung, Xiaomi 등)에 따라 메뉴 위치가 다를 수 있습니다.
+        </div>
+      </SettingSection>
+
       {isLoggedIn && (
         <>
-          <button style={{ ...S.ghostBtn, width: '100%', marginTop: 8, color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-            onClick={onSignOut}>로그아웃</button>
-
           {/* ── 위험 영역: 계정 삭제 ── */}
           <div style={{
             marginTop: 24, padding: 14, borderRadius: 14,

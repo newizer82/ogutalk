@@ -86,6 +86,15 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
             textDecoration: isDone ? 'line-through' : 'none',
           }}>
             <TextWithLinks text={todo.title || todo.text} />
+            {/* 기한 있는 할일 — 제목 옆에 (M/D) 표시 */}
+            {todo.due_date && (() => {
+              const dt = new Date(todo.due_date)
+              return (
+                <span style={{ color: isDone ? '#475569' : '#94a3b8', fontWeight: 400, marginLeft: 4 }}>
+                  ({dt.getMonth() + 1}/{dt.getDate()})
+                </span>
+              )
+            })()}
           </div>
           {due && !isDone && (
             <div style={{ fontSize: 11, color: due.color, marginTop: 3, fontWeight: 600 }}>

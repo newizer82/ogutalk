@@ -249,9 +249,10 @@ export default function AlarmsPage({
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {customAlarms.map(alarm => {
-                const isMp3 = alarm.tone === 'mobile-mp3'
-                const toneInfo = isMp3 ? { emoji: '📳', label: '커스텀음', color: '#fb923c' } : (ALARM_TONES[alarm.tone] || ALARM_TONES['딩동'])
                 const repeatCount = alarm.repeat || 1
+                // freq 라벨 (repeat_type 컬럼에 저장된 값) — 색상 매핑
+                const freq = alarm.repeatType || '매일'
+                const freqColor = freq === '평일' ? '#6366f1' : freq === '주말' ? '#f59e0b' : '#10b981'
                 return (
                   <div key={alarm.id} style={{
                     display: 'flex', alignItems: 'center', gap: 10,
@@ -267,12 +268,12 @@ export default function AlarmsPage({
                       <div style={{ color: '#64748b', fontSize: 10, marginTop: 2, display: 'flex', gap: 6, alignItems: 'center' }}>
                         <span>{pad(alarm.hour)}:{pad(alarm.minute)}</span>
                         <span>·</span>
-                        <button onClick={() => playTone(alarm.tone || '딩동', volume)} style={{
-                          padding: 0, border: 'none', background: 'transparent',
-                          color: toneInfo.color, fontSize: 10, cursor: 'pointer',
-                        }}>
-                          {toneInfo.emoji} {toneInfo.label} ▶
-                        </button>
+                        <span style={{
+                          color: freqColor, fontWeight: 700,
+                          padding: '1px 6px', borderRadius: 6,
+                          background: `${freqColor}22`,
+                          border: `1px solid ${freqColor}55`,
+                        }}>{freq}</span>
                         {repeatCount > 1 && (
                           <span style={{ color: '#475569' }}>× {repeatCount}</span>
                         )}

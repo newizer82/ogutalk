@@ -200,12 +200,16 @@ export default function HomePage({
               {minutesLeft}분 {pad(secsLeft)}초 남음
             </div>
           </div>
-          {/* 테스트 버튼 */}
-          <button onClick={onTestAlarm} style={{
-            flexShrink: 0, width: 44, height: 44, borderRadius: 14, border: 'none',
-            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          {/* 오구 설정 바로가기 (탭하면 설정 화면으로 이동) */}
+          <button
+            onClick={() => onTabChange('settings')}
+            title="오구 알람 설정으로 이동"
+            style={{
+              flexShrink: 0, width: 44, height: 44, borderRadius: 14, border: 'none',
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
             {OGU_TONES[oguTone]?.emoji || '⏱️'}
           </button>
         </div>
