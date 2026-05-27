@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// ── 릴리즈 키스토어 자격증명 (android/keystore.properties 에서 로드) ──
+// 이 파일은 .gitignore 로 보호됨. 키스토어 생성 후 keystore.properties.example 참고해서 작성.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.ogutalk.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +24,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // keystore.properties 가 없으면 (디버그 빌드 환경) 디버그 키로 fallback
+            // rootProject.file() — android/ 디렉토리 기준으로 경로 해석
+            // (file() 은 모듈 디렉토리 기준이라 app/ 가 중복될 수 있음)
+            if (keystorePropertiesFile.exists()) {
+                storeFile     rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias      keystoreProperties['keyAlias']
+                keyPassword   keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            // keystore.properties 가 존재할 때만 release 서명 적용
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

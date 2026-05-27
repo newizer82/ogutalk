@@ -463,7 +463,7 @@ Remove-Item .git\refs\heads\master.lock -ErrorAction SilentlyContinue
 - [ ] 릴리즈 키스토어 생성 + 백업 (3곳: USB, 클라우드, 종이)
 - [ ] AAB 빌드 → Play Console 비공개 테스트 트랙
 - [x] ~~개인정보 처리방침 호스팅~~ — 2026-05-21 완료 (`public/privacy.html` → Vercel `/privacy.html`)
-- [ ] 앱 아이콘 재디자인 (모던/트렌디)
+- [x] ~~앱 아이콘 재디자인~~ — 2026-05-21 현재 아이콘 유지로 결정
 
 ### 기능 개선 (Medium)
 - [x] ~~사용자 빠른 추가 편집 기능~~ — 2026-05-16 완료 (v0.6.x)

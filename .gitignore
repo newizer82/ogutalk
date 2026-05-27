@@ -7,3 +7,8 @@ dist
 supabase/.temp/
 *.txt
 vite.config.js.timestamp-*.mjs
+
+# ── 안드로이드 릴리즈 서명 (절대 커밋 금지) ──
+*.keystore
+*.jks
+android/keystore.properties
