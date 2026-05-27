@@ -290,9 +290,6 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
     emoji: ACTIVITY_EMOJI[key],
   })).sort((a, b) => b.count - a.count)
 
-  // 최근 체크인 5건
-  const recent = checkins.slice(0, 5)
-
   // 24시간 시간대 활동 맵
   const maxHourCount = Math.max(...Object.values(hourCount), 1)
 
@@ -392,28 +389,6 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
             </div>
           )}
 
-          {/* 최근 체크인 목록 */}
-          <div>
-            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>🕘 최근 기록</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {recent.map((c, i) => {
-                const dt = new Date(c.created_at)
-                const dateStr = `${dt.getMonth()+1}/${dt.getDate()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`
-                const label = ACTIVITY_LABEL[c.activity_type] || c.activity_type
-                const color = ACTIVITY_COLOR[c.activity_type] || '#64748b'
-                return (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 8px', borderRadius: 8,
-                    background: 'rgba(255,255,255,0.03)',
-                  }}>
-                    <span style={{ color, fontSize: 12, fontWeight: 600 }}>{label}</span>
-                    <span style={{ color: '#475569', fontSize: 10 }}>{dateStr}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
         </>
       )}
     </GlassCard>

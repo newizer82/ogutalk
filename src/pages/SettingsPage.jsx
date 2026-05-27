@@ -36,7 +36,7 @@ export default function SettingsPage({
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,
   alarmHours = {}, setAlarmHours,
-  onLoginOpen, onSignOut,
+  onLoginOpen, onSignOut, onDeleteAccount,
   playSound,
   userId = null,
 }) {
@@ -318,8 +318,50 @@ export default function SettingsPage({
       </SettingSection>
 
       {isLoggedIn && (
-        <button style={{ ...S.ghostBtn, width: '100%', marginTop: 8, color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
-          onClick={onSignOut}>로그아웃</button>
+        <>
+          <button style={{ ...S.ghostBtn, width: '100%', marginTop: 8, color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}
+            onClick={onSignOut}>로그아웃</button>
+
+          {/* ── 위험 영역: 계정 삭제 ── */}
+          <div style={{
+            marginTop: 24, padding: 14, borderRadius: 14,
+            background: 'rgba(239,68,68,0.05)',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}>
+            <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 700, marginBottom: 6 }}>⚠️ 위험 영역</div>
+            <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
+              계정을 삭제하면 모든 할일·목표·체크인·알람 데이터가 <b style={{ color: '#fca5a5' }}>영구 삭제</b>되며 복구할 수 없습니다.
+            </div>
+            <button
+              onClick={async () => {
+                const ok1 = window.confirm(
+                  '정말로 계정을 삭제하시겠어요?\n\n' +
+                  '모든 데이터가 영구 삭제되며 되돌릴 수 없습니다.'
+                )
+                if (!ok1) return
+                const ok2 = window.confirm(
+                  '한 번 더 확인 — 계정 삭제를 진행할까요?\n\n' +
+                  '이 작업은 즉시 처리되며 취소할 수 없습니다.'
+                )
+                if (!ok2) return
+                try {
+                  await onDeleteAccount?.()
+                  alert('계정이 삭제됐습니다. 이용해 주셔서 감사합니다.')
+                } catch (e) {
+                  alert('삭제 실패: ' + (e?.message || e))
+                }
+              }}
+              style={{
+                width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
+                border: '1px solid rgba(239,68,68,0.4)',
+                background: 'rgba(239,68,68,0.1)',
+                color: '#ef4444', fontSize: 13, fontWeight: 700,
+              }}
+            >
+              🗑 계정 삭제
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

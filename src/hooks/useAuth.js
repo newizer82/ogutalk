@@ -150,5 +150,31 @@ export function useAuth() {
     if (error) throw error
   }
 
-  return { user, loading, signUp, signIn, signInWithKakao, signOut }
+  // 비밀번호 재설정 메일 발송
+  // 사용자가 이메일 링크 클릭 → /reset-password 페이지로 이동 → 새 비번 설정
+  async function resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://ogutalk.vercel.app/reset-password',
+    })
+    if (error) throw error
+  }
+
+  // 새 비번으로 변경 (resetPassword 메일 클릭 후 세션에서 호출)
+  async function updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }
+
+  // 계정 삭제 — Edge Function 'delete-account' 호출
+  // (Edge Function이 사용자 데이터 + auth 계정 모두 삭제)
+  async function deleteAccount() {
+    const { data, error } = await supabase.functions.invoke('delete-account')
+    if (error) throw error
+    if (data?.error) throw new Error(data.error)
+    // 클라이언트 세션도 정리
+    await supabase.auth.signOut()
+    return data
+  }
+
+  return { user, loading, signUp, signIn, signInWithKakao, signOut, resetPassword, updatePassword, deleteAccount }
 }

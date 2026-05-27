@@ -15,20 +15,35 @@ import TodosPage from './pages/TodosPage'
 import ReportsPage from './pages/ReportsPage'
 import SettingsPage from './pages/SettingsPage'
 import AlarmsPage from './pages/AlarmsPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import { gradients, S } from './styles/theme'
 
 // ── 로그인 모달 (바텀시트)
 function LoginModal({ open, onClose, onLogin }) {
-  const [authMode, setAuthMode] = useState('login')
+  const [authMode, setAuthMode] = useState('login')  // 'login' | 'signup' | 'reset'
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
-  const { signIn, signUp, signInWithKakao } = useAuth()
+  const [info, setInfo]         = useState('')      // 성공 안내 메시지
+  const { signIn, signUp, signInWithKakao, resetPassword } = useAuth()
 
   if (!open) return null
 
   const handleSubmit = async () => {
-    setError('')
+    setError(''); setInfo('')
+
+    // 비밀번호 재설정 모드 — 이메일만 필요
+    if (authMode === 'reset') {
+      if (!email) { setError('이메일을 입력해주세요.'); return }
+      try {
+        await resetPassword(email)
+        setInfo('재설정 메일을 보냈습니다. 메일함을 확인해주세요.')
+      } catch (err) {
+        setError(err.message)
+      }
+      return
+    }
+
     if (!email || !password) { setError('이메일과 비밀번호를 입력해주세요.'); return }
     try {
       if (authMode === 'login') {
@@ -54,30 +69,52 @@ function LoginModal({ open, onClose, onLogin }) {
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>오구톡</div>
           <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
-            {authMode === 'login' ? '로그인하고 모든 기능을 사용하세요' : '새 계정을 만들어 시작하세요'}
+            {authMode === 'login'  && '로그인하고 모든 기능을 사용하세요'}
+            {authMode === 'signup' && '새 계정을 만들어 시작하세요'}
+            {authMode === 'reset'  && '가입하신 이메일을 입력하시면 재설정 링크를 보내드려요'}
           </div>
         </div>
 
         <input
           type="email" placeholder="이메일" value={email}
           onChange={e => setEmail(e.target.value)} style={S.input}
+          onKeyDown={e => e.key === 'Enter' && authMode === 'reset' && handleSubmit()}
         />
-        <input
-          type="password" placeholder="비밀번호" value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{ ...S.input, marginTop: 8 }}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-        />
+        {authMode !== 'reset' && (
+          <input
+            type="password" placeholder="비밀번호" value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{ ...S.input, marginTop: 8 }}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          />
+        )}
         {authMode === 'signup' && (
           <input type="password" placeholder="비밀번호 확인" style={{ ...S.input, marginTop: 8 }} />
         )}
         {error && (
           <div style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{error}</div>
         )}
+        {info && (
+          <div style={{ color: '#34d399', fontSize: 12, marginTop: 8 }}>{info}</div>
+        )}
 
         <button style={{ ...S.primaryBtn, marginTop: 16 }} onClick={handleSubmit}>
-          {authMode === 'login' ? '로그인' : '회원가입'}
+          {authMode === 'login'  && '로그인'}
+          {authMode === 'signup' && '회원가입'}
+          {authMode === 'reset'  && '재설정 메일 보내기'}
         </button>
+
+        {/* 로그인 모드일 때만 비밀번호 찾기 링크 노출 */}
+        {authMode === 'login' && (
+          <div style={{ textAlign: 'right', marginTop: 8 }}>
+            <span
+              style={{ color: '#64748b', fontSize: 11, cursor: 'pointer' }}
+              onClick={() => { setAuthMode('reset'); setError(''); setInfo('') }}
+            >
+              비밀번호를 잊으셨나요?
+            </span>
+          </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
@@ -101,15 +138,21 @@ function LoginModal({ open, onClose, onLogin }) {
         </button>
 
         <div style={{ textAlign: 'center', marginTop: 16 }}>
-          {authMode === 'login' ? (
+          {authMode === 'login' && (
             <span style={{ color: '#64748b', fontSize: 12 }}>
               계정이 없으신가요?{' '}
               <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => setAuthMode('signup')}>회원가입</span>
             </span>
-          ) : (
+          )}
+          {authMode === 'signup' && (
             <span style={{ color: '#64748b', fontSize: 12 }}>
               이미 계정이 있으신가요?{' '}
               <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => setAuthMode('login')}>로그인</span>
+            </span>
+          )}
+          {authMode === 'reset' && (
+            <span style={{ color: '#64748b', fontSize: 12 }}>
+              <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => { setAuthMode('login'); setError(''); setInfo('') }}>← 로그인으로 돌아가기</span>
             </span>
           )}
         </div>
@@ -120,10 +163,15 @@ function LoginModal({ open, onClose, onLogin }) {
 
 // ── 메인 App ───────────────────────────────────────────────────
 export default function App() {
+  // 비밀번호 재설정 메일 링크로 진입한 경우 → 전용 페이지만 렌더
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/reset-password')) {
+    return <ResetPasswordPage />
+  }
+
   const [activeTab, setActiveTab] = useState('home')
 
   // 인증 (옵션 — 비로그인도 앱 사용 가능)
-  const { user, signOut } = useAuth()
+  const { user, signOut, deleteAccount } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
   const [localEmail, setLocalEmail] = useState('')
   const isLoggedIn = !!user || !!localEmail
@@ -249,6 +297,14 @@ export default function App() {
     setIsPremium(false)
   }, [user, signOut])
 
+  // 계정 삭제 — Edge Function 호출 + 로컬 상태 정리
+  const handleDeleteAccount = useCallback(async () => {
+    await deleteAccount()
+    setLocalEmail('')
+    setIsPremium(false)
+    setActiveTab('home')
+  }, [deleteAccount])
+
   const displayEmail = user?.email || localEmail
 
   return (
@@ -351,6 +407,7 @@ export default function App() {
             goals={localGoals}
             onLoginOpen={() => setLoginOpen(true)}
             onSignOut={handleSignOut}
+            onDeleteAccount={handleDeleteAccount}
             playSound={playOguSound}
             userId={userId}
           />
