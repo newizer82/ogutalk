@@ -1,34 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
+import TextWithLinks from '../components/common/TextWithLinks'
 import { S } from '../styles/theme'
-import { openUrl } from '../lib/capacitor'
-
-// 텍스트 안의 URL을 감지해 클릭 가능한 링크로 렌더
-// (http(s):// 로 시작하거나 www. 로 시작하는 토큰)
-const URL_RE = /((?:https?:\/\/|www\.)[^\s]+)/gi
-
-function TextWithLinks({ text }) {
-  const str = String(text || '')
-  const parts = str.split(URL_RE)
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (URL_RE.test(part)) {
-          URL_RE.lastIndex = 0   // split 후 test용 lastIndex 리셋
-          return (
-            <span
-              key={i}
-              onClick={(e) => { e.stopPropagation(); openUrl(part) }}
-              style={{ color: '#818cf8', textDecoration: 'underline', cursor: 'pointer', wordBreak: 'break-all' }}
-            >{part}</span>
-          )
-        }
-        URL_RE.lastIndex = 0
-        return part
-      })}
-    </>
-  )
-}
 
 function PremiumLock({ onUnlock }) {
   return (
@@ -127,6 +100,20 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
   const [input, setInput]         = useState('')
   const [dueDate, setDueDate]     = useState('')
   const [editingId, setEditingId] = useState(null)      // null=추가 / id=수정
+
+  // ── 안드로이드 뒤로가기 — 페이지 오버레이 닫기 ──────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.handled) return
+      if (showForm) {
+        setShowForm(false)
+        setEditingId(null)
+        e.detail.handled = true
+      }
+    }
+    window.addEventListener('ogu:backRequest', handler)
+    return () => window.removeEventListener('ogu:backRequest', handler)
+  }, [showForm])
 
   if (!isPremium) return <PremiumLock onUnlock={() => setIsPremium(true)} />
 
@@ -257,10 +244,23 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
         ))}
       </div>
 
+      {/* 📌 기한 있는 할일 — 우선순위 상단 */}
+      {tasks.length > 0 && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>📌 기한 있는 할일</span>
+            <span style={{ color: '#334155', fontWeight: 400 }}>({tasks.length})</span>
+          </div>
+          {tasks.map(t => (
+            <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
+          ))}
+        </>
+      )}
+
       {/* 📅 주간 할일 */}
       {(weekly.length > 0 || todos.filter(t => !t.todo_type && !t.due_date).length === 0) && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#818cf8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#818cf8', margin: tasks.length > 0 ? '16px 0 8px' : '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>📅 이번 주 할일</span>
             <span style={{ color: '#334155', fontWeight: 400 }}>({weekly.length})</span>
           </div>
@@ -273,19 +273,6 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
               <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
             ))
           )}
-        </>
-      )}
-
-      {/* 📌 기한 있는 할일 */}
-      {tasks.length > 0 && (
-        <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', margin: '16px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>📌 기한 있는 할일</span>
-            <span style={{ color: '#334155', fontWeight: 400 }}>({tasks.length})</span>
-          </div>
-          {tasks.map(t => (
-            <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
-          ))}
         </>
       )}
 

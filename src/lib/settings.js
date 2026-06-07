@@ -18,7 +18,8 @@ export const DEFAULT_SETTINGS = {
   oguTone:       '오구',
   oguAlarmTone:  '딩동',   // ALARM_TONES 중 하나 — 실제 알람 시 재생 음
   oguRepeat:     2,
-  alarmMode:     'both',   // 'sound' | 'vibrate' | 'both'
+  alarmMode:     'both',   // 오구 알람용: 'sound' | 'vibrate' | 'both'
+  customAlarmDefaultMode: 'both',  // 커스텀 알람 신규 생성 시 폼 초기값: 'both' | 'vibrate'
   volume:        0.8,      // 0.0 ~ 1.0
   vibStrength:   'medium', // 'weak' | 'medium' | 'strong'
   alarmHours:    buildDefaultAlarmHours(),
@@ -39,8 +40,8 @@ function migrateOldKeys() {
     } catch { /* 손상된 값은 기본값 유지 */ }
   }
 
-  // alarmMode는 항상 'both' 고정 (UI 제거됨)
-  merged.alarmMode = 'both'
+  // alarmMode 유효성 검사 (사용자 선택 허용 — 'both' 또는 'vibrate'만 노출)
+  if (!['both', 'vibrate', 'sound'].includes(merged.alarmMode)) merged.alarmMode = 'both'
 
   if (foundOld) {
     // 새 키에 저장
@@ -65,8 +66,10 @@ export function loadSettings() {
       // 삭제된 톤('화남')이 남아있으면 기본값으로 교정
       const validTones = ['오구', '여유', '바쁨', '유쾌']
       if (!validTones.includes(merged.oguTone)) merged.oguTone = DEFAULT_SETTINGS.oguTone
-      // alarmMode는 항상 'both' 고정 (UI 제거됨)
-      merged.alarmMode = 'both'
+      // alarmMode 유효성 — 'both' / 'vibrate' / 'sound' 외 값은 기본값
+      if (!['both', 'vibrate', 'sound'].includes(merged.alarmMode)) merged.alarmMode = 'both'
+      // customAlarmDefaultMode 유효성 — 'both' / 'vibrate' 외 값은 기본값
+      if (!['both', 'vibrate'].includes(merged.customAlarmDefaultMode)) merged.customAlarmDefaultMode = 'both'
       return merged
     }
   } catch { /* 손상된 새 키는 무시 → 마이그레이션으로 fallback */ }

@@ -145,8 +145,17 @@ export async function clearDeliveredOguNotifs() {
   }
 }
 
+// ── 채널 ID 선택 헬퍼 (스케줄링·테스트가 같은 함수를 거치도록 — 분기 분산 방지) ─
+// alarmMode='vibrate' → 진동 전용 채널 / 그 외 → 사운드+진동 채널
+function oguChannelFor(alarmMode) {
+  return alarmMode === 'vibrate' ? 'ogu-hourly-vib-v1' : 'ogu-hourly-v4'
+}
+function customChannelFor(customAlarmMode) {
+  return customAlarmMode === 'vibrate' ? 'ogu-custom-vib-v1' : 'ogu-custom-v3'
+}
+
 // ── 알람 스케줄 등록 (alarmHours 변경 시 호출) ───────────────
-export async function scheduleOguAlarms(alarmHours = {}) {
+export async function scheduleOguAlarms(alarmHours = {}, alarmMode = 'both') {
   if (!IS_NATIVE) return { ok: false, reason: 'not-native' }
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
@@ -195,7 +204,8 @@ export async function scheduleOguAlarms(alarmHours = {}) {
           id:        day * 24 + targetHour + 1,
           title:     '⏱️ 오구!',
           body:      `곧 ${targetHour}시입니다! 잠깐 쉬어가세요.`,
-          channelId: 'ogu-hourly-v4',
+          // alarmMode='vibrate' 면 진동 전용 채널 사용 (사운드 없음) — 헬퍼로 통일
+          channelId: oguChannelFor(alarmMode),
           schedule:  { at, allowWhileIdle: true },
           extra:     { targetHour, scheduledAt: at.toISOString() },
         })
@@ -336,7 +346,7 @@ export async function diagnoseOguAlarm() {
 
 // ── 30초 뒤 테스트 알람 ──────────────────────────────────────
 // 스케줄링이 정상 작동하는지 즉시 확인용
-export async function scheduleTestNotification() {
+export async function scheduleTestNotification(alarmMode = 'both') {
   if (!IS_NATIVE) {
     alert('네이티브 환경에서만 동작 (브라우저에서는 즉시 알림 사용)')
     return
@@ -355,12 +365,13 @@ export async function scheduleTestNotification() {
     }
 
     const at = new Date(Date.now() + 30_000)
+    const channelId = oguChannelFor(alarmMode)   // 실제 알람과 같은 헬퍼 사용
     await LocalNotifications.schedule({
       notifications: [{
         id:        999,                // 오구 영역(< 1000) 마지막 ID
         title:     '🧪 오구 채널 테스트',
         body:      '오구 알람 채널이 정상 작동합니다!',
-        channelId: 'ogu-hourly-v4',
+        channelId,                     // alarmMode 'vibrate' → 진동 전용 채널
         schedule:  { at, allowWhileIdle: true },
         extra:     { isTest: true },   // 중복방지(dedup) 우회용 — 핸들러에서 항상 팝업
       }],
@@ -370,6 +381,7 @@ export async function scheduleTestNotification() {
     alert(
       `✅ 테스트 알람 등록 완료\n\n` +
       `예정 시각: ${at.toLocaleTimeString('ko-KR')}\n` +
+      `모드: ${alarmMode === 'vibrate' ? '진동만' : '알림음+진동'}\n` +
       `대기중 알람: ${pending.notifications.length}개\n\n` +
       `30초 뒤에 알림이 울리는지 확인해주세요.\n` +
       `(앱을 닫아도 OK)`
@@ -441,11 +453,13 @@ export async function scheduleCustomAlarms(customAlarms = []) {
         // freq(repeatType) 요일 필터 — 평일/주말 알람은 해당 요일에만 등록
         if (!_dayMatchesFreq(at, alarm.repeatType)) continue
 
+        // 알람의 tone === 'vibrate-only' 면 진동 전용 채널 사용 (Step 2 글로벌 토글 도입 후 customAlarmMode로 통합 예정)
+        const perAlarmMode = alarm.tone === 'vibrate-only' ? 'vibrate' : 'both'
         toSchedule.push({
           id:        1000 + alarmIdx * 7 + day,   // alarmIdx 로 NaN 방지
           title:     `${alarm.icon || '🔔'} ${alarm.title}`,
           body:      alarm.message || `${alarm.hour}시 ${String(alarm.minute).padStart(2, '0')}분 알람`,
-          channelId: 'ogu-custom-v3',
+          channelId: customChannelFor(perAlarmMode),
           schedule:  { at, allowWhileIdle: true },
         })
       }

@@ -3,7 +3,7 @@ const TABS = [
   { id: 'todos',    icon: '✅', label: '할일',   pro: false },
   { id: 'alarms',   icon: '🔔', label: '알람',   pro: false },
   { id: 'reports',  icon: '📊', label: '리포트', pro: false },
-  { id: 'settings', icon: '⚙️', label: '설정',  pro: false },
+  { id: 'settings', icon: '⚙️', label: '오구설정', pro: false },
 ]
 
 export default function TabBar({ active, onChange, isPremium, bottomOffset = 0 }) {

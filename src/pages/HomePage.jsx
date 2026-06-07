@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
+import TextWithLinks from '../components/common/TextWithLinks'
 import { OGU_TONES, QUOTES } from '../data/oguData'
 import { gradients } from '../styles/theme'
 
@@ -205,12 +206,17 @@ export default function HomePage({
             onClick={() => onTabChange('settings')}
             title="오구 알람 설정으로 이동"
             style={{
-              flexShrink: 0, width: 44, height: 44, borderRadius: 14, border: 'none',
+              flexShrink: 0, width: 56, padding: '6px 4px',
+              borderRadius: 14, border: 'none',
               background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
             }}
           >
-            {OGU_TONES[oguTone]?.emoji || '⏱️'}
+            <span style={{ fontSize: 20, lineHeight: 1 }}>{OGU_TONES[oguTone]?.emoji || '⏱️'}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#ffffff', letterSpacing: -0.3 }}>
+              오구 설정
+            </span>
           </button>
         </div>
 
@@ -314,7 +320,15 @@ export default function HomePage({
                 background: t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#f59e0b' : '#475569',
               }} />
               <span style={{ color: '#e2e8f0', fontSize: 13, flex: 1, lineHeight: 1.4 }}>
-                {t.title || t.text}
+                <TextWithLinks text={t.title || t.text} />
+                {t.due_date && (() => {
+                  const dt = new Date(t.due_date)
+                  return (
+                    <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>
+                      ({dt.getMonth() + 1}/{dt.getDate()})
+                    </span>
+                  )
+                })()}
               </span>
               {t.due_date && (
                 <span style={{ color: '#475569', fontSize: 10, flexShrink: 0 }}>

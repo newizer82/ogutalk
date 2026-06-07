@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
 import { OGU_TONES } from '../data/oguData'
@@ -43,6 +43,20 @@ export default function SettingsPage({
 }) {
   // 프로필 카드 클릭 시 로그아웃 메뉴 토글
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  // 위험 영역 클릭 시 계정 삭제 버튼 노출 토글
+  const [dangerOpen, setDangerOpen] = useState(false)
+
+  // ── 안드로이드 뒤로가기 — 페이지 오버레이 닫기 ──────────────────
+  // 우선순위: 위험 영역 펼침 → 프로필 메뉴 펼침
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.handled) return
+      if (dangerOpen)      { setDangerOpen(false); e.detail.handled = true; return }
+      if (profileMenuOpen) { setProfileMenuOpen(false); e.detail.handled = true; return }
+    }
+    window.addEventListener('ogu:backRequest', handler)
+    return () => window.removeEventListener('ogu:backRequest', handler)
+  }, [dangerOpen, profileMenuOpen])
   const fireSignal = (tone, repeat) => {
     if (alarmMode !== 'vibrate') playSound(tone, repeat, volume)
     if (alarmMode !== 'sound' && navigator.vibrate) {
@@ -140,6 +154,33 @@ export default function SettingsPage({
         </div>
       </SettingSection>
 
+      {/* ── 오구 알림 방식 (사운드+진동 / 진동만) ── */}
+      <SettingSection title="🔔 오구 알림 방식">
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
+          오구 알람이 울릴 때 사운드 재생 여부를 선택합니다.<br />
+          <span style={{ color: '#475569' }}>진동만 선택 시 백그라운드에서도 무음으로 진동만 울립니다.</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[
+            { key: 'both',    icon: '🔔', label: '오구 알림음 + 진동' },
+            { key: 'vibrate', icon: '📳', label: '진동만' },
+          ].map(opt => {
+            const active = alarmMode === opt.key
+            return (
+              <button key={opt.key} onClick={() => setAlarmMode(opt.key)} style={{
+                padding: '12px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+                border: `1px solid ${active ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
+                background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
+                color: active ? '#818cf8' : '#94a3b8',
+              }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>{opt.icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{opt.label}</div>
+              </button>
+            )
+          })}
+        </div>
+      </SettingSection>
+
       {/* ── 모바일 알람 사운드 톤 ── */}
       {IS_NATIVE && (
         <SettingSection title="📱 모바일 알람 사운드 톤">
@@ -149,15 +190,16 @@ export default function SettingsPage({
           <button
             onClick={() => { const a = new Audio('/sounds/ogu.mp3'); a.play().catch(() => {}) }}
             style={{
-              padding: '14px 12px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+              padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: '2px solid rgba(192,132,252,0.5)',
               background: 'rgba(192,132,252,0.12)',
               color: '#c084fc', width: '100%',
+              display: 'flex', alignItems: 'center', gap: 12,
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 4 }}>📳</div>
-            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>오구 오구~~</div>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>▶ 눌러서 앱 알람음 재생</div>
+            <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>📳</span>
+            <span style={{ fontSize: 14, fontWeight: 800, flex: 1, textAlign: 'left' }}>오구 오구~~</span>
+            <span style={{ fontSize: 11, opacity: 0.7, flexShrink: 0 }}>▶ 미리듣기</span>
           </button>
         </SettingSection>
       )}
@@ -188,10 +230,10 @@ export default function SettingsPage({
           앱을 닫아도 설정한 시간의 59분에 알람이 울립니다.<br />
           기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
         </div>
-        {IS_NATIVE && (
+        {IS_NATIVE && import.meta.env.DEV && (
           <>
             <button
-              onClick={() => scheduleTestNotification()}
+              onClick={() => scheduleTestNotification(alarmMode)}
               style={{
                 marginTop: 10, width: '100%', padding: '10px', borderRadius: 12,
                 border: '1px solid rgba(99,102,241,0.3)', cursor: 'pointer',
@@ -330,25 +372,6 @@ export default function SettingsPage({
 
       </SettingSection>
 
-      {/* ── 약관·정보 ── */}
-      <SettingSection title="ℹ️ 약관 및 정보">
-        <button
-          onClick={() => openUrl('https://ogutalk.vercel.app/privacy.html')}
-          style={{
-            width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
-            color: '#94a3b8', fontSize: 13, textAlign: 'left',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}
-        >
-          <span>🔒 개인정보 처리방침</span>
-          <span style={{ color: '#475569' }}>›</span>
-        </button>
-        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
-          오구톡 v0.6 · 주식회사 지성엔테크
-        </div>
-      </SettingSection>
-
       {/* ── 안정적 사용 가이드 ── */}
       <SettingSection title="📲 안정적인 알람을 위한 권한 안내">
         <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.7, marginBottom: 10 }}>
@@ -397,49 +420,84 @@ export default function SettingsPage({
         </div>
       </SettingSection>
 
+      {/* ── 위험 영역 (접기 — 클릭하면 계정 삭제 버튼 노출) ── */}
       {isLoggedIn && (
-        <>
-          {/* ── 위험 영역: 계정 삭제 ── */}
-          <div style={{
-            marginTop: 24, padding: 14, borderRadius: 14,
-            background: 'rgba(239,68,68,0.05)',
-            border: '1px solid rgba(239,68,68,0.2)',
-          }}>
-            <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 700, marginBottom: 6 }}>⚠️ 위험 영역</div>
-            <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
-              계정을 삭제하면 모든 할일·목표·체크인·알람 데이터가 <b style={{ color: '#fca5a5' }}>영구 삭제</b>되며 복구할 수 없습니다.
-            </div>
-            <button
-              onClick={async () => {
-                const ok1 = window.confirm(
-                  '정말로 계정을 삭제하시겠어요?\n\n' +
-                  '모든 데이터가 영구 삭제되며 되돌릴 수 없습니다.'
-                )
-                if (!ok1) return
-                const ok2 = window.confirm(
-                  '한 번 더 확인 — 계정 삭제를 진행할까요?\n\n' +
-                  '이 작업은 즉시 처리되며 취소할 수 없습니다.'
-                )
-                if (!ok2) return
-                try {
-                  await onDeleteAccount?.()
-                  alert('계정이 삭제됐습니다. 이용해 주셔서 감사합니다.')
-                } catch (e) {
-                  alert('삭제 실패: ' + (e?.message || e))
-                }
-              }}
-              style={{
-                width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
-                border: '1px solid rgba(239,68,68,0.4)',
-                background: 'rgba(239,68,68,0.1)',
-                color: '#ef4444', fontSize: 13, fontWeight: 700,
-              }}
-            >
-              🗑 계정 삭제
-            </button>
+        <div style={{
+          marginTop: 16, padding: 14, borderRadius: 14,
+          background: 'rgba(239,68,68,0.05)',
+          border: '1px solid rgba(239,68,68,0.2)',
+        }}>
+          <div
+            onClick={() => setDangerOpen(v => !v)}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              cursor: 'pointer', userSelect: 'none',
+            }}
+          >
+            <div style={{ color: '#ef4444', fontSize: 13, fontWeight: 700 }}>⚠️ 위험 영역</div>
+            <span style={{
+              color: '#ef4444', fontSize: 14,
+              transition: 'transform 0.15s',
+              transform: dangerOpen ? 'rotate(180deg)' : 'rotate(0)',
+            }}>▼</span>
           </div>
-        </>
+
+          {dangerOpen && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
+                계정을 삭제하면 모든 할일·목표·체크인·알람 데이터가 <b style={{ color: '#fca5a5' }}>영구 삭제</b>되며 복구할 수 없습니다.
+              </div>
+              <button
+                onClick={async () => {
+                  const ok1 = window.confirm(
+                    '정말로 계정을 삭제하시겠어요?\n\n' +
+                    '모든 데이터가 영구 삭제되며 되돌릴 수 없습니다.'
+                  )
+                  if (!ok1) return
+                  const ok2 = window.confirm(
+                    '한 번 더 확인 — 계정 삭제를 진행할까요?\n\n' +
+                    '이 작업은 즉시 처리되며 취소할 수 없습니다.'
+                  )
+                  if (!ok2) return
+                  try {
+                    await onDeleteAccount?.()
+                    alert('계정이 삭제됐습니다. 이용해 주셔서 감사합니다.')
+                  } catch (e) {
+                    alert('삭제 실패: ' + (e?.message || e))
+                  }
+                }}
+                style={{
+                  width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  background: 'rgba(239,68,68,0.1)',
+                  color: '#ef4444', fontSize: 13, fontWeight: 700,
+                }}
+              >
+                🗑 계정 삭제
+              </button>
+            </div>
+          )}
+        </div>
       )}
+
+      {/* ── 약관·정보 (제일 마지막에 배치) ── */}
+      <SettingSection title="ℹ️ 약관 및 정보">
+        <button
+          onClick={() => openUrl('https://ogutalk.vercel.app/privacy.html')}
+          style={{
+            width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+            color: '#94a3b8', fontSize: 13, textAlign: 'left',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}
+        >
+          <span>🔒 개인정보 처리방침</span>
+          <span style={{ color: '#475569' }}>›</span>
+        </button>
+        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
+          오구톡 v1.2.0 · 주식회사 지성엔테크
+        </div>
+      </SettingSection>
     </div>
   )
 }

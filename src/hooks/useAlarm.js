@@ -46,19 +46,20 @@ export function useAlarm({
     }
   }, [])
 
-  // ── 네이티브 알람 스케줄 등록 (마운트 시 + alarmHours 변경 시) ──
+  // ── 네이티브 알람 스케줄 등록 (마운트 시 + alarmHours/alarmMode 변경 시) ──
+  // alarmMode='vibrate' 면 진동 전용 채널로 등록 (capacitor.js 참고)
   useEffect(() => {
     if (IS_NATIVE) {
-      scheduleOguAlarms(alarmHours).catch(() => {})
+      scheduleOguAlarms(alarmHours, alarmMode).catch(() => {})
     }
-  }, [alarmHours])
+  }, [alarmHours, alarmMode])
 
   // ── 네이티브: 12시간마다 자동 재등록 (30일치 소진 방지) ────────
   useEffect(() => {
     if (!IS_NATIVE) return
-    const id = setInterval(() => scheduleOguAlarms(alarmHours).catch(() => {}), 12 * 3_600_000)
+    const id = setInterval(() => scheduleOguAlarms(alarmHours, alarmMode).catch(() => {}), 12 * 3_600_000)
     return () => clearInterval(id)
-  }, [alarmHours])
+  }, [alarmHours, alarmMode])
 
   // ── 웹: Service Worker에 alarmHours 동기화 ─────────────────────
   useEffect(() => {

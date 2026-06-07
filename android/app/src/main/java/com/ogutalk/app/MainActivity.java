@@ -20,8 +20,10 @@ public class MainActivity extends BridgeActivity {
     // Android는 채널 사운드를 생성 후 변경 불가. 사용자가 채널을 무음으로 오버라이드하면
     // 같은 ID를 삭제 후 재생성해도 OS가 기존 무음 설정을 복원한다.
     // 채널 ID를 바꿔야만 시스템이 새 사운드 설정을 받아들인다 → 필요 시 v3, v4... 로 올릴 것.
-    private static final String CHANNEL_OGU    = "ogu-hourly-v4";   // v4: 진동 강화 + 다른 앱 일시정지 강조
-    private static final String CHANNEL_CUSTOM = "ogu-custom-v3";   // v3: 진동 강화 + 다른 앱 일시정지 강조
+    private static final String CHANNEL_OGU        = "ogu-hourly-v4";    // 사운드+진동
+    private static final String CHANNEL_OGU_VIB    = "ogu-hourly-vib-v1"; // 진동만 (NEW v10)
+    private static final String CHANNEL_CUSTOM     = "ogu-custom-v3";    // 사운드+진동
+    private static final String CHANNEL_CUSTOM_VIB = "ogu-custom-vib-v1"; // 진동만 (NEW v10)
     private static final String[] LEGACY_CHANNELS = {
         "ogu-alarm",        // v1~v3
         "ogu-hourly",       // v4~v6 (사용자 무음 오버라이드 가능성)
@@ -33,7 +35,7 @@ public class MainActivity extends BridgeActivity {
     private static final String PREFS_NAME     = "ogu_prefs";
     private static final String KEY_CHAN_VER   = "channel_version";
     // 채널 설정 변경 시 이 숫자를 올리면 자동 재생성됨
-    private static final int    CHAN_VERSION   = 9;
+    private static final int    CHAN_VERSION   = 10;   // v10: 진동 전용 채널 2개 추가
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +69,9 @@ public class MainActivity extends BridgeActivity {
             nm.deleteNotificationChannel(legacyId);
         }
         nm.deleteNotificationChannel(CHANNEL_OGU);
+        nm.deleteNotificationChannel(CHANNEL_OGU_VIB);
         nm.deleteNotificationChannel(CHANNEL_CUSTOM);
+        nm.deleteNotificationChannel(CHANNEL_CUSTOM_VIB);
 
         AudioAttributes audioAttr = new AudioAttributes.Builder()
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -108,6 +112,34 @@ public class MainActivity extends BridgeActivity {
         customCh.setShowBadge(true);
         customCh.setSound(Uri.parse("android.resource://" + pkg + "/raw/ogu_custom"), audioAttr);
         nm.createNotificationChannel(customCh);
+
+        // 3) 오구 알람 — 진동 전용 채널 (사운드 없음)
+        NotificationChannel oguVibCh = new NotificationChannel(
+            CHANNEL_OGU_VIB,
+            "오구 알람 (진동)",
+            NotificationManager.IMPORTANCE_HIGH
+        );
+        oguVibCh.setDescription("매시 59분 오구톡 알람 — 진동만");
+        oguVibCh.enableVibration(true);
+        oguVibCh.setVibrationPattern(strongPattern);
+        oguVibCh.setBypassDnd(true);
+        oguVibCh.setShowBadge(true);
+        oguVibCh.setSound(null, null);   // 사운드 없음
+        nm.createNotificationChannel(oguVibCh);
+
+        // 4) 커스텀 알람 — 진동 전용 채널 (사운드 없음)
+        NotificationChannel customVibCh = new NotificationChannel(
+            CHANNEL_CUSTOM_VIB,
+            "커스텀 알람 (진동)",
+            NotificationManager.IMPORTANCE_HIGH
+        );
+        customVibCh.setDescription("사용자 정의 시간 알람 — 진동만");
+        customVibCh.enableVibration(true);
+        customVibCh.setVibrationPattern(strongPattern);
+        customVibCh.setBypassDnd(true);
+        customVibCh.setShowBadge(true);
+        customVibCh.setSound(null, null);   // 사운드 없음
+        nm.createNotificationChannel(customVibCh);
 
         prefs.edit().putInt(KEY_CHAN_VER, CHAN_VERSION).apply();
     }

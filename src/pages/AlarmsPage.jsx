@@ -3,6 +3,7 @@ import Toggle from '../components/common/Toggle'
 import { ALARM_TONES } from '../data/oguData'
 import { PRESET_CATEGORIES, DEFAULT_CATEGORY, FREQ_OPTIONS, DEFAULT_FREQ } from '../data/quickAddPresets'
 import { IS_NATIVE } from '../lib/capacitor'
+import { TIME_SEGMENTS, groupAlarmsByTimeSegment } from '../lib/timeSegments'
 import { S } from '../styles/theme'
 import { playAlarmTone, unlockAudio } from '../hooks/useAlarm'
 import { useUserPresets, canCustomizePresets } from '../hooks/useUserPresets'
@@ -105,10 +106,15 @@ export default function AlarmsPage({
   onAddAlarm,
   onToggleAlarm,
   onDeleteAlarm,
+  customAlarmDefaultMode    = 'both',         // 신규 알람 생성 시 폼 초기값
+  setCustomAlarmDefaultMode = () => {},
 }) {
   const addAlarm    = onAddAlarm
   const toggleAlarm = onToggleAlarm
   const deleteAlarm = onDeleteAlarm
+
+  // 설정값('both'/'vibrate')을 폼 모드('sound'/'vibrate')로 변환하는 헬퍼
+  const initialFormMode = () => customAlarmDefaultMode === 'vibrate' ? 'vibrate' : 'sound'
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [formTitle,   setFormTitle]   = useState('')
@@ -116,6 +122,8 @@ export default function AlarmsPage({
   const [formHour,    setFormHour]    = useState('08')
   const [formMinute,  setFormMinute]  = useState('00')
   const [formTone,    setFormTone]    = useState(IS_NATIVE ? 'mobile-mp3' : '딩동')
+  // 알림 방식: 'sound' = 사운드+진동 / 'vibrate' = 진동만 (초기값은 글로벌 기본값 반영)
+  const [formMode,    setFormMode]    = useState(initialFormMode)
   const [formCategory, setFormCategory] = useState(DEFAULT_CATEGORY)
   const [formFreq,     setFormFreq]     = useState(DEFAULT_FREQ)
   const [saveAsPreset, setSaveAsPreset] = useState(false)
@@ -133,6 +141,18 @@ export default function AlarmsPage({
   // 사용자 정의 프리셋 (localStorage)
   const { userPresets, saveUserPreset, updateUserPreset, deleteUserPreset } = useUserPresets()
 
+  // ── 안드로이드 뒤로가기 — 페이지 오버레이 닫기 ──────────────────
+  // 우선순위: 시간 편집 시트 → 추가/편집 폼
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.handled) return
+      if (quickEdit)   { setQuickEdit(null); e.detail.handled = true; return }
+      if (showAddForm) { setShowAddForm(false); e.detail.handled = true; return }
+    }
+    window.addEventListener('ogu:backRequest', handler)
+    return () => window.removeEventListener('ogu:backRequest', handler)
+  }, [quickEdit, showAddForm])
+
   // 빠른 추가 카드 탭 시 디폴트 시·분 채우기
   useEffect(() => {
     if (quickEdit) {
@@ -145,6 +165,7 @@ export default function AlarmsPage({
     setFormTitle(''); setFormMessage('')
     setFormHour('08'); setFormMinute('00')
     setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
+    setFormMode(initialFormMode())   // 글로벌 기본값 반영
     setFormCategory(DEFAULT_CATEGORY)
     setFormFreq(DEFAULT_FREQ)
     setSaveAsPreset(false)
@@ -161,6 +182,7 @@ export default function AlarmsPage({
     setFormCategory(preset.category || DEFAULT_CATEGORY)
     setFormFreq(preset.freq || DEFAULT_FREQ)
     setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
+    setFormMode(initialFormMode())   // 글로벌 기본값 반영
     setSaveAsPreset(false)
     setShowAddForm(true)
   }
@@ -202,13 +224,14 @@ export default function AlarmsPage({
     }
 
     // 신규: 실제 알람 등록
+    // formMode='vibrate' 면 tone에 'vibrate-only' 마커 저장 → capacitor.js가 진동 채널로 분기
     addAlarm({
       icon: autoIcon(hour),
       title: formTitle.trim(),
       message: formMessage.trim(),
       hour, minute,
       repeatType: formFreq || DEFAULT_FREQ,   // 매일/평일/주말 — 요일 필터에 사용
-      tone: formTone,
+      tone: formMode === 'vibrate' ? 'vibrate-only' : formTone,
       repeat: 1,
     })
     // 체크박스 켜져있으면 빠른 추가에도 저장
@@ -236,61 +259,133 @@ export default function AlarmsPage({
         💡 매시 59분 오구톡 알람 설정은 <b style={{ color: '#818cf8' }}>설정 탭</b>에서 변경할 수 있어요.
       </div>
 
+      {/* ── 커스텀 알람 기본 알림 방식 (신규 알람 생성 시 폼 초기값) ── */}
+      <Section title="🔔 커스텀 알람 기본 알림 방식">
+        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
+          새 커스텀 알람을 만들 때 폼에 미리 선택되는 기본값입니다.<br />
+          <span style={{ color: '#475569' }}>폼에서 알람별로 다르게 선택 가능 · 기존 알람에는 영향 없음</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[
+            { key: 'both',    icon: '🔔', label: '알림음 + 진동' },
+            { key: 'vibrate', icon: '📳', label: '진동만' },
+          ].map(opt => {
+            const active = customAlarmDefaultMode === opt.key
+            return (
+              <button key={opt.key} onClick={() => setCustomAlarmDefaultMode(opt.key)} style={{
+                padding: '12px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+                border: `1px solid ${active ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
+                background: active ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
+                color: active ? '#fb923c' : '#94a3b8',
+              }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>{opt.icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{opt.label}</div>
+              </button>
+            )
+          })}
+        </div>
+      </Section>
+
       <Section title="➕ 커스텀 알람">
         <div style={{ color: '#64748b', fontSize: 11, marginBottom: 14, lineHeight: 1.6 }}>
           원하는 시간에 매일 반복 알람을 추가하세요.
         </div>
 
-        {/* ── 등록된 알람 목록 ── */}
-        {customAlarms.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
-              📋 등록된 알람 ({customAlarms.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {customAlarms.map(alarm => {
-                const repeatCount = alarm.repeat || 1
-                // freq 라벨 (repeat_type 컬럼에 저장된 값) — 색상 매핑
-                const freq = alarm.repeatType || '매일'
-                const freqColor = freq === '평일' ? '#6366f1' : freq === '주말' ? '#f59e0b' : '#10b981'
+        {/* ── 등록된 알람 목록 — 4 시간대 그룹 (컴팩트 한 줄) ── */}
+        {customAlarms.length > 0 && (() => {
+          const groups = groupAlarmsByTimeSegment(customAlarms)
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
+                📋 등록된 알람 ({customAlarms.length})
+              </div>
+              {TIME_SEGMENTS.map(seg => {
+                const list = groups[seg.key]
+                if (!list || list.length === 0) return null
                 return (
-                  <div key={alarm.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 14,
-                    background: alarm.isEnabled ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${alarm.isEnabled ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                  }}>
-                    <span style={{ fontSize: 20 }}>{alarm.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: alarm.isEnabled ? '#e2e8f0' : '#64748b', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {alarm.title}
-                      </div>
-                      <div style={{ color: '#64748b', fontSize: 10, marginTop: 2, display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <span>{pad(alarm.hour)}:{pad(alarm.minute)}</span>
-                        <span>·</span>
-                        <span style={{
-                          color: freqColor, fontWeight: 700,
-                          padding: '1px 6px', borderRadius: 6,
-                          background: `${freqColor}22`,
-                          border: `1px solid ${freqColor}55`,
-                        }}>{freq}</span>
-                        {repeatCount > 1 && (
-                          <span style={{ color: '#475569' }}>× {repeatCount}</span>
-                        )}
-                      </div>
+                  <div key={seg.key} style={{ marginBottom: 12 }}>
+                    {/* 시간대 헤더 (얇은 줄형) */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      marginBottom: 4, paddingLeft: 2,
+                    }}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: 3,
+                        background: seg.color,
+                      }} />
+                      <span style={{ color: seg.color, fontSize: 11, fontWeight: 700 }}>{seg.label}</span>
+                      <span style={{ color: '#475569', fontSize: 10 }}>{seg.range}</span>
+                      <span style={{ color: '#475569', fontSize: 10, marginLeft: 'auto' }}>
+                        {list.length}개
+                      </span>
                     </div>
-                    <Toggle on={alarm.isEnabled} onToggle={() => toggleAlarm(alarm.id)} />
-                    <button onClick={() => deleteAlarm(alarm.id)} style={{
-                      width: 28, height: 28, borderRadius: 8, border: 'none',
-                      background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                      fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>✕</button>
+                    {/* 알람 행들 — 한 줄 컴팩트 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {list.map(alarm => {
+                        const freq = alarm.repeatType || '매일'
+                        const freqColor = freq === '평일' ? '#6366f1' : freq === '주말' ? '#f59e0b' : '#10b981'
+                        const isVib = alarm.tone === 'vibrate-only'
+                        return (
+                          <div key={alarm.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '7px 10px 7px 12px', borderRadius: 10,
+                            background: alarm.isEnabled ? 'rgba(255,255,255,0.025)' : 'transparent',
+                            borderLeft: `3px solid ${alarm.isEnabled ? seg.color : 'rgba(255,255,255,0.08)'}`,
+                          }}>
+                            {/* 좌측: 시각 (큰 글씨 강조) */}
+                            <span style={{
+                              color: alarm.isEnabled ? '#e2e8f0' : '#64748b',
+                              fontSize: 15, fontWeight: 800,
+                              fontVariantNumeric: 'tabular-nums',
+                              minWidth: 46,
+                            }}>
+                              {pad(alarm.hour)}:{pad(alarm.minute)}
+                            </span>
+                            {/* 중간: 아이콘 + 제목 + freq/진동 인라인 */}
+                            <div style={{
+                              flex: 1, minWidth: 0,
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              overflow: 'hidden',
+                            }}>
+                              <span style={{ fontSize: 14 }}>{alarm.icon}</span>
+                              <span style={{
+                                color: alarm.isEnabled ? '#cbd5e1' : '#64748b',
+                                fontSize: 12.5, fontWeight: 600,
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                flex: 1, minWidth: 0,
+                              }}>
+                                {alarm.title}
+                              </span>
+                              <span style={{
+                                color: freqColor, fontSize: 9, fontWeight: 700,
+                                padding: '1px 5px', borderRadius: 5,
+                                background: `${freqColor}1f`,
+                                flexShrink: 0,
+                              }}>{freq}</span>
+                              {isVib && (
+                                <span style={{
+                                  fontSize: 11, color: '#94a3b8', flexShrink: 0,
+                                }} title="진동만">📳</span>
+                              )}
+                            </div>
+                            {/* 우측: 토글 + × (작게) */}
+                            <Toggle on={alarm.isEnabled} onToggle={() => toggleAlarm(alarm.id)} />
+                            <button onClick={() => deleteAlarm(alarm.id)} aria-label="삭제" style={{
+                              width: 22, height: 22, borderRadius: 6, border: 'none',
+                              background: 'transparent', color: '#475569',
+                              fontSize: 14, cursor: 'pointer', padding: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>✕</button>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* ── 직접 추가하기 ── */}
         {!showAddForm ? (
@@ -348,13 +443,37 @@ export default function AlarmsPage({
               </div>
             </div>
 
-            {/* 알람음 — 폰에서는 mp3 고정이라 선택 UI 숨김 */}
-            {!IS_NATIVE && (
+            {/* 알림 방식 — 사운드+진동 / 진동만 */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알림 방식</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {[
+                  { key: 'sound',   icon: '🔔', label: '알림음 + 진동' },
+                  { key: 'vibrate', icon: '📳', label: '진동만' },
+                ].map(opt => {
+                  const active = formMode === opt.key
+                  return (
+                    <button key={opt.key} onClick={() => setFormMode(opt.key)} style={{
+                      padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+                      border: `1px solid ${active ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
+                      background: active ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
+                      color: active ? '#fb923c' : '#94a3b8',
+                      fontSize: 12, fontWeight: 700,
+                    }}>
+                      {opt.icon} {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 알람음 선택 — formMode='sound' 일 때만 (진동만이면 숨김) */}
+            {formMode === 'sound' && !IS_NATIVE && (
               <div style={{ marginBottom: 14 }}>
                 <TonePicker value={formTone} onChange={setFormTone} volume={volume} />
               </div>
             )}
-            {IS_NATIVE && (
+            {formMode === 'sound' && IS_NATIVE && (
               <div style={{
                 marginBottom: 14, padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)',

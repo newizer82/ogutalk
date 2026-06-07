@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
@@ -17,6 +17,11 @@ import SettingsPage from './pages/SettingsPage'
 import AlarmsPage from './pages/AlarmsPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import { gradients, S } from './styles/theme'
+
+// ── 뒤로가기 더블 프레스 종료 패턴 ────────────────────────────────
+// React state로 두면 클로저 함정에 빠질 수 있어 모듈 스코프 일반 변수로 관리
+let lastBackPressAt = 0
+const EXIT_DOUBLE_PRESS_WINDOW = 2000   // 2초
 
 // ── 로그인 모달 (바텀시트)
 function LoginModal({ open, onClose, onLogin }) {
@@ -182,7 +187,7 @@ export default function App() {
 
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
-  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, volume, vibStrength, alarmHours } = settings
+  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmDefaultMode, volume, vibStrength, alarmHours } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -201,6 +206,7 @@ export default function App() {
   const setVolume      = v => updateSetting('volume', v)
   const setVibStrength = v => updateSetting('vibStrength', v)
   const setAlarmHours  = v => updateSetting('alarmHours', v)
+  const setCustomAlarmDefaultMode = v => updateSetting('customAlarmDefaultMode', v)
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
@@ -286,6 +292,89 @@ export default function App() {
   useEffect(() => {
     if (isLoggedIn && loginOpen) setLoginOpen(false)
   }, [isLoggedIn, loginOpen])
+
+  // ── 안드로이드 뒤로가기 처리 — 단일 등록 + ref 기반 ─────────────────
+  // 핵심:
+  //  • addListener를 **한 번만** 등록 (deps=[]). React state는 ref로 읽음 → 클로저 함정 회피.
+  //  • Toast 모듈 import는 핸들러 안에서 지연 로드 (실패해도 listener 등록은 안전).
+  //  • Capacitor backButton에 listener가 하나도 없으면 안드로이드 기본 동작(앱 종료)이 실행됨.
+  //    → 등록 자체가 절대 실패하지 않도록 try/catch 위치를 조정.
+  // 우선순위:
+  //  1) 오구 알람 팝업 → 닫고 홈 탭으로
+  //  2) 로그인 모달 → 닫기
+  //  3) 페이지 내 오버레이(모달/바텀시트/펼침) → 이벤트 디스패치로 해당 페이지가 닫음
+  //  4) 비-홈 탭 → 홈 탭
+  //  5) 홈 탭 → "한 번 더 누르면 종료" 토스트 + 2초 내 두 번째 누름 → exitApp
+  const activeTabRef       = useRef(activeTab)
+  const showAlarmPopupRef  = useRef(showAlarmPopup)
+  const loginOpenRef       = useRef(loginOpen)
+  const closeAlarmPopupRef = useRef(closeAlarmPopup)
+  useEffect(() => { activeTabRef.current       = activeTab },       [activeTab])
+  useEffect(() => { showAlarmPopupRef.current  = showAlarmPopup },  [showAlarmPopup])
+  useEffect(() => { loginOpenRef.current       = loginOpen },       [loginOpen])
+  useEffect(() => { closeAlarmPopupRef.current = closeAlarmPopup }, [closeAlarmPopup])
+
+  useEffect(() => {
+    if (!IS_NATIVE) return
+    let removeHandle = null
+    let canceled = false
+
+    ;(async () => {
+      try {
+        const { App: CapApp } = await import('@capacitor/app')
+        if (canceled) return
+
+        const handle = await CapApp.addListener('backButton', async () => {
+          // 1) 오구 알람 팝업
+          if (showAlarmPopupRef.current) {
+            closeAlarmPopupRef.current?.()
+            setActiveTab('home')
+            return
+          }
+          // 2) 로그인 모달
+          if (loginOpenRef.current) {
+            setLoginOpen(false)
+            return
+          }
+          // 3) 페이지 내 오버레이
+          const overlayEvent = new CustomEvent('ogu:backRequest', { detail: { handled: false } })
+          window.dispatchEvent(overlayEvent)
+          if (overlayEvent.detail.handled) return
+          // 4) 비-홈 탭 → 홈
+          if (activeTabRef.current !== 'home') {
+            setActiveTab('home')
+            return
+          }
+          // 5) 홈 탭 — 더블 백 종료
+          const now = Date.now()
+          if (now - lastBackPressAt < EXIT_DOUBLE_PRESS_WINDOW) {
+            try { CapApp.exitApp() } catch (_) { /* ignore */ }
+          } else {
+            lastBackPressAt = now
+            // Toast는 지연 import — 실패해도 listener엔 영향 없음
+            try {
+              const { Toast } = await import('@capacitor/toast')
+              await Toast.show({
+                text:     '한 번 더 누르면 종료됩니다',
+                duration: 'short',
+                position: 'bottom',
+              })
+            } catch (_) { /* 토스트 실패는 무시 */ }
+          }
+        })
+
+        if (canceled) { handle.remove(); return }
+        removeHandle = handle
+      } catch (e) {
+        console.warn('[backButton] 등록 실패:', e)
+      }
+    })()
+
+    return () => {
+      canceled = true
+      if (removeHandle) { try { removeHandle.remove() } catch (_) {} }
+    }
+  }, [])   // ← 단일 등록
 
   const handleLogin = useCallback((email) => {
     setLocalEmail(email)
@@ -377,6 +466,8 @@ export default function App() {
             onAddAlarm={addAlarm}
             onToggleAlarm={toggleAlarm}
             onDeleteAlarm={deleteAlarm}
+            customAlarmDefaultMode={customAlarmDefaultMode}
+            setCustomAlarmDefaultMode={setCustomAlarmDefaultMode}
           />
         )}
         {activeTab === 'reports' && (
