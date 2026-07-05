@@ -106,15 +106,13 @@ export default function AlarmsPage({
   onAddAlarm,
   onToggleAlarm,
   onDeleteAlarm,
-  customAlarmDefaultMode    = 'both',         // 신규 알람 생성 시 폼 초기값
-  setCustomAlarmDefaultMode = () => {},
+  // v1.2.1: 진짜 글로벌 커스텀 알람 방식 (모든 알람에 즉시 적용)
+  customAlarmMode    = 'both',
+  setCustomAlarmMode = () => {},
 }) {
   const addAlarm    = onAddAlarm
   const toggleAlarm = onToggleAlarm
   const deleteAlarm = onDeleteAlarm
-
-  // 설정값('both'/'vibrate')을 폼 모드('sound'/'vibrate')로 변환하는 헬퍼
-  const initialFormMode = () => customAlarmDefaultMode === 'vibrate' ? 'vibrate' : 'sound'
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [formTitle,   setFormTitle]   = useState('')
@@ -122,8 +120,6 @@ export default function AlarmsPage({
   const [formHour,    setFormHour]    = useState('08')
   const [formMinute,  setFormMinute]  = useState('00')
   const [formTone,    setFormTone]    = useState(IS_NATIVE ? 'mobile-mp3' : '딩동')
-  // 알림 방식: 'sound' = 사운드+진동 / 'vibrate' = 진동만 (초기값은 글로벌 기본값 반영)
-  const [formMode,    setFormMode]    = useState(initialFormMode)
   const [formCategory, setFormCategory] = useState(DEFAULT_CATEGORY)
   const [formFreq,     setFormFreq]     = useState(DEFAULT_FREQ)
   const [saveAsPreset, setSaveAsPreset] = useState(false)
@@ -165,7 +161,6 @@ export default function AlarmsPage({
     setFormTitle(''); setFormMessage('')
     setFormHour('08'); setFormMinute('00')
     setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
-    setFormMode(initialFormMode())   // 글로벌 기본값 반영
     setFormCategory(DEFAULT_CATEGORY)
     setFormFreq(DEFAULT_FREQ)
     setSaveAsPreset(false)
@@ -182,7 +177,6 @@ export default function AlarmsPage({
     setFormCategory(preset.category || DEFAULT_CATEGORY)
     setFormFreq(preset.freq || DEFAULT_FREQ)
     setFormTone(IS_NATIVE ? 'mobile-mp3' : '딩동')
-    setFormMode(initialFormMode())   // 글로벌 기본값 반영
     setSaveAsPreset(false)
     setShowAddForm(true)
   }
@@ -224,14 +218,14 @@ export default function AlarmsPage({
     }
 
     // 신규: 실제 알람 등록
-    // formMode='vibrate' 면 tone에 'vibrate-only' 마커 저장 → capacitor.js가 진동 채널로 분기
+    // v1.2.1: 진동 여부는 글로벌 customAlarmMode 로 관리 → tone 은 사운드 종류만 저장
     addAlarm({
       icon: autoIcon(hour),
       title: formTitle.trim(),
       message: formMessage.trim(),
       hour, minute,
       repeatType: formFreq || DEFAULT_FREQ,   // 매일/평일/주말 — 요일 필터에 사용
-      tone: formMode === 'vibrate' ? 'vibrate-only' : formTone,
+      tone: formTone,
       repeat: 1,
     })
     // 체크박스 켜져있으면 빠른 추가에도 저장
@@ -259,20 +253,20 @@ export default function AlarmsPage({
         💡 매시 59분 오구톡 알람 설정은 <b style={{ color: '#818cf8' }}>설정 탭</b>에서 변경할 수 있어요.
       </div>
 
-      {/* ── 커스텀 알람 기본 알림 방식 (신규 알람 생성 시 폼 초기값) ── */}
-      <Section title="🔔 커스텀 알람 기본 알림 방식">
+      {/* ── 커스텀 알람 방식 (진짜 글로벌 — 등록된 모든 커스텀 알람에 즉시 적용) ── */}
+      <Section title="🔔 커스텀 알람 방식">
         <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
-          새 커스텀 알람을 만들 때 폼에 미리 선택되는 기본값입니다.<br />
-          <span style={{ color: '#475569' }}>폼에서 알람별로 다르게 선택 가능 · 기존 알람에는 영향 없음</span>
+          <b style={{ color: '#94a3b8' }}>모든 커스텀 알람</b>에 즉시 적용됩니다.<br />
+          <span style={{ color: '#475569' }}>진동만 선택 시 소리 없이 진동만 울려요 (회의·수면 시 유용).</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {[
             { key: 'both',    icon: '🔔', label: '알림음 + 진동' },
             { key: 'vibrate', icon: '📳', label: '진동만' },
           ].map(opt => {
-            const active = customAlarmDefaultMode === opt.key
+            const active = customAlarmMode === opt.key
             return (
-              <button key={opt.key} onClick={() => setCustomAlarmDefaultMode(opt.key)} style={{
+              <button key={opt.key} onClick={() => setCustomAlarmMode(opt.key)} style={{
                 padding: '12px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
                 border: `1px solid ${active ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
                 background: active ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
@@ -324,7 +318,8 @@ export default function AlarmsPage({
                       {list.map(alarm => {
                         const freq = alarm.repeatType || '매일'
                         const freqColor = freq === '평일' ? '#6366f1' : freq === '주말' ? '#f59e0b' : '#10b981'
-                        const isVib = alarm.tone === 'vibrate-only'
+                        // v1.2.1: 글로벌 모드가 진동이면 무조건, 그 외엔 개별 tone 존중
+                        const isVib = customAlarmMode === 'vibrate' || alarm.tone === 'vibrate-only'
                         return (
                           <div key={alarm.id} style={{
                             display: 'flex', alignItems: 'center', gap: 10,
@@ -443,43 +438,26 @@ export default function AlarmsPage({
               </div>
             </div>
 
-            {/* 알림 방식 — 사운드+진동 / 진동만 */}
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알림 방식</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {[
-                  { key: 'sound',   icon: '🔔', label: '알림음 + 진동' },
-                  { key: 'vibrate', icon: '📳', label: '진동만' },
-                ].map(opt => {
-                  const active = formMode === opt.key
-                  return (
-                    <button key={opt.key} onClick={() => setFormMode(opt.key)} style={{
-                      padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
-                      border: `1px solid ${active ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
-                      background: active ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
-                      color: active ? '#fb923c' : '#94a3b8',
-                      fontSize: 12, fontWeight: 700,
-                    }}>
-                      {opt.icon} {opt.label}
-                    </button>
-                  )
-                })}
+            {/* v1.2.1: 알림 방식은 상단 글로벌 섹션에서 관리 (폼에는 표시하지 않음) */}
+            {customAlarmMode === 'vibrate' ? (
+              <div style={{
+                marginBottom: 14, padding: '10px 12px', borderRadius: 10,
+                background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.25)',
+                color: '#cbd5e1', fontSize: 11,
+              }}>
+                📳 알림 방식: <b>진동만</b> <span style={{ color: '#64748b' }}>(상단 설정 기준)</span>
               </div>
-            </div>
-
-            {/* 알람음 선택 — formMode='sound' 일 때만 (진동만이면 숨김) */}
-            {formMode === 'sound' && !IS_NATIVE && (
+            ) : !IS_NATIVE ? (
               <div style={{ marginBottom: 14 }}>
                 <TonePicker value={formTone} onChange={setFormTone} volume={volume} />
               </div>
-            )}
-            {formMode === 'sound' && IS_NATIVE && (
+            ) : (
               <div style={{
                 marginBottom: 14, padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)',
                 color: '#fb923c', fontSize: 11,
               }}>
-                📳 알람음: <b>오구 커스텀음</b> (mp3 자동 적용)
+                🔔 알림 방식: <b>알림음 + 진동</b> · 알람음: <b>오구 커스텀음</b>
               </div>
             )}
 

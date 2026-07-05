@@ -201,6 +201,20 @@ export default function SettingsPage({
             <span style={{ fontSize: 14, fontWeight: 800, flex: 1, textAlign: 'left' }}>오구 오구~~</span>
             <span style={{ fontSize: 11, opacity: 0.7, flexShrink: 0 }}>▶ 미리듣기</span>
           </button>
+
+          {/* 볼륨 조절 안내 — Android 정책상 앱이 알람 볼륨을 직접 조절할 수 없음 */}
+          <div style={{
+            marginTop: 12, padding: '10px 12px', borderRadius: 10,
+            background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)',
+            color: '#94a3b8', fontSize: 11, lineHeight: 1.6,
+          }}>
+            🔊 <b style={{ color: '#cbd5e1' }}>알람 음량 조절</b><br />
+            Android 정책상 앱 내에서 음량을 직접 조절할 수 없어요.<br />
+            <span style={{ color: '#64748b' }}>
+              폰 <b>설정 → 소리 및 진동 → 볼륨 → 알림 볼륨</b> 슬라이더에서 조절하세요.
+              또는 알람이 울릴 때 <b>볼륨 다운 키</b>를 눌러 즉시 낮출 수 있어요.
+            </span>
+          </div>
         </SettingSection>
       )}
 
@@ -495,7 +509,7 @@ export default function SettingsPage({
           <span style={{ color: '#475569' }}>›</span>
         </button>
         <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
-          오구톡 v1.2.0 · 주식회사 지성엔테크
+          오구톡 v1.2.1 · 주식회사 지성엔테크
         </div>
       </SettingSection>
     </div>

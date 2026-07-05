@@ -19,7 +19,9 @@ export const DEFAULT_SETTINGS = {
   oguAlarmTone:  '딩동',   // ALARM_TONES 중 하나 — 실제 알람 시 재생 음
   oguRepeat:     2,
   alarmMode:     'both',   // 오구 알람용: 'sound' | 'vibrate' | 'both'
-  customAlarmDefaultMode: 'both',  // 커스텀 알람 신규 생성 시 폼 초기값: 'both' | 'vibrate'
+  // v1.2.1: 커스텀 알람 글로벌 방식 — 모든 커스텀 알람에 즉시 적용
+  // 이전 'customAlarmDefaultMode'(폼 초기값 전용)에서 '진짜 글로벌'로 승격
+  customAlarmMode: 'both',   // 'both' | 'vibrate'
   volume:        0.8,      // 0.0 ~ 1.0
   vibStrength:   'medium', // 'weak' | 'medium' | 'strong'
   alarmHours:    buildDefaultAlarmHours(),
@@ -68,8 +70,13 @@ export function loadSettings() {
       if (!validTones.includes(merged.oguTone)) merged.oguTone = DEFAULT_SETTINGS.oguTone
       // alarmMode 유효성 — 'both' / 'vibrate' / 'sound' 외 값은 기본값
       if (!['both', 'vibrate', 'sound'].includes(merged.alarmMode)) merged.alarmMode = 'both'
-      // customAlarmDefaultMode 유효성 — 'both' / 'vibrate' 외 값은 기본값
-      if (!['both', 'vibrate'].includes(merged.customAlarmDefaultMode)) merged.customAlarmDefaultMode = 'both'
+      // v1.2.1 마이그레이션: customAlarmDefaultMode → customAlarmMode (진짜 글로벌로 승격)
+      if (merged.customAlarmDefaultMode !== undefined && merged.customAlarmMode === undefined) {
+        merged.customAlarmMode = merged.customAlarmDefaultMode
+      }
+      delete merged.customAlarmDefaultMode
+      // customAlarmMode 유효성 — 'both' / 'vibrate' 외 값은 기본값
+      if (!['both', 'vibrate'].includes(merged.customAlarmMode)) merged.customAlarmMode = 'both'
       return merged
     }
   } catch { /* 손상된 새 키는 무시 → 마이그레이션으로 fallback */ }

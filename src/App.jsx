@@ -187,7 +187,7 @@ export default function App() {
 
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
-  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmDefaultMode, volume, vibStrength, alarmHours } = settings
+  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -206,7 +206,7 @@ export default function App() {
   const setVolume      = v => updateSetting('volume', v)
   const setVibStrength = v => updateSetting('vibStrength', v)
   const setAlarmHours  = v => updateSetting('alarmHours', v)
-  const setCustomAlarmDefaultMode = v => updateSetting('customAlarmDefaultMode', v)
+  const setCustomAlarmMode = v => updateSetting('customAlarmMode', v)
 
   // 기능 활성화 (프리미엄)
   const [premiumFeatures, setPremiumFeatures] = useState({
@@ -219,7 +219,7 @@ export default function App() {
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
 
   // 커스텀 알람 (앱 최상위에서 관리 — 로그인 시 Supabase 동기화)
-  const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms(userId)
+  const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms(userId, customAlarmMode)
 
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
@@ -466,8 +466,8 @@ export default function App() {
             onAddAlarm={addAlarm}
             onToggleAlarm={toggleAlarm}
             onDeleteAlarm={deleteAlarm}
-            customAlarmDefaultMode={customAlarmDefaultMode}
-            setCustomAlarmDefaultMode={setCustomAlarmDefaultMode}
+            customAlarmMode={customAlarmMode}
+            setCustomAlarmMode={setCustomAlarmMode}
           />
         )}
         {activeTab === 'reports' && (

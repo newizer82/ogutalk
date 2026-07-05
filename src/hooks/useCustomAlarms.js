@@ -53,13 +53,14 @@ function toDB(alarm, userId) {
 }
 
 // ── 훅 ───────────────────────────────────────────────────────
-export function useCustomAlarms(userId = null) {
+// customAlarmMode: 'both' | 'vibrate' — 글로벌 알림 방식 (변경 시 재스케줄됨)
+export function useCustomAlarms(userId = null, customAlarmMode = 'both') {
   const [alarms, setAlarms] = useState(loadLocal)
 
-  // 알람 변경 시 Capacitor 재스케줄
+  // 알람 목록 또는 글로벌 모드 변경 시 Capacitor 재스케줄
   useEffect(() => {
-    if (IS_NATIVE) scheduleCustomAlarms(alarms)
-  }, [alarms])
+    if (IS_NATIVE) scheduleCustomAlarms(alarms, customAlarmMode)
+  }, [alarms, customAlarmMode])
 
   // userId 변경 시 Supabase 동기화
   useEffect(() => {

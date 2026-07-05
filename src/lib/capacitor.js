@@ -417,7 +417,10 @@ function _dayMatchesFreq(date, freq) {
 }
 
 // ── 커스텀 알람 스케줄 등록 ───────────────────────────────────
-export async function scheduleCustomAlarms(customAlarms = []) {
+// customAlarmMode: 'both' | 'vibrate' — 글로벌 모드 (모든 커스텀 알람에 적용)
+//   'vibrate' → 무조건 진동 채널 (사용자가 설정 탭에서 진동만 선택)
+//   'both'    → 개별 alarm.tone === 'vibrate-only' 일 때만 진동 채널
+export async function scheduleCustomAlarms(customAlarms = [], customAlarmMode = 'both') {
   if (!IS_NATIVE) return { ok: false, reason: 'not-native' }
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
@@ -453,13 +456,16 @@ export async function scheduleCustomAlarms(customAlarms = []) {
         // freq(repeatType) 요일 필터 — 평일/주말 알람은 해당 요일에만 등록
         if (!_dayMatchesFreq(at, alarm.repeatType)) continue
 
-        // 알람의 tone === 'vibrate-only' 면 진동 전용 채널 사용 (Step 2 글로벌 토글 도입 후 customAlarmMode로 통합 예정)
-        const perAlarmMode = alarm.tone === 'vibrate-only' ? 'vibrate' : 'both'
+        // 글로벌 모드 우선 — 'vibrate' 면 모든 알람이 진동 채널
+        // 'both' 일 때만 개별 alarm.tone === 'vibrate-only' 를 존중
+        const effectiveMode = customAlarmMode === 'vibrate'
+          ? 'vibrate'
+          : (alarm.tone === 'vibrate-only' ? 'vibrate' : 'both')
         toSchedule.push({
           id:        1000 + alarmIdx * 7 + day,   // alarmIdx 로 NaN 방지
           title:     `${alarm.icon || '🔔'} ${alarm.title}`,
           body:      alarm.message || `${alarm.hour}시 ${String(alarm.minute).padStart(2, '0')}분 알람`,
-          channelId: customChannelFor(perAlarmMode),
+          channelId: customChannelFor(effectiveMode),
           schedule:  { at, allowWhileIdle: true },
         })
       }
