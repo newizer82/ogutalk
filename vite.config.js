@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  esbuild: { drop: ['console', 'debugger'] },   // production 빌드에서 자동 제거
   plugins: [
     react(),
     VitePWA({

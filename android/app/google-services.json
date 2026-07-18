@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "727934251732",
+    "project_id": "ogutalk-app",
+    "storage_bucket": "ogutalk-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727934251732:android:87a1beaba6e4fc3b120141",
+        "android_client_info": {
+          "package_name": "com.ogutalk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFkfJEwyCJMvdwb0HIAvNkM-YK7ph0XxM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

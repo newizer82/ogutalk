@@ -36,7 +36,8 @@ export function useTodos(userId) {
     const total = data.length
     const done = data.filter(t => t.completed).length
     const progress = total === 0 ? 0 : Math.round((done / total) * 100)
-    await supabase.from('goals').update({ progress }).eq('id', goalId)
+    const { error } = await supabase.from('goals').update({ progress }).eq('id', goalId)
+    if (error) console.warn('[goal 진행률 갱신 실패]', error)
   }
 
   async function addTodo(title, todoType = 'weekly', dueDate = null) {

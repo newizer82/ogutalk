@@ -215,6 +215,16 @@ export default function App() {
 
   // Supabase 훅 (로그인 시)
   const userId = user?.id ?? null
+
+  // Firebase: 앱 시작/로그인 상태 변화 시 push 등록 + Analytics 사용자 세팅
+  useEffect(() => {
+    (async () => {
+      const { initFirebasePush, setAnalyticsUser } = await import('./lib/firebase')
+      await initFirebasePush(userId)
+      await setAnalyticsUser(userId)
+    })()
+  }, [userId])
+
   const { todos, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(userId)
   const { goals, addGoal, updateGoalProgress, deleteGoal } = useGoals(userId)
 
@@ -242,6 +252,10 @@ export default function App() {
     ? todos.map(t => ({ ...t, priority: t.priority || 'medium' }))
     : localTodos
   const activeTodosForAlarm = activeTodos.filter(t => !t.completed).length
+  // 카카오 공유 메시지용 진행률 (완료/전체)
+  const todoPct = activeTodos.length
+    ? Math.round(activeTodos.filter(t => t.completed || t.done).length / activeTodos.length * 100)
+    : 0
 
   // goals를 배열로 flatten (홈 화면용)
   const allGoalsList = userId
@@ -501,6 +515,7 @@ export default function App() {
             onDeleteAccount={handleDeleteAccount}
             playSound={playOguSound}
             userId={userId}
+            todoPct={todoPct}
           />
         )}
       </Layout>

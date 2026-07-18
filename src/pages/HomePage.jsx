@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import TextWithLinks from '../components/common/TextWithLinks'
+import ShareButton from '../components/common/ShareButton'
 import { OGU_TONES, QUOTES } from '../data/oguData'
 import { gradients } from '../styles/theme'
 
@@ -353,6 +354,11 @@ export default function HomePage({
         <div style={{ color: '#334155', fontSize: 10, marginTop: 6, textAlign: 'right' }}>
           — {quoteObj?.author || ''}
         </div>
+      </div>
+
+      {/* ── 5. 카카오 공유 ── */}
+      <div style={{ marginTop: 10 }}>
+        <ShareButton progress={todoPct} />
       </div>
 
     </div>

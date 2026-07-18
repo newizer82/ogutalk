@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import Toggle from '../components/common/Toggle'
+import ShareButton from '../components/common/ShareButton'
 import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
 import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm, openUrl } from '../lib/capacitor'
@@ -40,6 +41,7 @@ export default function SettingsPage({
   onLoginOpen, onSignOut, onDeleteAccount,
   playSound,
   userId = null,
+  todoPct = 0,
 }) {
   // 프로필 카드 클릭 시 로그아웃 메뉴 토글
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
@@ -494,6 +496,11 @@ export default function SettingsPage({
         </div>
       )}
 
+      {/* ── 카카오 공유 ── */}
+      <div style={{ marginBottom: 14 }}>
+        <ShareButton progress={todoPct} />
+      </div>
+
       {/* ── 약관·정보 (제일 마지막에 배치) ── */}
       <SettingSection title="ℹ️ 약관 및 정보">
         <button
@@ -509,7 +516,7 @@ export default function SettingsPage({
           <span style={{ color: '#475569' }}>›</span>
         </button>
         <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
-          오구톡 v1.2.1 · 주식회사 지성엔테크
+          오구톡 v1.3.0 · 주식회사 지성엔테크
         </div>
       </SettingSection>
     </div>
