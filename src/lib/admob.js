@@ -3,61 +3,65 @@
 import { IS_NATIVE } from './capacitor'
 
 const BANNER_AD_ID = 'ca-app-pub-1719848049915600/1218270984'
-
-// 탭바를 배너 위로 올리는 높이.
-// 배너(50dp) + 시스템 내비게이션 바(~48dp) 합산 고려 → 100px 여유 확보.
-// (배너가 시스템 바 위에 그려지는 기기에서 60px로는 탭바 침범 발생)
 export const BANNER_HEIGHT_PX = 100
 
 // ── 광고 숨김 여부 판단 (단일 지점) ─────────────────────────────
-// 로그인 사용자는 광고 제거. 비로그인 사용자만 배너 표시.
 // TODO(premium): RevenueCat 연동 후 isPremium 을 실제 유료 구독 상태로 교체
 export function isAdFree(isPremium) {
-  return !!isPremium   // 현재: 로그인(=isPremium) 시 광고 제거
+  return !!isPremium
 }
 
-// ── 초기화 (앱 시작 시 1회) ─────────────────────────────────────
-export async function initAdMob() {
-  if (!IS_NATIVE) return
-  try {
+// ── 초기화 (싱글턴) ─────────────────────────────────────────────
+// 여러 useEffect 병렬 호출해도 실제 initialize는 1회만.
+// showBanner/hideBanner/resumeBanner 가 항상 이 Promise 를 await → NPE 방지 (v1.3.1 hotfix)
+let _initPromise = null
+export function initAdMob() {
+  if (!IS_NATIVE) return Promise.resolve()
+  if (_initPromise) return _initPromise
+  _initPromise = (async () => {
     const { AdMob } = await import('@capacitor-community/admob')
-    await AdMob.initialize({
-      initializeForTesting: false,
-    })
-    console.log('[AdMob] 초기화 완료')
-  } catch (e) {
+    await AdMob.initialize({ initializeForTesting: false })
+  })().catch(e => {
     console.warn('[AdMob] 초기화 실패:', e)
-  }
+    _initPromise = null   // 실패 시 재시도 가능
+    throw e
+  })
+  return _initPromise
 }
 
-// ── 배너 표시 (onLoaded: 광고 실제 로드 시 호출되는 콜백) ────────
+// ── 리스너 등록 (한 번만) ───────────────────────────────────────
+let _listenerAdded = false
+async function ensureBannerLoadedListener(onLoaded) {
+  if (_listenerAdded || !onLoaded) { _listenerAdded = true; return }
+  _listenerAdded = true
+  const { AdMob } = await import('@capacitor-community/admob')
+  await AdMob.addListener('bannerAdLoaded', () => onLoaded())
+}
+
+// ── 배너 표시 ───────────────────────────────────────────────────
 export async function showBanner(onLoaded) {
   if (!IS_NATIVE) return
   try {
-    const { AdMob, BannerAdSize, BannerAdPosition, AdMobBannerSize } = await import('@capacitor-community/admob')
-
-    // 배너 실제 로드 완료 이벤트 수신
-    await AdMob.addListener('bannerAdLoaded', () => {
-      console.log('[AdMob] 배너 로드 완료')
-      if (onLoaded) onLoaded()
-    })
-
+    await initAdMob()   // 초기화 완료 보장 (NPE fix)
+    await ensureBannerLoadedListener(onLoaded)
+    const { AdMob, BannerAdSize, BannerAdPosition } = await import('@capacitor-community/admob')
     await AdMob.showBanner({
       adId:      BANNER_AD_ID,
-      adSize:    BannerAdSize.BANNER,       // 고정 320×50
+      adSize:    BannerAdSize.BANNER,
       position:  BannerAdPosition.BOTTOM_CENTER,
       margin:    0,
-      isTesting: false,  // 실서비스 광고 (테스트 시 true로 변경)
+      isTesting: false,
     })
   } catch (e) {
     console.warn('[AdMob] 배너 표시 실패:', e)
   }
 }
 
-// ── 배너 숨김 (팝업/모달이 뜰 때 — 광고가 그 위에 겹치지 않도록) ──
+// ── 배너 숨김 ───────────────────────────────────────────────────
 export async function hideBanner() {
   if (!IS_NATIVE) return
   try {
+    await initAdMob()
     const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.hideBanner()
   } catch (e) {
@@ -65,10 +69,11 @@ export async function hideBanner() {
   }
 }
 
-// ── 배너 다시 표시 (팝업/모달이 닫힌 후 — hideBanner 의 짝) ───────
+// ── 배너 재표시 ─────────────────────────────────────────────────
 export async function resumeBanner() {
   if (!IS_NATIVE) return
   try {
+    await initAdMob()
     const { AdMob } = await import('@capacitor-community/admob')
     await AdMob.resumeBanner()
   } catch (e) {
