@@ -6,7 +6,7 @@ import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { loadSettings, saveSettings } from './lib/settings'
 import { IS_NATIVE } from './lib/capacitor'
-import { initAdMob, showBanner, hideBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
+import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import HomePage from './pages/HomePage'
@@ -286,10 +286,11 @@ export default function App() {
     initAdMob().catch(() => {})
   }, [])
 
-  // AdMob 배너: isAdFree() 단일 판단 지점 — 로그인 시 광고 제거
+  // AdMob 배너: isAdFree() 단일 판단 지점 — 로그인 시 광고 완전 제거
+  // hideBanner 는 다시 표시될 수 있어 로그인 시엔 removeBanner 사용 (v1.3.2)
   useEffect(() => {
     if (!IS_NATIVE) return
-    if (isAdFree(isPremium)) hideBanner().catch(() => {})
+    if (isAdFree(isPremium)) removeBanner().catch(() => {})
     else                     showBanner().catch(() => {})
   }, [isPremium])
 

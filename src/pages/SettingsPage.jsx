@@ -516,7 +516,7 @@ export default function SettingsPage({
           <span style={{ color: '#475569' }}>›</span>
         </button>
         <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
-          오구톡 v1.3.1 · 주식회사 지성엔테크
+          오구톡 v1.3.2 · 주식회사 지성엔테크
         </div>
       </SettingSection>
     </div>

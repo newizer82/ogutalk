@@ -3,7 +3,7 @@
 import { IS_NATIVE } from './capacitor'
 
 const BANNER_AD_ID = 'ca-app-pub-1719848049915600/1218270984'
-export const BANNER_HEIGHT_PX = 100
+export const BANNER_HEIGHT_PX = 130   // 배너 50dp + 시스템 내비바 여유 (100 → 130, v1.3.2)
 
 // ── 광고 숨김 여부 판단 (단일 지점) ─────────────────────────────
 // TODO(premium): RevenueCat 연동 후 isPremium 을 실제 유료 구독 상태로 교체
@@ -57,7 +57,7 @@ export async function showBanner(onLoaded) {
   }
 }
 
-// ── 배너 숨김 ───────────────────────────────────────────────────
+// ── 배너 일시 숨김 (모달 열릴 때 — resumeBanner 로 복원) ─────────
 export async function hideBanner() {
   if (!IS_NATIVE) return
   try {
@@ -66,6 +66,19 @@ export async function hideBanner() {
     await AdMob.hideBanner()
   } catch (e) {
     console.warn('[AdMob] 배너 숨김 실패:', e)
+  }
+}
+
+// ── 배너 완전 제거 (로그인/프리미엄 전환 시) ─────────────────────
+// hideBanner 만으로는 일부 상황에서 다시 표시될 수 있음 → removeBanner 로 확실히 제거
+export async function removeBanner() {
+  if (!IS_NATIVE) return
+  try {
+    await initAdMob()
+    const { AdMob } = await import('@capacitor-community/admob')
+    await AdMob.removeBanner()
+  } catch (e) {
+    console.warn('[AdMob] 배너 제거 실패:', e)
   }
 }
 
