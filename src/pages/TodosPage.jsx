@@ -115,8 +115,6 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
     return () => window.removeEventListener('ogu:backRequest', handler)
   }, [showForm])
 
-  if (!isPremium) return <PremiumLock onUnlock={() => setIsPremium(true)} />
-
   // 타입별 분류
   const weekly    = todos.filter(t => (t.todo_type === 'weekly' || !t.todo_type) && !t.due_date && !(t.completed || t.done))
   const tasks     = todos.filter(t => (t.todo_type === 'task'   ||  t.due_date)  && !(t.completed || t.done))

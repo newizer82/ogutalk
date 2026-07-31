@@ -1,50 +1,24 @@
 import { useState, useEffect } from 'react'
-import GlassCard from '../components/common/GlassCard'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
-import { OGU_TONES, QUOTES } from '../data/oguData'
-import { gradients } from '../styles/theme'
+import { theme } from '../styles/theme'
 
 const pad = n => String(n).padStart(2, '0')
 
-// ── SVG 원형 링 진행률
-function RingProgress({ value = 0, size = 72, stroke = 7, color = '#818cf8', bg = 'rgba(255,255,255,0.06)', children }) {
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const filled = circ * Math.min(value, 100) / 100
+// ── 24시간 타임라인 한 행 ─────────────────────────────────
+function TimelineRow({ hours, currentHour, activeColor, showCurrent }) {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={bg} strokeWidth={stroke} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={`${filled} ${circ - filled}`}
-        strokeDashoffset={circ * 0.25}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.8s ease' }}
-      />
-      <foreignObject x={0} y={0} width={size} height={size}>
-        <div xmlns="http://www.w3.org/1999/xhtml"
-          style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {children}
-        </div>
-      </foreignObject>
-    </svg>
-  )
-}
-
-// ── 단일 행 24칸 바
-function TimelineRow({ hours, currentHour, activeColor, activeHeight = 14, showCurrentHour = true, dimColor = 'rgba(255,255,255,0.05)' }) {
-  return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: activeHeight + 4 }}>
+    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 18 }}>
       {Array.from({ length: 24 }, (_, h) => {
         const isActive = hours.has ? hours.has(h) : !!hours[h]
-        const isCur    = showCurrentHour && h === currentHour
+        const isCur    = showCurrent && h === currentHour
         return (
           <div key={h} style={{
             flex: 1, borderRadius: 2,
-            height: isCur ? activeHeight + 4 : isActive ? activeHeight : 6,
+            height: isCur ? 18 : isActive ? 14 : 6,
             background: isCur
               ? 'linear-gradient(180deg,#818cf8,#6366f1)'
-              : isActive ? activeColor : dimColor,
+              : isActive ? activeColor : 'rgba(255,255,255,0.05)',
             transition: 'height 0.3s ease',
           }} />
         )
@@ -53,314 +27,205 @@ function TimelineRow({ hours, currentHour, activeColor, activeHeight = 14, showC
   )
 }
 
-// ── 오구 + 커스텀 2행 타임라인
-function AlarmTimeline({ alarmHours = {}, customAlarmHours = new Set(), currentHour }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      {/* 1행: 오구 알람 (보라) — 현재 시각 하이라이트 포함 */}
-      <TimelineRow hours={alarmHours} currentHour={currentHour} activeColor="rgba(99,102,241,0.55)" activeHeight={14} showCurrentHour={true} />
-      {/* 2행: 커스텀 알람 (주황) — 현재 시각 하이라이트 없음 */}
-      <TimelineRow hours={customAlarmHours} currentHour={currentHour} activeColor="rgba(251,146,60,0.75)" activeHeight={14} showCurrentHour={false} />
-      {/* 하단 범례 */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(99,102,241,0.55)' }} />
-          <span style={{ color: '#6366f1', fontSize: 9, fontWeight: 700 }}>오구 알람</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(251,146,60,0.75)' }} />
-          <span style={{ color: '#fb923c', fontSize: 9, fontWeight: 700 }}>커스텀 알람</span>
-        </div>
-      </div>
-    </div>
-  )
+// ── 카드 공통 스타일 ───────────────────────────────────────
+const cardStyle = {
+  background: 'rgba(255,255,255,0.05)',
+  border:     '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 20,
+  padding:    '16px 18px',
+  marginBottom: 14,
 }
 
 export default function HomePage({
   alarmCount = 0,
   todos = [],
-  goals = {},
-  isPremium = false,
-  setIsPremium,
-  premiumFeatures = {},
   onTabChange,
   alarmHours = {},
-  oguTone = '오구',
-  onTestAlarm,
   customAlarms = [],
 }) {
   const [now, setNow] = useState(new Date())
-  const [todayCheckins, setTodayCheckins] = useState([])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  // 오늘 체크인 로컬 읽기 (마운트 + 포커스 복귀 시)
-  useEffect(() => {
-    const readCheckins = () => {
-      try {
-        const raw  = localStorage.getItem('ogu_local_checkins')
-        const list = raw ? JSON.parse(raw) : []
-        const todayStr = new Date().toISOString().slice(0, 10)
-        setTodayCheckins(list.filter(c => c.created_at?.slice(0, 10) === todayStr))
-      } catch {}
-    }
-    readCheckins()
-    window.addEventListener('focus',       readCheckins)
-    window.addEventListener('ogu:checkin', readCheckins)
-    return () => {
-      window.removeEventListener('focus',       readCheckins)
-      window.removeEventListener('ogu:checkin', readCheckins)
-    }
-  }, [])
+  const H = now.getHours(), M = now.getMinutes()
 
-  const H = now.getHours(), M = now.getMinutes(), Sec = now.getSeconds()
-  const HH = pad(H), MM = pad(M), SS = pad(Sec)
-  const weekday = ['일','월','화','수','목','금','토'][now.getDay()]
-  const dateStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${weekday})`
-
-  // 다음 알람
-  const nextAlarm = (() => {
-    for (let i = 0; i < 24; i++) {
-      const ch = (H + i) % 24
-      if (alarmHours[ch] && (i > 0 || M < 59)) {
-        const diff = ((ch * 60 + 59) - (H * 60 + M) + 1440) % 1440
-        const dh = Math.floor(diff / 60), dm = diff % 60
-        return { time: `${pad(ch)}:59`, diffStr: dh > 0 ? `${dh}시간 ${dm}분` : `${dm}분`, diffMin: diff }
-      }
-    }
-    return { time: '--:--', diffStr: '--', diffMin: 60 }
-  })()
-
-  const secondsLeft = (59 - M) * 60 + (60 - Sec)
-  const minutesLeft = Math.floor(secondsLeft / 60)
-  const secsLeft    = secondsLeft % 60
-
-  // 링 진행률 — 현재 시각 기준 59분까지 카운트다운
-  const countdownPct = Math.round((1 - secondsLeft / 3600) * 100)
-
-  // 할일 stats
+  // 할일 계산
   const doneTodos    = todos.filter(t => t.completed || t.done)
   const pendingTodos = todos.filter(t => !t.completed && !t.done)
   const todoPct      = todos.length ? Math.round(doneTodos.length / todos.length * 100) : 0
 
-  // 알람 활성 시간대 카운트 (타임라인 하단 표기용)
+  // 알람 통계
   const totalActiveHours = Object.values(alarmHours).filter(Boolean).length
-
-  // 명언
-  const quoteObj = QUOTES[Math.floor(now.getTime() / 60000) % QUOTES.length]
-
-  // 커스텀 알람 — 활성화된 것만, 시간 순 정렬
-  const activeCustomAlarms = customAlarms
-    .filter(a => a.isEnabled)
-    .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
-
-  // 커스텀 알람이 설정된 시(hour) 집합 — 타임라인 주황 표시용
-  const customAlarmHours = new Set(activeCustomAlarms.map(a => a.hour))
-
+  const customAlarmHours = new Set(customAlarms.filter(a => a.isEnabled).map(a => a.hour))
 
   return (
     <div>
-
-      {/* ── 1. 시계 헤더 ── */}
-      <div style={{ textAlign: 'center', paddingBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', lineHeight: 1, marginBottom: 4 }}>
-          <span style={{ fontSize: 76, fontWeight: 900, color: '#f1f5f9', letterSpacing: -4 }}>{HH}</span>
-          <span style={{ fontSize: 52, color: '#6366f1', fontWeight: 200, marginBottom: 8, marginInline: 1 }}>:</span>
-          <span style={{
-            fontSize: 76, fontWeight: 900, letterSpacing: -4,
-            background: gradients.logo, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>{MM}</span>
-        </div>
-        <div style={{ color: '#475569', fontSize: 11 }}>{dateStr} · {SS}초</div>
-      </div>
-
-      {/* ── 2. 카운트다운 링 + 다음 오구 ── */}
-      <GlassCard style={{ marginBottom: 14, padding: '16px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          {/* 링 */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <RingProgress value={countdownPct} size={84} stroke={8} color="#818cf8">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: '#818cf8', lineHeight: 1 }}>{minutesLeft}</div>
-                <div style={{ fontSize: 8, color: '#475569', marginTop: 1 }}>분 후</div>
-              </div>
-            </RingProgress>
-          </div>
-          {/* 텍스트 */}
-          <div style={{ flex: 1 }}>
-            <div style={{ color: '#94a3b8', fontSize: 10, fontWeight: 600, marginBottom: 4 }}>다음 오구 알람</div>
-            <div style={{
-              fontSize: 28, fontWeight: 900, lineHeight: 1,
-              background: gradients.logo, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              {nextAlarm.time}
-            </div>
-            <div style={{ color: '#475569', fontSize: 11, marginTop: 4 }}>
-              {minutesLeft}분 {pad(secsLeft)}초 남음
-            </div>
-          </div>
-          {/* 오구 설정 바로가기 (탭하면 설정 화면으로 이동) */}
+      {/* ── 카드 1: 히어로 (오구 설정 · 시각 · 알람 설정 + 타임라인) ── */}
+      <section style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={() => onTabChange('settings')}
-            title="오구 알람 설정으로 이동"
             style={{
-              flexShrink: 0, width: 56, padding: '6px 4px',
-              borderRadius: 14, border: 'none',
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-              cursor: 'pointer',
+              flex: 1, padding: '6px 4px', borderRadius: 14, border: 'none', cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
             }}
           >
-            <span style={{ fontSize: 20, lineHeight: 1 }}>{OGU_TONES[oguTone]?.emoji || '⏱️'}</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#ffffff', letterSpacing: -0.3 }}>
-              오구 설정
+            <span style={{ fontSize: 20, lineHeight: 1 }}>⏱️</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>오구 설정</span>
+          </button>
+
+          <div style={{ flex: 1, textAlign: 'center', padding: '0 4px' }}>
+            <span style={{
+              fontSize: 34, fontWeight: 900, color: '#f1f5f9',
+              letterSpacing: -1, fontVariantNumeric: 'tabular-nums',
+            }}>
+              {pad(H)}:{pad(M)}
             </span>
+          </div>
+
+          <button
+            onClick={() => onTabChange('alarms')}
+            style={{
+              flex: 1, padding: '6px 4px', borderRadius: 14, border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              background: 'linear-gradient(135deg,#f59e0b,#fb923c)',
+            }}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>🔔</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>알람 설정</span>
           </button>
         </div>
 
-        {/* 알람 시간대 타임라인 */}
+        {/* 타임라인 */}
         <div style={{ marginTop: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ color: '#475569', fontSize: 9 }}>00시</span>
-            <span style={{ color: '#818cf8', fontSize: 9, fontWeight: 700 }}>현재 {HH}시</span>
-            <span style={{ color: '#475569', fontSize: 9 }}>23시</span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+            <span style={{ color: theme.accent.secondary, fontSize: 9, fontWeight: 700 }}>현재 {H}시</span>
           </div>
-          <AlarmTimeline alarmHours={alarmHours} customAlarmHours={customAlarmHours} currentHour={H} />
+
+          <TimelineRow
+            hours={alarmHours} currentHour={H}
+            activeColor="rgba(99,102,241,0.55)" showCurrent
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+            {['0시', '6시', '12시', '18시', '24시'].map(l => (
+              <span key={l} style={{ color: theme.text.muted, fontSize: 8 }}>{l}</span>
+            ))}
+          </div>
+
+          <TimelineRow
+            hours={customAlarmHours} currentHour={H}
+            activeColor="rgba(251,146,60,0.75)" showCurrent={false}
+          />
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 7 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(99,102,241,0.55)' }} />
+              <span style={{ color: '#6366f1', fontSize: 9, fontWeight: 700 }}>오구 알람</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(251,146,60,0.75)' }} />
+              <span style={{ color: '#fb923c', fontSize: 9, fontWeight: 700 }}>커스텀 알람</span>
+            </div>
+          </div>
+
           <div style={{ color: '#334155', fontSize: 9, marginTop: 6, textAlign: 'center' }}>
             오늘 활성 알람 {totalActiveHours}시간대 · {alarmCount}회 울림
           </div>
         </div>
+      </section>
 
-        {/* 오늘 체크인 미니 요약 */}
-        {todayCheckins.length > 0 && (() => {
-          const EMOJI = { goal_work: '🎯', study: '📚', sns: '📱', rest: '😴' }
-          const counts = todayCheckins.reduce((acc, c) => {
-            acc[c.activity_type] = (acc[c.activity_type] || 0) + 1
-            return acc
-          }, {})
-          return (
-            <div style={{
-              marginTop: 10, paddingTop: 10,
-              borderTop: '1px solid rgba(255,255,255,0.05)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{ color: '#475569', fontSize: 9 }}>오늘 체크인</span>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {Object.entries(counts).map(([type, cnt]) => (
-                  <span key={type} style={{ fontSize: 10, color: '#64748b' }}>
-                    {EMOJI[type] || '?'}{cnt > 1 ? `×${cnt}` : ''}
-                  </span>
-                ))}
-                <span style={{ color: '#334155', fontSize: 9 }}>({todayCheckins.length}회)</span>
-              </div>
-            </div>
-          )
-        })()}
-      </GlassCard>
-
-      {/* ── 3. 오늘의 할일 인포그래픽 ── */}
-      <GlassCard style={{ marginBottom: 14, padding: 18 }}>
+      {/* ── 카드 2: 할일 현황 ── */}
+      <section style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15 }}>✅</span>
             <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>할일 현황</span>
             {pendingTodos.length > 0 && (
-              <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10,
-                background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 700 }}>
+              <span style={{
+                fontSize: 10, padding: '2px 7px', borderRadius: 10,
+                background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 700,
+              }}>
                 {pendingTodos.length}개 남음
               </span>
             )}
           </div>
           <button onClick={() => onTabChange('todos')} style={{
             padding: '4px 10px', borderRadius: 10, border: 'none',
-            background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontSize: 11, cursor: 'pointer',
-          }}>전체 →</button>
+            background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+            fontSize: 11, cursor: 'pointer',
+          }}>
+            전체 →
+          </button>
         </div>
 
-        {/* 완료율 그라데이션 바 */}
-        <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)', marginBottom: 10 }}>
+        {/* 진행률 바 */}
+        <div style={{
+          position: 'relative', height: 8, borderRadius: 4,
+          background: 'rgba(255,255,255,0.06)', marginBottom: 10,
+        }}>
           <div style={{
             position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4,
             width: `${todoPct}%`,
-            background: todoPct >= 80
-              ? 'linear-gradient(90deg,#34d399,#6ee7b7)'
-              : todoPct >= 50
-                ? 'linear-gradient(90deg,#818cf8,#a78bfa)'
-                : 'linear-gradient(90deg,#6366f1,#818cf8)',
+            background: 'linear-gradient(90deg,#6366f1,#818cf8)',
             transition: 'width 0.8s ease',
           }} />
         </div>
 
-        {/* 할일 리스트 */}
+        {/* 할일 목록 */}
         {todos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '16px 0', color: '#475569', fontSize: 12 }}>
+          <div style={{ textAlign: 'center', padding: '16px 0', color: theme.text.muted, fontSize: 12 }}>
             <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
-            할일을 추가해보세요
-            <br />
+            할일을 추가해보세요<br />
             <button onClick={() => onTabChange('todos')} style={{
               marginTop: 10, padding: '6px 16px', borderRadius: 10, border: 'none',
-              background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontSize: 12, cursor: 'pointer',
+              background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+              fontSize: 12, cursor: 'pointer',
             }}>+ 추가</button>
           </div>
         ) : pendingTodos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '12px 0', color: '#34d399', fontSize: 14, fontWeight: 800 }}>
+          <div style={{ textAlign: 'center', padding: '12px 0', color: theme.status.success, fontSize: 14, fontWeight: 800 }}>
             🎉 모든 할일 완료!
           </div>
         ) : (
           pendingTodos.map((t, i) => (
             <div key={t.id || i} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '9px 0',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0',
               borderBottom: i < pendingTodos.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
             }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                background: t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#f59e0b' : '#475569',
+                background:
+                  t.priority === 'high'   ? theme.status.error   :
+                  t.priority === 'medium' ? theme.status.warning : theme.text.muted,
               }} />
-              <span style={{ color: '#e2e8f0', fontSize: 13, flex: 1, lineHeight: 1.4 }}>
+              <span style={{ color: theme.text.primary, fontSize: 13, flex: 1, lineHeight: 1.4 }}>
                 <TextWithLinks text={t.title || t.text} />
                 {t.due_date && (() => {
                   const dt = new Date(t.due_date)
                   return (
-                    <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>
+                    <span style={{ color: theme.text.secondary, fontWeight: 400, marginLeft: 4 }}>
                       ({dt.getMonth() + 1}/{dt.getDate()})
                     </span>
                   )
                 })()}
               </span>
               {t.due_date && (
-                <span style={{ color: '#475569', fontSize: 10, flexShrink: 0 }}>
+                <span style={{ color: theme.text.muted, fontSize: 10, flexShrink: 0 }}>
                   D-{Math.ceil((new Date(t.due_date) - new Date()) / 86400000)}
                 </span>
               )}
             </div>
           ))
         )}
-      </GlassCard>
+      </section>
 
-      {/* ── 4. 오늘의 명언 ── */}
-      <div style={{
-        padding: '14px 16px', borderRadius: 16,
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-        marginBottom: 4,
-      }}>
-        <div style={{ color: '#334155', fontSize: 20, lineHeight: 1, marginBottom: 6 }}>"</div>
-        <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.7, fontStyle: 'italic' }}>
-          {quoteObj?.text || '오늘도 한 걸음씩.'}
-        </div>
-        <div style={{ color: '#334155', fontSize: 10, marginTop: 6, textAlign: 'right' }}>
-          — {quoteObj?.author || ''}
-        </div>
-      </div>
-
-      {/* ── 5. 카카오 공유 ── */}
-      <div style={{ marginTop: 10 }}>
-        <ShareButton progress={todoPct} />
-      </div>
-
+      {/* ── 카카오 공유 ── */}
+      <ShareButton progress={todoPct} />
     </div>
   )
 }

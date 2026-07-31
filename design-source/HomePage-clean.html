@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오구톡 홈</title>
+<style>
+  :root {
+    --bg: #080f1e;
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --text: #e2e8f0;
+    --text-dim: #475569;
+    --accent: #6366f1;
+    --accent-2: #818cf8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15) 0%, transparent 60%), linear-gradient(180deg, #080f1e 0%, #0d1526 50%, #111827 100%);
+    font-family: 'Segoe UI', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+    color: var(--text);
+  }
+  .app { max-width: 412px; margin: 0 auto; min-height: 100vh; position: relative; }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky; top: 0; background: rgba(8,15,30,0.85);
+  }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-text {
+    font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .login-btn {
+    padding: 6px 16px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    border: 1px solid rgba(99,102,241,0.4); background: rgba(99,102,241,0.12);
+    color: var(--accent-2); cursor: pointer; white-space: nowrap;
+  }
+  main { padding: 16px 18px 106px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 16px 18px; margin-bottom: 14px;
+  }
+  .quick-actions { display: flex; align-items: center; gap: 10px; }
+  .action-btn {
+    flex: 1; padding: 6px 4px; border-radius: 14px; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  .action-btn .icon { font-size: 20px; line-height: 1; }
+  .action-btn .label { font-size: 9px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .action-btn.ogu { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .action-btn.alarm { background: linear-gradient(135deg,#f59e0b,#fb923c); }
+  .clock { flex: 1; text-align: center; padding: 0 4px; }
+  .clock-time { font-size: 34px; font-weight: 900; color: #f1f5f9; letter-spacing: -1px; }
+  .timeline { margin-top: 14px; }
+  .timeline-current { display: flex; justify-content: center; margin-bottom: 6px; }
+  .timeline-current span { color: var(--accent-2); font-size: 9px; font-weight: 700; }
+  .timeline-row { display: flex; gap: 2px; align-items: flex-end; height: 18px; }
+  .timeline-row.ogu .bar { background: rgba(255,255,255,0.05); }
+  .timeline-row.ogu .bar.active { background: rgba(99,102,241,0.55); height: 14px; }
+  .timeline-row.ogu .bar.cur { background: linear-gradient(180deg,#818cf8,#6366f1); height: 18px; }
+  .timeline-row.custom .bar { background: rgba(255,255,255,0.05); }
+  .timeline-row.custom .bar.active { background: rgba(251,146,60,0.75); height: 14px; }
+  .bar { flex: 1; border-radius: 2px; height: 6px; }
+  .timeline-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+  .timeline-labels span { color: var(--text-dim); font-size: 8px; }
+  .legend { display: flex; gap: 12px; justify-content: center; margin-top: 7px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .legend-dot.ogu { background: rgba(99,102,241,0.55); }
+  .legend-dot.custom { background: rgba(251,146,60,0.75); }
+  .legend span { font-size: 9px; font-weight: 700; }
+  .legend-item:first-child span { color: #6366f1; }
+  .legend-item:last-child span { color: #fb923c; }
+  .timeline-summary { color: #334155; font-size: 9px; margin-top: 6px; text-align: center; }
+  .todo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .todo-title-group { display: flex; align-items: center; gap: 8px; }
+  .todo-title { color: #cbd5e1; font-size: 13px; font-weight: 700; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(248,113,113,0.15); color: #f87171; font-weight: 700; }
+  .see-all-btn { padding: 4px 10px; border-radius: 10px; border: none; background: rgba(99,102,241,0.2); color: var(--accent-2); font-size: 11px; cursor: pointer; }
+  .progress { position: relative; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); margin-bottom: 10px; }
+  .progress-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg,#6366f1,#818cf8); }
+  .todo-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .todo-dot.high { background: #ef4444; }
+  .todo-dot.medium { background: #f59e0b; }
+  .todo-text { color: var(--text); font-size: 13px; flex: 1; line-height: 1.4; }
+  .share-btn {
+    width: 100%; padding: 12px; border-radius: 14px; border: none;
+    background: #FEE500; color: #3A1D1D; font-weight: 800; font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tabbar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 412px; display: flex; justify-content: space-around;
+    padding: 8px 4px 16px; background: rgba(8,15,30,0.92); border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 8px; border: none; border-radius: 12px; background: transparent;
+    color: var(--text-dim); cursor: pointer; min-width: 44px;
+  }
+  .tab.active { background: rgba(99,102,241,0.15); color: var(--accent-2); }
+  .tab .icon { font-size: 17px; }
+  .tab .label { font-size: 9px; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="logo">
+      <span style="font-size:20px">⏱️</span>
+      <span class="logo-text">오구톡</span>
+    </div>
+    <button class="login-btn">로그인</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="quick-actions">
+        <button class="action-btn ogu">
+          <span class="icon">⏱️</span>
+          <span class="label">오구 설정</span>
+        </button>
+        <div class="clock">
+          <span class="clock-time">13:03</span>
+        </div>
+        <button class="action-btn alarm">
+          <span class="icon">🔔</span>
+          <span class="label">알람 설정</span>
+        </button>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-current"><span>현재 13시</span></div>
+        <div class="timeline-row ogu">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar cur"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div><div class="bar active"></div>
+        </div>
+        <div class="timeline-labels">
+          <span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>24시</span>
+        </div>
+        <div class="timeline-row custom">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot ogu"></div><span>오구 알람</span></div>
+          <div class="legend-item"><div class="legend-dot custom"></div><span>커스텀 알람</span></div>
+        </div>
+        <div class="timeline-summary">오늘 활성 알람 17시간대 · 0회 울림</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="todo-header">
+        <div class="todo-title-group">
+          <span style="font-size:15px">✅</span>
+          <span class="todo-title">할일 현황</span>
+          <span class="badge">2개 남음</span>
+        </div>
+        <button class="see-all-btn">전체 →</button>
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:33%"></div></div>
+      <div class="todo-item">
+        <div class="todo-dot high"></div>
+        <span class="todo-text">기획서 작성</span>
+      </div>
+      <div class="todo-item">
+        <div class="todo-dot medium"></div>
+        <span class="todo-text">운동 30분</span>
+      </div>
+    </section>
+
+    <button class="share-btn"><span>💬</span> 카카오로 오늘 진행률 공유하기</button>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active"><span class="icon">⏱️</span><span class="label">홈</span></button>
+    <button class="tab"><span class="icon">✅</span><span class="label">할일</span></button>
+    <button class="tab"><span class="icon">🔔</span><span class="label">알람</span></button>
+    <button class="tab"><span class="icon">📊</span><span class="label">리포트</span></button>
+    <button class="tab"><span class="icon">⚙️</span><span class="label">오구설정</span></button>
+  </nav>
+
+</div>
+</body>
+</html>
