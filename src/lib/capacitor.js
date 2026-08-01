@@ -148,10 +148,12 @@ export async function clearDeliveredOguNotifs() {
 // ── 채널 ID 선택 헬퍼 (스케줄링·테스트가 같은 함수를 거치도록 — 분기 분산 방지) ─
 // alarmMode='vibrate' → 진동 전용 채널 / 그 외 → 사운드+진동 채널
 function oguChannelFor(alarmMode) {
-  return alarmMode === 'vibrate' ? 'ogu-hourly-vib-v1' : 'ogu-hourly-v4'
+  // v11: v4→v5 (무음 오버라이드 우회 — MainActivity.java 동기화)
+  return alarmMode === 'vibrate' ? 'ogu-hourly-vib-v1' : 'ogu-hourly-v5'
 }
 function customChannelFor(customAlarmMode) {
-  return customAlarmMode === 'vibrate' ? 'ogu-custom-vib-v1' : 'ogu-custom-v3'
+  // v11: v3→v4 (무음 오버라이드 우회)
+  return customAlarmMode === 'vibrate' ? 'ogu-custom-vib-v1' : 'ogu-custom-v4'
 }
 
 // ── 알람 스케줄 등록 (alarmHours 변경 시 호출) ───────────────

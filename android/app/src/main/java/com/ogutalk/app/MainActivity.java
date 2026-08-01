@@ -20,22 +20,24 @@ public class MainActivity extends BridgeActivity {
     // Android는 채널 사운드를 생성 후 변경 불가. 사용자가 채널을 무음으로 오버라이드하면
     // 같은 ID를 삭제 후 재생성해도 OS가 기존 무음 설정을 복원한다.
     // 채널 ID를 바꿔야만 시스템이 새 사운드 설정을 받아들인다 → 필요 시 v3, v4... 로 올릴 것.
-    private static final String CHANNEL_OGU        = "ogu-hourly-v4";    // 사운드+진동
-    private static final String CHANNEL_OGU_VIB    = "ogu-hourly-vib-v1"; // 진동만 (NEW v10)
-    private static final String CHANNEL_CUSTOM     = "ogu-custom-v3";    // 사운드+진동
-    private static final String CHANNEL_CUSTOM_VIB = "ogu-custom-vib-v1"; // 진동만 (NEW v10)
+    private static final String CHANNEL_OGU        = "ogu-hourly-v5";    // 사운드+진동 (v11: 무음 오버라이드 우회)
+    private static final String CHANNEL_OGU_VIB    = "ogu-hourly-vib-v1"; // 진동만
+    private static final String CHANNEL_CUSTOM     = "ogu-custom-v4";    // 사운드+진동 (v11: 무음 오버라이드 우회)
+    private static final String CHANNEL_CUSTOM_VIB = "ogu-custom-vib-v1"; // 진동만
     private static final String[] LEGACY_CHANNELS = {
         "ogu-alarm",        // v1~v3
-        "ogu-hourly",       // v4~v6 (사용자 무음 오버라이드 가능성)
+        "ogu-hourly",       // v4~v6
         "ogu-hourly-v2",    // v7
-        "ogu-hourly-v3",    // v8 (이번에 v4로 갈아탐)
+        "ogu-hourly-v3",    // v8
+        "ogu-hourly-v4",    // v9~v10 (v1.3.x, 사용자 무음 오버라이드 발견 — v11에서 v5로 갈아탐)
         "ogu-custom",       // v3~v6
-        "ogu-custom-v2",    // v7~v8 (이번에 v3로 갈아탐)
+        "ogu-custom-v2",    // v7~v8
+        "ogu-custom-v3",    // v9~v10 (v11에서 v4로 갈아탐)
     };
     private static final String PREFS_NAME     = "ogu_prefs";
     private static final String KEY_CHAN_VER   = "channel_version";
     // 채널 설정 변경 시 이 숫자를 올리면 자동 재생성됨
-    private static final int    CHAN_VERSION   = 10;   // v10: 진동 전용 채널 2개 추가
+    private static final int    CHAN_VERSION   = 11;   // v11: 채널 ID v4→v5 / v3→v4 (무음 오버라이드 우회)
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
