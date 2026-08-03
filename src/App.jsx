@@ -4,6 +4,7 @@ import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
 import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
+import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
 import { IS_NATIVE } from './lib/capacitor'
 import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
@@ -231,6 +232,9 @@ export default function App() {
   // 커스텀 알람 (앱 최상위에서 관리 — 로그인 시 Supabase 동기화)
   const { alarms: customAlarms, addAlarm, toggleAlarm, deleteAlarm } = useCustomAlarms(userId, customAlarmMode)
 
+  // 빠른 메모 (로그인 사용자 전용, 최대 9개)
+  const { notes, addNote, deleteNote } = useNotes(userId)
+
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
     { id: '1', title: '기획서 작성', completed: false, priority: 'high'   },
@@ -436,6 +440,11 @@ export default function App() {
             oguTone={oguTone}
             onTestAlarm={fireAlarm}
             customAlarms={customAlarms}
+            isLoggedIn={isLoggedIn}
+            notes={notes}
+            onAddNote={addNote}
+            onDeleteNote={deleteNote}
+            onLoginOpen={() => setLoginOpen(true)}
           />
         )}
         {activeTab === 'todos' && (

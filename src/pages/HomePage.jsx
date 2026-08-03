@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
+import NotesCard from '../components/notes/NotesCard'
 import { theme } from '../styles/theme'
 
 const pad = n => String(n).padStart(2, '0')
@@ -42,6 +43,11 @@ export default function HomePage({
   onTabChange,
   alarmHours = {},
   customAlarms = [],
+  isLoggedIn = false,
+  notes = [],
+  onAddNote,
+  onDeleteNote,
+  onLoginOpen,
 }) {
   const [now, setNow] = useState(new Date())
 
@@ -223,6 +229,15 @@ export default function HomePage({
           ))
         )}
       </section>
+
+      {/* ── 카드 3: 빠른 메모 ── */}
+      <NotesCard
+        isLoggedIn={isLoggedIn}
+        notes={notes}
+        onAdd={onAddNote}
+        onDelete={onDeleteNote}
+        onLoginOpen={onLoginOpen}
+      />
 
       {/* ── 카카오 공유 ── */}
       <ShareButton progress={todoPct} />
