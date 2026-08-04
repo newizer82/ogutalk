@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
+import SnsShareButtons from '../components/common/SnsShareButtons'
 import NotesCard from '../components/notes/NotesCard'
 import { theme } from '../styles/theme'
 
@@ -239,8 +240,9 @@ export default function HomePage({
         onLoginOpen={onLoginOpen}
       />
 
-      {/* ── 카카오 공유 ── */}
+      {/* ── 카카오 공유 + SNS 공유 ── */}
       <ShareButton progress={todoPct} />
+      <SnsShareButtons />
     </div>
   )
 }

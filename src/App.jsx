@@ -177,7 +177,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home')
 
   // 인증 (옵션 — 비로그인도 앱 사용 가능)
-  const { user, signOut, deleteAccount } = useAuth()
+  const { user, loading: authLoading, signOut, deleteAccount } = useAuth()
   const [loginOpen, setLoginOpen] = useState(false)
   const [localEmail, setLocalEmail] = useState('')
   const isLoggedIn = !!user || !!localEmail
@@ -290,22 +290,25 @@ export default function App() {
     initAdMob().catch(() => {})
   }, [])
 
-  // AdMob 배너: isAdFree() 단일 판단 지점 — 로그인 시 광고 완전 제거
-  // hideBanner 는 다시 표시될 수 있어 로그인 시엔 removeBanner 사용 (v1.3.2)
+  // AdMob 배너: 인증 로딩 완료 후에만 결정 (v1.6.0)
+  // 이전 버그: 로딩 중엔 isLoggedIn=false → showBanner → 로그인 확인돼도 removeBanner 실패
   useEffect(() => {
     if (!IS_NATIVE) return
+    if (authLoading) return   // ← 인증 확정될 때까지 광고 아무것도 안 함
     if (isAdFree(isPremium)) removeBanner().catch(() => {})
     else                     showBanner().catch(() => {})
-  }, [isPremium])
+  }, [isPremium, authLoading])
 
-  // 팝업/모달이 떠 있는 동안엔 배너 숨김 (네이티브 배너는 항상 최상단 레이어라
-  // 인앱 팝업 위에 겹쳐 보임 → 모달 동안 숨기고 닫히면 다시 표시)
+  // 팝업/모달 시 배너 임시 숨김 — 로그인 여부 무관 (알람 팝업 위에 광고 겹침 방지)
   useEffect(() => {
-    if (!IS_NATIVE || isAdFree(isPremium)) return
+    if (!IS_NATIVE || authLoading) return
     const modalOpen = showAlarmPopup || loginOpen
-    if (modalOpen) hideBanner().catch(() => {})
-    else           resumeBanner().catch(() => {})
-  }, [showAlarmPopup, loginOpen, isPremium])
+    if (modalOpen) {
+      hideBanner().catch(() => {})
+    } else if (!isAdFree(isPremium)) {
+      resumeBanner().catch(() => {})
+    }
+  }, [showAlarmPopup, loginOpen, isPremium, authLoading])
 
   // 로그인 성공 시 모달 자동 닫기 (카카오 OAuth 딥링크 콜백 케이스)
   useEffect(() => {
