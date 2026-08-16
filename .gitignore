@@ -8,6 +8,12 @@ supabase/.temp/
 *.txt
 vite.config.js.timestamp-*.mjs
 
+# ── IDE (Android Studio / IntelliJ) ──
+.idea/
+*.iml
+android/.idea/
+android/*.iml
+
 # ── 안드로이드 릴리즈 서명 (절대 커밋 금지) ──
 *.keystore
 *.jks
