@@ -25,6 +25,9 @@ export const DEFAULT_SETTINGS = {
   volume:        0.8,      // 0.0 ~ 1.0
   vibStrength:   'medium', // 'weak' | 'medium' | 'strong'
   alarmHours:    buildDefaultAlarmHours(),
+  // 자동 활동 기록 (UsageStats) — 기본 꺼짐, 사용자가 고지 동의 후 켠다
+  autoCheckin:    false,
+  lastBackfillAt: null,     // 마지막 소급 기록 시각 (epoch ms)
 }
 
 // ── 마이그레이션: 옛 6개 키 → 새 통합 키 ───────────────────────

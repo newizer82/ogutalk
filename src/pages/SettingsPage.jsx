@@ -6,6 +6,7 @@ import { OGU_TONES } from '../data/oguData'
 import { gradients, S } from '../styles/theme'
 import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm, openUrl } from '../lib/capacitor'
 import { supabase } from '../lib/supabase'
+import AutoCheckinSection from '../components/settings/AutoCheckinSection'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -42,6 +43,7 @@ export default function SettingsPage({
   playSound,
   userId = null,
   todoPct = 0,
+  autoCheckin = false, setAutoCheckin,
 }) {
   // 프로필 카드 클릭 시 로그아웃 메뉴 토글
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
@@ -500,6 +502,8 @@ export default function SettingsPage({
       <div style={{ marginBottom: 14 }}>
         <ShareButton progress={todoPct} />
       </div>
+
+      <AutoCheckinSection enabled={autoCheckin} onChange={setAutoCheckin} />
 
       {/* ── 약관·정보 (제일 마지막에 배치) ── */}
       <SettingSection title="ℹ️ 약관 및 정보">

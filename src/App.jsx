@@ -188,7 +188,8 @@ export default function App() {
 
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
-  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours } = settings
+  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
+          autoCheckin, lastBackfillAt } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -204,6 +205,8 @@ export default function App() {
   const setOguAlarmTone = v => updateSetting('oguAlarmTone', v)
   const setOguRepeat    = v => updateSetting('oguRepeat', v)
   const setAlarmMode   = v => updateSetting('alarmMode', v)
+  const setAutoCheckin    = v => updateSetting('autoCheckin', v)
+  const setLastBackfillAt = v => updateSetting('lastBackfillAt', v)
   const setVolume      = v => updateSetting('volume', v)
   const setVibStrength = v => updateSetting('vibStrength', v)
   const setAlarmHours  = v => updateSetting('alarmHours', v)
@@ -520,6 +523,8 @@ export default function App() {
             setVibStrength={setVibStrength}
             alarmHours={alarmHours}
             setAlarmHours={setAlarmHours}
+            autoCheckin={autoCheckin}
+            setAutoCheckin={setAutoCheckin}
             onTestAlarm={fireAlarm}
             todos={activeTodos}
             goals={localGoals}
