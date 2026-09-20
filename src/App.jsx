@@ -277,12 +277,15 @@ export default function App() {
   } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
 
   // 자동 체크인 소급 기록 (앱 사용시간 기반)
-  const { runBackfill, lastHourSummary, correctLastHour } = useAutoCheckin({
+  const { runBackfill, lastHourSummary, correctLastHour, hasAccess } = useAutoCheckin({
     enabled: autoCheckin,
     userId,
     lastBackfillAt,
     setLastBackfillAt,
   })
+  // 권한이 없다고 확정된 경우(false)에만 즉시 수동 모드로 — 미확인(null)인 동안은
+  // 자동 모드로 간주해 "준비 중" 화면을 보여주고, 수동 4버튼이 잠깐 떴다 사라지는 것을 막는다
+  const autoCheckinMode = autoCheckin && hasAccess !== false
 
   // 앱 복귀 시 + 알람 팝업이 뜰 때 소급 기록
   useEffect(() => {
@@ -570,6 +573,7 @@ export default function App() {
           onCheckin={saveCheckin}
           autoSummary={autoCheckin ? lastHourSummary : null}
           onCorrect={correctLastHour}
+          autoMode={autoCheckinMode}
         />
       )}
 

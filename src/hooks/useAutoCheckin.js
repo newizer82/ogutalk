@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { buildSlots, slotKey, MIN_ACTIVE_MS } from '../lib/checkinSlots'
+import { buildSlots, slotKey, floorToSlot, MIN_ACTIVE_MS } from '../lib/checkinSlots'
 import { categoryForApp } from '../data/appCategories'
 import { getUsage, hasUsageAccess } from '../lib/usageStats'
 import { saveCheckin, updateCheckinCategory, loadLocalCheckins } from '../lib/checkinStore'
@@ -29,6 +29,9 @@ function recordedSlotKeys() {
 
 export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfillAt }) {
   const [lastHourSummary, setLastHourSummary] = useState(null)
+  // null=미확인, true/false=확인됨 — 팝업이 "기록 확인 중…" 을 얼마나 보여줄지 판단하는 데 쓰인다.
+  // (권한이 아직 없는 상태(null)로 보이면 자동 모드로 간주해 깜빡임을 막고, false 로 확정되면 즉시 수동으로 폴백한다)
+  const [hasAccess, setHasAccess] = useState(null)
   const running = useRef(false)   // 중복 실행 방지
 
   // ⚠️ App.jsx 의 setLastBackfillAt 은 매 렌더 새로 만들어지는 화살표 함수다.
@@ -48,11 +51,30 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
     if (!enabled || running.current) return 0
     running.current = true
     try {
-      if (!(await hasUsageAccess())) return 0
+      const access = await hasUsageAccess()
+      setHasAccess(access)
+      if (!access) return 0
 
       const now       = Date.now()
       const overrides = loadOverrides()
-      const slots     = buildSlots(lastRef.current, now, recordedSlotKeys())
+
+      // 지난 1시간 요약 — 슬롯 루프 결과와 무관하므로 루프보다 앞에서 계산한다.
+      // (네이티브 getUsage 호출을 1회로 줄여 팝업이 "준비 중" 상태로 노출되는 시간을 최소화한다)
+      const hourAgo = now - 60 * 60 * 1000
+      const recent  = await getUsage(hourAgo, now, 3)
+      if (recent.length) {
+        const top = recent[0]
+        setLastHourSummary({
+          pkg:      top.pkg,
+          label:    top.label,
+          minutes:  Math.round(top.seconds / 60),
+          category: categoryForApp(top.pkg, overrides),
+        })
+      } else {
+        setLastHourSummary(null)
+      }
+
+      const slots = buildSlots(lastRef.current, now, recordedSlotKeys())
 
       let saved = 0
       for (const slot of slots) {
@@ -81,21 +103,6 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
       // 최근 2시간치만 유지
       const keepFrom = now - 2 * 60 * 60 * 1000
       slotOriginRef.current = slotOriginRef.current.filter(o => o.start >= keepFrom)
-
-      // 지난 1시간 요약 (팝업 표시용 — 기록 여부와 무관하게 계산)
-      const hourAgo = now - 60 * 60 * 1000
-      const recent  = await getUsage(hourAgo, now, 3)
-      if (recent.length) {
-        const top = recent[0]
-        setLastHourSummary({
-          pkg:      top.pkg,
-          label:    top.label,
-          minutes:  Math.round(top.seconds / 60),
-          category: categoryForApp(top.pkg, overrides),
-        })
-      } else {
-        setLastHourSummary(null)
-      }
 
       setLastRef.current?.(now)
       return saved
@@ -134,8 +141,17 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
       o.category = category
     }
 
+    // 대상이 하나도 없다 (5분 컷에 걸렸거나, 앱 재시작으로 ref가 비었거나, 슬롯 최다앱과 1시간 최다앱이 다름).
+    // 사용자가 명시적으로 고른 분류이므로 말없이 사라지면 안 된다 — 현재 슬롯에 1건은 남긴다.
+    if (!mine.length) {
+      const slotStart = floorToSlot(now)
+      await saveCheckin(category, userId, slotStart)
+      // 같은 호출이 다시 와도(예: 중복 탭) 위 갱신 경로를 타도록 출처를 남겨 멱등성을 지킨다
+      slotOriginRef.current.push({ start: slotStart, pkg: s.pkg, category, saved: true })
+    }
+
     setLastHourSummary({ ...s, category })
   }, [lastHourSummary, userId])
 
-  return { runBackfill, lastHourSummary, correctLastHour }
+  return { runBackfill, lastHourSummary, correctLastHour, hasAccess }
 }

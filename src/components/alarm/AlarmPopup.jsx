@@ -16,7 +16,7 @@ const ACTIVITY_LABEL = ACTIVITIES.reduce((m, a) => { m[a.id] = a.label; return m
 
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
-  autoSummary = null, onCorrect = null,
+  autoSummary = null, onCorrect = null, autoMode = false,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -104,7 +104,18 @@ export default function AlarmPopup({
           borderRadius: 20, padding: '18px 14px',
           boxShadow: '0 0 24px rgba(99,102,241,0.12)',
         }}>
-          {autoSummary && !correcting ? (
+          {autoMode && !autoSummary && !correcting ? (
+            /* 자동 모드지만 아직 소급 계산이 끝나지 않음 — 수동 4버튼이 잠깐 떴다 사라지며
+               같은 슬롯에 중복 기록되는 것을 막기 위해 계산이 끝날 때까지 버튼을 감춘다 */
+            <div style={{ padding: '10px 0 4px' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#cbd5e1' }}>
+                기록 확인 중…
+              </div>
+              <div style={{ color: '#64748b', fontSize: 12, marginTop: 6 }}>
+                잠시만요, 방금 쓴 앱을 확인하고 있어요
+              </div>
+            </div>
+          ) : autoSummary && !correcting ? (
             /* 자동 기록 모드 — 아무것도 누르지 않아도 이미 기록됨 */
             <>
               <div style={{ fontSize: 17, fontWeight: 900, color: '#f1f5f9', marginBottom: 8, letterSpacing: '-0.5px' }}>
