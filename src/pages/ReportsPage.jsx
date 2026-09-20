@@ -331,9 +331,12 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
               display: 'flex', alignItems: 'center', gap: 10,
             }}>
               <span style={{ fontSize: 18 }}>📅</span>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 700 }}>오늘 체크인 {todayTotal}회</div>
-                <div style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>
+                <div style={{
+                  color: '#475569', fontSize: 10, marginTop: 2,
+                  lineHeight: 1.8, wordBreak: 'break-all', whiteSpace: 'normal',
+                }}>
                   {todayCheckins.map(c => ACTIVITY_EMOJI[c.activity_type] || '?').join('  ')}
                 </div>
               </div>
