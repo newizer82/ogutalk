@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
 import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
+import { useAutoCheckin } from './hooks/useAutoCheckin'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
@@ -188,7 +189,8 @@ export default function App() {
 
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
-  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours } = settings
+  const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
+          autoCheckin, lastBackfillAt } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -204,6 +206,8 @@ export default function App() {
   const setOguAlarmTone = v => updateSetting('oguAlarmTone', v)
   const setOguRepeat    = v => updateSetting('oguRepeat', v)
   const setAlarmMode   = v => updateSetting('alarmMode', v)
+  const setAutoCheckin    = v => updateSetting('autoCheckin', v)
+  const setLastBackfillAt = v => updateSetting('lastBackfillAt', v)
   const setVolume      = v => updateSetting('volume', v)
   const setVibStrength = v => updateSetting('vibStrength', v)
   const setAlarmHours  = v => updateSetting('alarmHours', v)
@@ -271,6 +275,30 @@ export default function App() {
     alarmCount, showAlarmPopup, alarmContent, closeAlarmPopup, fireAlarm,
     saveCheckin,
   } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
+
+  // 자동 체크인 소급 기록 (앱 사용시간 기반)
+  const { runBackfill, lastHourSummary, correctLastHour, hasAccess } = useAutoCheckin({
+    enabled: autoCheckin,
+    userId,
+    lastBackfillAt,
+    setLastBackfillAt,
+  })
+  // 권한이 없다고 확정된 경우(false)에만 즉시 수동 모드로 — 미확인(null)인 동안은
+  // 자동 모드로 간주해 "준비 중" 화면을 보여주고, 수동 4버튼이 잠깐 떴다 사라지는 것을 막는다
+  const autoCheckinMode = autoCheckin && hasAccess !== false
+
+  // 앱 복귀 시 + 알람 팝업이 뜰 때 소급 기록
+  useEffect(() => {
+    if (!autoCheckin) return
+    runBackfill()
+    const onVis = () => { if (document.visibilityState === 'visible') runBackfill() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [autoCheckin, runBackfill])
+
+  useEffect(() => {
+    if (autoCheckin && showAlarmPopup) runBackfill()
+  }, [autoCheckin, showAlarmPopup, runBackfill])
 
   // 모바일 AudioContext unlock — 첫 터치 시 소리 활성화
   useEffect(() => {
@@ -520,6 +548,8 @@ export default function App() {
             setVibStrength={setVibStrength}
             alarmHours={alarmHours}
             setAlarmHours={setAlarmHours}
+            autoCheckin={autoCheckin}
+            setAutoCheckin={setAutoCheckin}
             onTestAlarm={fireAlarm}
             todos={activeTodos}
             goals={localGoals}
@@ -541,6 +571,9 @@ export default function App() {
           oguTone={oguTone}
           onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
           onCheckin={saveCheckin}
+          autoSummary={autoCheckin ? lastHourSummary : null}
+          onCorrect={correctLastHour}
+          autoMode={autoCheckinMode}
         />
       )}
 

@@ -3,7 +3,7 @@
 > ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
 > 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
 >
-> 마지막 업데이트: 2026-04-28 (대규모 정리 후)
+> 마지막 업데이트: 2026-09-20 (자동 활동 기록 추가, v1.7.0)
 
 ---
 
@@ -23,8 +23,9 @@
 ✅ Day 2~7 React + PWA + Supabase 연동, 핵심 기능 구현
 ✅ 추가    Capacitor 안드로이드 빌드, 카카오 로그인
 ✅ 추가    커스텀 알람, 주간 리포트(템플릿), 백그라운드 알림
+✅ 추가    자동 활동 기록 (UsageStats, 30분 슬롯, 기본 OFF) — v1.7.0
 🟡 정리    몰입시간 알람 / 키워드 탭 / 죽은 코드 1차 정리 완료
-⏳ 다음    localStorage 통합, LoginModal 분리, DB 정리
+⏳ 다음    LoginModal 분리, SettingsPage 분할, DB 정리
 ```
 
 ### 최근 정리 작업 (2026-04-28 세션)
@@ -52,6 +53,7 @@
 스타일:      인라인 CSS + theme.js 디자인 토큰
 사운드:      Web Audio API (오실레이터로 직접 생성)
 알림:        브라우저 Notification API + Capacitor Local Notifications
+네이티브 플러그인: 커스텀 Capacitor 플러그인 (AudioFocus, UsageStats)
 ```
 
 추후 연동 예정:
@@ -221,6 +223,18 @@ const theme = {
 할일       - todos 테이블에서 미완료 카운트
 ```
 
+### 6. 자동 활동 기록 (UsageStats, 기본 OFF)
+
+```
+- 안드로이드 UsageStats 권한으로 앱별 사용시간을 조회해 30분 슬롯(정각/30분) 단위로 체크인 자동 기록
+- 기본값 OFF — 설정 > 자동 활동 기록에서 사용자가 직접 켜야 함 (Play 정책상 사전 고지 후 권한 이동)
+- 앱 패키지 → 활동 카테고리는 내장 매핑 사용, 미분류 앱은 기록하지 않음
+- 분류가 틀리면 사용자가 한 번 고쳐서 학습(ogu_app_category), 다음부터 해당 앱에 자동 적용
+- 소급 기록은 앱 복귀·알람 발동 시점에 실행 (useAutoCheckin), 최대 24시간(48슬롯) 상한
+- 권한 미허용/미지원(iOS·웹) 시 기존 수동 체크인 그대로 동작
+- 사용시간 데이터는 기기 내에서만 처리되며 서버로 전송하지 않음
+```
+
 ---
 
 ## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)
@@ -273,6 +287,10 @@ localStorage 키 (현재 6개 — 통합 후보):
 
 추가 키:
   ogu_customAlarms (커스텀 알람 목록)
+  ogu_app_category (자동 활동 기록 — 앱→카테고리 사용자 수정 학습)
+
+설정 값 (settings.js, autoCheckin 기본 false):
+  autoCheckin (자동 활동 기록 on/off), lastBackfillAt (마지막 소급 기록 시각)
 
 서버 상태:
   user (Supabase Auth) → todos, goals 가 자동으로 user_id 분기
@@ -292,6 +310,10 @@ localStorage 키 (현재 6개 — 통합 후보):
 6. localStorage 키 prefix 는 'ogu_' 통일
 7. 모든 src 파일 끝에 NULL 바이트 패딩이 붙기 쉬움 (윈도우↔리눅스 마운트)
    → 빌드 실패 시 `tr -d '\000'` 로 정리 필요
+8. 안드로이드 릴리즈 빌드는 JDK 21로 해야 함 — Gradle 8.14.3은 JDK 25에서 실행 불가
+   (`Unsupported class file major version 69`). Android Studio 번들 JBR이 25로 올라가 있으면
+   그대로 못 씀 → `JAVA_HOME` 을 JDK 21로 지정(이 머신은 `~/.jdks/jbr-21.0.11`) 하거나
+   Android Studio의 Gradle JDK 설정을 21로 맞출 것
 ```
 
 ---
