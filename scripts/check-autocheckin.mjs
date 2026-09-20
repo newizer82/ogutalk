@@ -38,12 +38,13 @@ assert.equal(slotKey(at(9, 0)),   '2026-09-20T09:00')
   assert.deepEqual(slots.map(s => s.hour), [15, 15])
 }
 
-// 24시간 상한: 48슬롯을 넘지 않는다
+// 24시간 상한: 정확히 48슬롯이어야 한다
 {
   const now = at(15, 59)
   const slots = buildSlots(now - 72 * 60 * 60 * 1000, now)
-  assert.ok(slots.length <= 48, `48슬롯 이하여야 하는데 ${slots.length}`)
-  assert.ok(slots[0].start >= now - MAX_BACKFILL_MS - SLOT_MS)
+  assert.equal(slots.length, 48, `정확히 48슬롯이어야 하는데 ${slots.length}`)
+  // 49개에서 첫 개를 자르므로 첫 슬롯은 어제 16:00 (경계 점검)
+  assert.equal(slots[0].key, '2026-09-19T16:00', `첫 슬롯이 정확한 경계에서 잘려야 함`)
 }
 
 // 멱등: 이미 기록된 키는 제외
@@ -53,10 +54,10 @@ assert.equal(slotKey(at(9, 0)),   '2026-09-20T09:00')
   assert.deepEqual(slots.map(s => s.key), ['2026-09-20T14:30'])
 }
 
-// lastBackfillAt 이 null 이면 24시간 전부터
+// lastBackfillAt 이 null 이면 24시간 전부터, 정확히 48슬롯
 {
   const slots = buildSlots(null, at(15, 59))
-  assert.ok(slots.length > 0 && slots.length <= 48)
+  assert.equal(slots.length, 48, `null fallback은 정확히 48슬롯이어야 하는데 ${slots.length}`)
 }
 
 console.log('✓ checkinSlots 검증 통과')
