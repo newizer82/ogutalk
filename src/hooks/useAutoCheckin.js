@@ -118,13 +118,20 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
       o => o.pkg === s.pkg && o.start >= hourAgo && o.start <= now,
     )
 
-    // 이미 기록된 슬롯 → 카테고리 갱신
-    const toUpdate = mine.filter(o => o.saved).map(o => new Date(o.start).toISOString())
-    if (toUpdate.length) await updateCheckinCategory(toUpdate, category, userId)
+    // 이미 기록된 슬롯 → 카테고리 갱신 (삽입 루프가 saved를 바꾸기 전에 먼저 확정)
+    const updated = mine.filter(o => o.saved)
+    const toUpdate = updated.map(o => new Date(o.start).toISOString())
+    if (toUpdate.length) {
+      await updateCheckinCategory(toUpdate, category, userId)
+      for (const o of updated) o.category = category
+    }
 
     // 미분류라 건너뛴 슬롯 → 그 슬롯 시각으로 새로 저장 (슬롯 정렬 유지)
     for (const o of mine.filter(o => !o.saved)) {
       await saveCheckin(category, userId, o.start)
+      // 같은 슬롯에 중복 삽입되지 않도록 소비 표시 — 재수정 시에는 갱신 경로를 타게 된다
+      o.saved    = true
+      o.category = category
     }
 
     setLastHourSummary({ ...s, category })
