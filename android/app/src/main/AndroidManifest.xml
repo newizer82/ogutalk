@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 설치된 앱의 표시 이름 조회 (QUERY_ALL_PACKAGES 없이 — 선언 양식 대상 회피) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -68,5 +77,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 배터리 최적화 면제 요청 (앱이 화이트리스트에 등록될 수 있도록) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- 앱별 사용시간 조회 (사용자가 설정에서 '사용정보 접근'을 직접 허용해야 함) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
 </manifest>
