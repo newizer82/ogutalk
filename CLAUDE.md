@@ -80,8 +80,6 @@ public.todos             - 할일                          [사용]
 public.notification_log  - 알림 기록 (체크인 저장)       [사용]
 public.economic_tips     - 경제 상식 (10건 입력됨)       [사용]
 public.user_preferences  - 사용자 환경설정               [사용]
-
-public.tracked_keywords  - 키워드                        [⚠️ 미사용 — 추후 마이그레이션 예정]
 ```
 
 ### 트리거
@@ -301,8 +299,7 @@ localStorage 키 (현재 6개 — 통합 후보):
 ## 🚧 다음 작업 후보 (정리 단계)
 
 ```
-[5] localStorage 6개 키 → 단일 settings 객체로 통합
 [6] App.jsx 에 인라인된 LoginModal 분리 (~100줄 → 별도 파일)
-[7] DB의 tracked_keywords 테이블 마이그레이션으로 제거
-[8] SettingsPage.jsx 460줄 분할 (사운드/알람시간/커스텀알람/계정 등)
-[9] reference/ 폴더의 미사용 자료 
+[8] SettingsPage.jsx 524줄 분할 (사운드/알람시간/커스텀알람/계정 등)
+
+완료됨: [5] localStorage 통합(src/lib/settings.js) · [7] tracked_keywords 테이블 제거 · [9] reference/ 폴더 정리 
