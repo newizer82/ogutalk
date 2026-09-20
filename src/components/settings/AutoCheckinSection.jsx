@@ -6,6 +6,15 @@ import { hasUsageAccess, openUsageSettings } from '../../lib/usageStats'
 export default function AutoCheckinSection({ enabled, onChange }) {
   const [granted, setGranted] = useState(false)
   const [notice,  setNotice]  = useState(false)   // 고지 화면 표시 여부
+  const [armed,   setArmed]   = useState(false)   // 300ms 지나야 버튼 활성화 (토글 탭의 합성 클릭이 동의로 새는 것 방지)
+
+  // 모달이 열린 직후에는 버튼을 잠가둔다 — 토글 탭 뒤에 오는 합성 click 이벤트가
+  // 같은 좌표의 "허용하고 계속" 버튼에 떨어져 고지 없이 동의가 성립하는 것을 막는다.
+  useEffect(() => {
+    if (!notice) { setArmed(false); return }
+    const t = setTimeout(() => setArmed(true), 300)
+    return () => clearTimeout(t)
+  }, [notice])
 
   const refresh = useCallback(async () => {
     setGranted(await hasUsageAccess())
@@ -28,6 +37,7 @@ export default function AutoCheckinSection({ enabled, onChange }) {
   }
 
   const handleAgree = async () => {
+    if (!armed) return   // 모달 등장 직후 합성 click 은 무시 (disabled 버튼 방어의 이중 안전장치)
     setNotice(false)
     onChange(true)
     if (!granted) await openUsageSettings()
@@ -90,7 +100,13 @@ export default function AutoCheckinSection({ enabled, onChange }) {
               >취소</button>
               <button
                 onClick={handleAgree}
-                style={{ flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontSize: 13, fontWeight: 800 }}
+                disabled={!armed}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: 12, border: 'none', color: 'white', fontSize: 13, fontWeight: 800,
+                  cursor: armed ? 'pointer' : 'default',
+                  background: armed ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.12)',
+                  opacity: armed ? 1 : 0.5,
+                }}
               >허용하고 계속</button>
             </div>
           </div>
