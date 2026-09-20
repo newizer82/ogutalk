@@ -12,7 +12,12 @@ const ACTIVITIES = [
   { id: 'rest',      label: '😴 휴식/식사',     color: '#10b981' },
 ]
 
-export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin }) {
+const ACTIVITY_LABEL = ACTIVITIES.reduce((m, a) => { m[a.id] = a.label; return m }, {})
+
+export default function AlarmPopup({
+  alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
+  autoSummary = null, onCorrect = null,
+}) {
   const now = new Date()
   const HH  = pad(now.getHours())
   const MM  = pad(now.getMinutes())
@@ -26,6 +31,15 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
     setCheckedIn(true)
     if (onCheckin) onCheckin(activityId)
     // 선택 즉시 닫기 (피드백을 위한 짧은 200ms만 유지)
+    setTimeout(onClose, 200)
+  }
+
+  const [correcting, setCorrecting] = useState(false)
+
+  const handleCorrect = (activityId) => {
+    onCorrect?.(activityId)
+    setCorrecting(false)
+    setCheckedIn(true)
     setTimeout(onClose, 200)
   }
 
@@ -90,38 +104,64 @@ export default function AlarmPopup({ alarmContent, pendingCount = 0, oguTone = '
           borderRadius: 20, padding: '18px 14px',
           boxShadow: '0 0 24px rgba(99,102,241,0.12)',
         }}>
-          <div style={{
-            fontSize: 19, fontWeight: 900, color: '#f1f5f9',
-            marginBottom: 6, textAlign: 'center', letterSpacing: '-0.5px',
-          }}>
-            ⏱️ 이번 시간 뭐 하셨어요?
-          </div>
-          <div style={{
-            color: '#fb923c', fontSize: 13, fontWeight: 700,
-            marginBottom: 14, textAlign: 'center',
-          }}>
-            👇 선택해야 알람이 종료됩니다
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {ACTIVITIES.map(a => (
+          {autoSummary && !correcting ? (
+            /* 자동 기록 모드 — 아무것도 누르지 않아도 이미 기록됨 */
+            <>
+              <div style={{ fontSize: 17, fontWeight: 900, color: '#f1f5f9', marginBottom: 8, letterSpacing: '-0.5px' }}>
+                지난 1시간
+              </div>
+              <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
+                {autoSummary.label} {autoSummary.minutes}분
+              </div>
+              <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
+                {autoSummary.category
+                  ? `✓ ${ACTIVITY_LABEL[autoSummary.category] ?? autoSummary.category} 으로 기록했어요`
+                  : '아직 분류되지 않은 앱이에요'}
+              </div>
               <button
-                key={a.id}
-                onClick={() => handleCheckin(a.id)}
+                onClick={() => setCorrecting(true)}
                 style={{
-                  padding: '14px 6px', borderRadius: 14, border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 700, lineHeight: 1.3,
-                  background: selected === a.id ? `${a.color}33` : 'rgba(255,255,255,0.06)',
-                  color: selected === a.id ? a.color : '#cbd5e1',
-                  outline: selected === a.id ? `2px solid ${a.color}` : '1.5px solid rgba(255,255,255,0.1)',
-                  transition: 'all 0.15s ease',
-                  transform: selected === a.id ? 'scale(1.05)' : 'scale(1)',
-                  boxShadow: selected === a.id ? `0 0 16px ${a.color}44` : 'none',
+                  width: '100%', padding: '12px', borderRadius: 12, cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
+                  color: '#cbd5e1', fontSize: 13, fontWeight: 700,
                 }}
               >
-                {a.label}
+                {autoSummary.category ? '다르게 기록' : '분류 선택하기'}
               </button>
-            ))}
-          </div>
+            </>
+          ) : (
+            /* 수동 모드 (권한 없음·기능 OFF) 또는 수정 중 */
+            <>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#f1f5f9', marginBottom: 6, textAlign: 'center', letterSpacing: '-0.5px' }}>
+                ⏱️ 이번 시간 뭐 하셨어요?
+              </div>
+              {!autoSummary && (
+                <div style={{ color: '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14, textAlign: 'center' }}>
+                  👇 선택해야 알람이 종료됩니다
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {ACTIVITIES.map(a => (
+                  <button
+                    key={a.id}
+                    onClick={() => (correcting ? handleCorrect(a.id) : handleCheckin(a.id))}
+                    style={{
+                      padding: '14px 6px', borderRadius: 14, border: 'none', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 700, lineHeight: 1.3,
+                      background: selected === a.id ? `${a.color}33` : 'rgba(255,255,255,0.06)',
+                      color: selected === a.id ? a.color : '#cbd5e1',
+                      outline: selected === a.id ? `2px solid ${a.color}` : '1.5px solid rgba(255,255,255,0.1)',
+                      transition: 'all 0.15s ease',
+                      transform: selected === a.id ? 'scale(1.05)' : 'scale(1)',
+                      boxShadow: selected === a.id ? `0 0 16px ${a.color}44` : 'none',
+                    }}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {checkedIn && (
             <div style={{ marginTop: 10, color: '#34d399', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
               ✓ 기록 완료!

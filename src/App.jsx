@@ -568,6 +568,8 @@ export default function App() {
           oguTone={oguTone}
           onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
           onCheckin={saveCheckin}
+          autoSummary={autoCheckin ? lastHourSummary : null}
+          onCorrect={correctLastHour}
         />
       )}
 
