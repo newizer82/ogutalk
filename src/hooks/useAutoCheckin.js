@@ -40,6 +40,10 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
   useEffect(() => { lastRef.current    = lastBackfillAt    }, [lastBackfillAt])
   useEffect(() => { setLastRef.current = setLastBackfillAt }, [setLastBackfillAt])
 
+  // 소급 루프가 어떤 슬롯을 어떤 앱으로 처리했는지 기억한다 (수정 학습이 앱 단위로 대상을 찾기 위함).
+  // 메모리에만 두고 저장하지 않는다 — 원시 사용시간을 영속화하지 않는다는 제약을 지킨다.
+  const slotOriginRef = useRef([])   // [{ start, pkg, category, saved }]
+
   const runBackfill = useCallback(async () => {
     if (!enabled || running.current) return 0
     running.current = true
@@ -59,11 +63,24 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
 
         const top = apps[0]
         const category = categoryForApp(top.pkg, overrides)
+
+        // 미분류 앱은 기록하지 않지만, 출처는 남긴다 (사용자가 나중에 분류하면 이 슬롯에 채워 넣는다)
+        slotOriginRef.current.push({
+          start:    slot.start,
+          pkg:      top.pkg,
+          category,
+          saved:    !!category,
+        })
+
         if (!category) continue                       // 미분류 앱은 기록하지 않음
 
         await saveCheckin(category, userId, slot.start)
         saved++
       }
+
+      // 최근 2시간치만 유지
+      const keepFrom = now - 2 * 60 * 60 * 1000
+      slotOriginRef.current = slotOriginRef.current.filter(o => o.start >= keepFrom)
 
       // 지난 1시간 요약 (팝업 표시용 — 기록 여부와 무관하게 계산)
       const hourAgo = now - 60 * 60 * 1000
@@ -93,18 +110,22 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
     if (!s) return
     saveOverride(s.pkg, category)
 
-    // 직전 1시간에 그 앱으로 기록된 슬롯(최대 2건)을 모두 갱신
+    // 스펙 6.3: "직전 한 시간에 그 앱으로 기록된 슬롯 전부"를 갱신한다.
+    // 체크인 레코드에는 pkg가 없으므로(레코드 형식 불변 제약) 소급 루프가 남긴 출처로 대상을 특정한다.
     const now     = Date.now()
     const hourAgo = now - 60 * 60 * 1000
-    const targets = loadLocalCheckins()
-      .filter(c => {
-        const t = new Date(c.created_at).getTime()
-        return t >= hourAgo && t <= now && c.activity_type === s.category
-      })
-      .map(c => c.created_at)
+    const mine    = slotOriginRef.current.filter(
+      o => o.pkg === s.pkg && o.start >= hourAgo && o.start <= now,
+    )
 
-    if (targets.length) await updateCheckinCategory(targets, category, userId)
-    else await saveCheckin(category, userId, now)   // 미분류라 기록이 없던 경우
+    // 이미 기록된 슬롯 → 카테고리 갱신
+    const toUpdate = mine.filter(o => o.saved).map(o => new Date(o.start).toISOString())
+    if (toUpdate.length) await updateCheckinCategory(toUpdate, category, userId)
+
+    // 미분류라 건너뛴 슬롯 → 그 슬롯 시각으로 새로 저장 (슬롯 정렬 유지)
+    for (const o of mine.filter(o => !o.saved)) {
+      await saveCheckin(category, userId, o.start)
+    }
 
     setLastHourSummary({ ...s, category })
   }, [lastHourSummary, userId])
