@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, ALARM_TONE_CONFIGS } from '../data/oguData'
-import { supabase } from '../lib/supabase'
+import { saveCheckin as saveCheckinToStore } from '../lib/checkinStore'
 import {
   IS_NATIVE,
   createOguChannel,
@@ -206,47 +206,11 @@ export function useAlarm({
     return () => setCustomAlarmHandler(null)
   }, [volume])
 
-  const saveCheckin = useCallback(async (activityType) => {
-    const entry = {
-      activity_type: activityType,
-      alarm_hour:    new Date().getHours(),
-      created_at:    new Date().toISOString(),
-    }
-
-    // 항상 로컬 저장 (비로그인 fallback + 오프라인 대비)
-    try {
-      const raw  = localStorage.getItem('ogu_local_checkins')
-      const list = raw ? JSON.parse(raw) : []
-      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
-      const trimmed = list.filter(c => new Date(c.created_at) >= cutoff)
-      trimmed.unshift(entry)
-      localStorage.setItem('ogu_local_checkins', JSON.stringify(trimmed))
-      // 새 체크인 entry를 detail에 실어 발사 — 리포트/홈이 즉시 반영 (Supabase 비동기 대기 불필요)
-      window.dispatchEvent(new CustomEvent('ogu:checkin', { detail: entry }))
-    } catch {}
-
-    // 로그인 시 Supabase에도 저장
-    // notification_log 테이블의 NOT NULL 컬럼(notification_type/title/body)을 함께 채움
-    if (!userId) return
-    const { error } = await supabase
-      .from('notification_log')
-      .insert({
-        user_id:           userId,
-        notification_type: 'checkin',
-        title:             '오구 체크인',
-        body:              `이번 시간 활동: ${activityType}`,
-        ...entry,
-      })
-    if (error) {
-      console.error('[체크인] Supabase 저장 실패:', error)
-      // 사용자가 인지하도록 이벤트 발사 (UI에서 토스트 등으로 표시 가능)
-      window.dispatchEvent(new CustomEvent('ogu:checkin-error', {
-        detail: { message: error.message, code: error.code },
-      }))
-    } else {
-      console.log('[체크인] Supabase 저장 성공:', entry)
-    }
-  }, [userId])
+  // 저장 로직은 checkinStore 가 담당 (자동 체크인과 공유)
+  const saveCheckin = useCallback(
+    (activityType, atMs) => saveCheckinToStore(activityType, userId, atMs),
+    [userId],
+  )
 
   return {
     alarmCount,

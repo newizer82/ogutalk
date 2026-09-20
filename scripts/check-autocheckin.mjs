@@ -3,6 +3,7 @@ import {
   SLOT_MS, MAX_BACKFILL_MS, floorToSlot, slotKey, buildSlots,
 } from '../src/lib/checkinSlots.js'
 import { categoryForApp } from '../src/data/appCategories.js'
+import { buildCheckinEntry } from '../src/lib/checkinEntry.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
 
@@ -85,3 +86,13 @@ assert.ok(!Object.values((await import('../src/data/appCategories.js')).BUILTIN_
   .includes('goal_work'), '내장 매핑에 goal_work 가 있으면 안 됨')
 
 console.log('✓ appCategories 검증 통과')
+
+// 엔트리는 "현재 시각"이 아니라 "주어진 시각"으로 만들어져야 한다
+{
+  const e = buildCheckinEntry('sns', at(9, 30))
+  assert.equal(e.activity_type, 'sns')
+  assert.equal(e.alarm_hour, 9)
+  assert.equal(new Date(e.created_at).getTime(), at(9, 30))
+}
+
+console.log('✓ checkinStore 검증 통과')
