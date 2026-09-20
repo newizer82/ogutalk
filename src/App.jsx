@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
 import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
+import { useAutoCheckin } from './hooks/useAutoCheckin'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
@@ -274,6 +275,27 @@ export default function App() {
     alarmCount, showAlarmPopup, alarmContent, closeAlarmPopup, fireAlarm,
     saveCheckin,
   } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
+
+  // 자동 체크인 소급 기록 (앱 사용시간 기반)
+  const { runBackfill, lastHourSummary, correctLastHour } = useAutoCheckin({
+    enabled: autoCheckin,
+    userId,
+    lastBackfillAt,
+    setLastBackfillAt,
+  })
+
+  // 앱 복귀 시 + 알람 팝업이 뜰 때 소급 기록
+  useEffect(() => {
+    if (!autoCheckin) return
+    runBackfill()
+    const onVis = () => { if (document.visibilityState === 'visible') runBackfill() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [autoCheckin, runBackfill])
+
+  useEffect(() => {
+    if (autoCheckin && showAlarmPopup) runBackfill()
+  }, [autoCheckin, showAlarmPopup, runBackfill])
 
   // 모바일 AudioContext unlock — 첫 터치 시 소리 활성화
   useEffect(() => {
