@@ -310,6 +310,10 @@ localStorage 키 (현재 6개 — 통합 후보):
 6. localStorage 키 prefix 는 'ogu_' 통일
 7. 모든 src 파일 끝에 NULL 바이트 패딩이 붙기 쉬움 (윈도우↔리눅스 마운트)
    → 빌드 실패 시 `tr -d '\000'` 로 정리 필요
+8. 안드로이드 릴리즈 빌드는 JDK 21로 해야 함 — Gradle 8.14.3은 JDK 25에서 실행 불가
+   (`Unsupported class file major version 69`). Android Studio 번들 JBR이 25로 올라가 있으면
+   그대로 못 씀 → `JAVA_HOME` 을 JDK 21로 지정(이 머신은 `~/.jdks/jbr-21.0.11`) 하거나
+   Android Studio의 Gradle JDK 설정을 21로 맞출 것
 ```
 
 ---
