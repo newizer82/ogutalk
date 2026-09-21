@@ -2,13 +2,16 @@ import { useState } from 'react'
 import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
-import { GROUPS, labelOf } from '../../data/appCategories'
+import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
 
 const pad = n => String(n).padStart(2, '0')
 
 // 수동 팝업은 그룹 4개만 보여준다 — 알람이 뜬 순간 세부 11개 중 고르는 건 부담이 크다
 // (수동 체크인을 안 누르는 것이 애초의 문제였다). 세부 분류는 자동 기록이 채운다.
 const ACTIVITIES = Object.entries(GROUPS).map(([id, g]) => ({ id, label: g.label, color: g.color }))
+
+// 세부 분류만 보이면 "검색·정보"가 어느 그룹(소비)인지 몰라 사용자가 굳이 다시 고르게 된다 → 그룹을 앞에 붙인다
+const summaryLabel = c => (GROUPS[c] ? labelOf(c) : `${labelOf(groupOf(c))} · ${labelOf(c)}`)
 
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
@@ -122,7 +125,7 @@ export default function AlarmPopup({
               </div>
               <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
                 {autoSummary.category
-                  ? `✓ ${labelOf(autoSummary.category)} 으로 기록했어요`
+                  ? `✓ ${summaryLabel(autoSummary.category)} 으로 기록했어요`
                   : '아직 분류되지 않은 앱이에요'}
               </div>
               <button
