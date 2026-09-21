@@ -2,17 +2,13 @@ import { useState } from 'react'
 import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
+import { GROUPS, labelOf } from '../../data/appCategories'
 
 const pad = n => String(n).padStart(2, '0')
 
-const ACTIVITIES = [
-  { id: 'goal_work', label: '🎯 목표 할일',    color: '#8b5cf6' },
-  { id: 'study',     label: '📚 공부/업무',     color: '#6366f1' },
-  { id: 'sns',       label: '📱 SNS/유튜브',    color: '#f59e0b' },
-  { id: 'rest',      label: '😴 휴식/식사',     color: '#10b981' },
-]
-
-const ACTIVITY_LABEL = ACTIVITIES.reduce((m, a) => { m[a.id] = a.label; return m }, {})
+// 수동 팝업은 그룹 4개만 보여준다 — 알람이 뜬 순간 세부 11개 중 고르는 건 부담이 크다
+// (수동 체크인을 안 누르는 것이 애초의 문제였다). 세부 분류는 자동 기록이 채운다.
+const ACTIVITIES = Object.entries(GROUPS).map(([id, g]) => ({ id, label: g.label, color: g.color }))
 
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
@@ -126,7 +122,7 @@ export default function AlarmPopup({
               </div>
               <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
                 {autoSummary.category
-                  ? `✓ ${ACTIVITY_LABEL[autoSummary.category] ?? autoSummary.category} 으로 기록했어요`
+                  ? `✓ ${labelOf(autoSummary.category)} 으로 기록했어요`
                   : '아직 분류되지 않은 앱이에요'}
               </div>
               <button
@@ -146,11 +142,9 @@ export default function AlarmPopup({
               <div style={{ fontSize: 19, fontWeight: 900, color: '#f1f5f9', marginBottom: 6, textAlign: 'center', letterSpacing: '-0.5px' }}>
                 ⏱️ 이번 시간 뭐 하셨어요?
               </div>
-              {!autoSummary && (
-                <div style={{ color: '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14, textAlign: 'center' }}>
-                  👇 선택해야 알람이 종료됩니다
-                </div>
-              )}
+              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 14, textAlign: 'center' }}>
+                폰을 안 썼다면 그냥 닫아도 돼요
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {ACTIVITIES.map(a => (
                   <button
@@ -179,6 +173,23 @@ export default function AlarmPopup({
             </div>
           )}
         </div>
+
+        {/* 모든 모드 공통 닫기 — 이전엔 팝업 안에 닫기가 없어서
+            수동은 "무엇이든 골라야" 닫혔고(폰을 안 쓴 시간이 틀린 기록으로 남음),
+            자동·"기록 확인 중…"은 하드웨어 뒤로가기만이 탈출구였다.
+            수동에서 안 고르고 닫으면 기록이 남지 않는다 = 폰을 안 쓴 시간의 정직한 표현. */}
+        {!checkedIn && (
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%', padding: '10px', borderRadius: 12, cursor: 'pointer',
+              border: 'none', background: 'transparent',
+              color: '#64748b', fontSize: 13, fontWeight: 600,
+            }}
+          >
+            닫기
+          </button>
+        )}
       </div>
     </div>
   )

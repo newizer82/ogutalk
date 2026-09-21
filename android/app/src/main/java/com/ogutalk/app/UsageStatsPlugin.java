@@ -5,7 +5,9 @@ import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -20,7 +22,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 구간별 앱 포그라운드 사용시간 조회.
@@ -142,22 +146,28 @@ public class UsageStatsPlugin extends Plugin {
         Collections.sort(sorted, (a, b) -> Long.compare(b.getValue(), a.getValue()));
 
         PackageManager pm = ctx.getPackageManager();
-        String self = ctx.getPackageName();
+        Set<String> skip = nonActivityPackages(ctx, pm);
         JSArray apps = new JSArray();
         int shown = 0;
         for (Map.Entry<String, Long> en : sorted) {
             if (shown >= limit) break;
             String pkg = en.getKey();
-            if (pkg.equals(self)) continue;      // 오구톡 자신은 제외
+            if (skip.contains(pkg)) continue;    // 오구톡 자신·런처·시스템 화면은 활동이 아니다
             if (en.getValue() < 1000) continue;  // 1초 미만 노이즈 컷
             String label = pkg;
+            int osCategory = -1;                 // ApplicationInfo.CATEGORY_UNDEFINED
             try {
-                label = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
-            } catch (Exception ignore) { /* 패키지 가시성 제한 시 패키지명 그대로 */ }
+                ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+                label = pm.getApplicationLabel(ai).toString();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) osCategory = ai.category;
+                // 구형 게임은 category 대신 FLAG_IS_GAME 만 세운다 → 게임(0)으로 합친다
+                if (osCategory == -1 && (ai.flags & ApplicationInfo.FLAG_IS_GAME) != 0) osCategory = 0;
+            } catch (Exception ignore) { /* 패키지 가시성 제한 시 패키지명 그대로, 분류는 미정 */ }
             JSObject o = new JSObject();
             o.put("pkg", pkg);
             o.put("label", label);
             o.put("seconds", en.getValue() / 1000);
+            o.put("category", osCategory);
             apps.put(o);
             shown++;
         }
@@ -165,6 +175,31 @@ public class UsageStatsPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("apps", apps);
         call.resolve(ret);
+    }
+
+    /**
+     * 활동으로 세지 않을 패키지: 오구톡 자신, 홈 런처, 시스템 UI·설정·권한 화면.
+     * 실기기 검증에서 앱 사이를 오가며 보낸 구간은 런처("One UI 홈")가 1위가 되어 실제 활동이 가려졌다.
+     *
+     * 스캔 단계가 아니라 출력 단계에서만 뺀다 — 스캔에서 빼면 직전 앱의 세션이 닫히지 않아
+     * 그 앱 시간이 부푼다(자기 패키지에서 이미 겪은 버그와 같은 원리).
+     */
+    private static Set<String> nonActivityPackages(Context ctx, PackageManager pm) {
+        Set<String> skip = new HashSet<>();
+        skip.add(ctx.getPackageName());
+        skip.add("com.android.systemui");
+        skip.add("com.android.settings");
+        skip.add("com.android.permissioncontroller");
+        skip.add("com.google.android.permissioncontroller");
+        // 기본 런처는 기기마다 다르다(삼성: com.sec.android.app.launcher) → HOME 인텐트로 찾는다.
+        // Android 11+ 는 매니페스트 <queries> 에 HOME 이 선언돼 있어야 결과가 보인다.
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+            for (ResolveInfo ri : pm.queryIntentActivities(home, 0)) {
+                if (ri.activityInfo != null) skip.add(ri.activityInfo.packageName);
+            }
+        } catch (Exception ignore) { /* 런처를 못 찾아도 나머지 제외는 유지 */ }
+        return skip;
     }
 
     /** [s, t] 구간을 [begin, end] 로 잘라 누적 */

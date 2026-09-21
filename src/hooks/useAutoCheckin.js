@@ -69,7 +69,7 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
           pkg:      top.pkg,
           label:    top.label,
           minutes:  Math.round(top.seconds / 60),
-          category: categoryForApp(top.pkg, overrides),
+          category: categoryForApp(top.pkg, overrides, top.category),
         })
       } else {
         setLastHourSummary(null)
@@ -85,7 +85,7 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
         if (totalMs < MIN_ACTIVE_MS) continue        // 취침·미사용 구간
 
         const top = apps[0]
-        const category = categoryForApp(top.pkg, overrides)
+        const category = categoryForApp(top.pkg, overrides, top.category)
 
         // 미분류 앱은 기록하지 않지만, 출처는 남긴다 (사용자가 나중에 분류하면 이 슬롯에 채워 넣는다)
         slotOriginRef.current.push({

@@ -8,6 +8,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- 홈 런처 식별 — 사용시간 집계에서 런처를 활동으로 세지 않기 위함 (QUERY_ALL_PACKAGES 불필요) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
     </queries>
 
     <application

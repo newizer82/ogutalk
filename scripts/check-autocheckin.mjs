@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import {
   SLOT_MS, MAX_BACKFILL_MS, floorToSlot, slotKey, buildSlots,
 } from '../src/lib/checkinSlots.js'
-import { categoryForApp } from '../src/data/appCategories.js'
+import {
+  categoryForApp, groupOf, labelOf, emojiOf, colorOf,
+  GROUPS, CATEGORIES, BUILTIN_CATEGORY,
+} from '../src/data/appCategories.js'
 import { buildCheckinEntry } from '../src/lib/checkinEntry.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
@@ -64,26 +67,65 @@ assert.equal(slotKey(at(9, 0)),   '2026-09-20T09:00')
 
 console.log('✓ checkinSlots 검증 통과')
 
-// 내장 매핑
-assert.equal(categoryForApp('com.google.android.youtube'), 'sns')
-assert.equal(categoryForApp('com.google.android.gm'), 'study')
+// ── 내장 매핑: 이전엔 합쳐져 있던 것들이 분리됐는가 ──
+assert.equal(categoryForApp('com.google.android.youtube'), 'video')   // 유튜브 ≠ SNS
+assert.equal(categoryForApp('com.instagram.android'), 'sns')
+assert.equal(categoryForApp('com.google.android.gm'), 'work')
+assert.equal(categoryForApp('com.openai.chatgpt'), 'ai')
+assert.equal(categoryForApp('com.android.chrome'), 'search')
+assert.equal(categoryForApp('viva.republica.toss'), 'finance')
+
+// 카카오톡: 이전엔 "업무/잡담 구분 불가"로 일부러 뺐지만, 메신저 칸이 생겨 분류된다
+assert.equal(categoryForApp('com.kakao.talk'), 'messenger')
 
 // 모르는 앱은 null (기록하지 않음)
 assert.equal(categoryForApp('com.unknown.app'), null)
 
-// 카카오톡은 의도적으로 내장 매핑에 없다 (업무/잡담 구분 불가)
-assert.equal(categoryForApp('com.kakao.talk'), null)
+// ── OS 분류 폴백: 내장 목록에 없는 앱 ──
+assert.equal(categoryForApp('com.some.game', {}, 0), 'game')    // CATEGORY_GAME
+assert.equal(categoryForApp('com.some.video', {}, 2), 'video')  // CATEGORY_VIDEO
+assert.equal(categoryForApp('com.some.app', {}, -1), null)      // CATEGORY_UNDEFINED → 미분류
+assert.equal(categoryForApp('com.some.app', {}, undefined), null)
 
-// 사용자 지정이 내장 매핑보다 우선
+// 우선순위: 사용자 지정 > 내장 > OS
+assert.equal(categoryForApp('com.google.android.youtube', {}, 7), 'video',
+  '내장 목록이 OS 분류보다 우선해야 함')
 assert.equal(
-  categoryForApp('com.google.android.youtube', { 'com.google.android.youtube': 'study' }),
-  'study',
-)
+  categoryForApp('com.google.android.youtube', { 'com.google.android.youtube': 'produce' }, 2),
+  'produce', '사용자 지정이 최우선')
 
-// 사용자 지정으로 goal_work 부여 가능 (자동 판정으로는 절대 안 나옴)
-assert.equal(categoryForApp('com.unknown.app', { 'com.unknown.app': 'goal_work' }), 'goal_work')
-assert.ok(!Object.values((await import('../src/data/appCategories.js')).BUILTIN_CATEGORY)
-  .includes('goal_work'), '내장 매핑에 goal_work 가 있으면 안 됨')
+// 이전 Minor: overrides 에 null 이 와도 throw 하지 않아야 함
+assert.equal(categoryForApp('com.google.android.youtube', null), 'video')
+
+// ── 내장 목록의 모든 값이 실제로 정의된 세부 분류인가 (오타 방지) ──
+for (const [pkg, cat] of Object.entries(BUILTIN_CATEGORY)) {
+  assert.ok(CATEGORIES[cat], `${pkg} → '${cat}' 는 정의되지 않은 분류`)
+}
+
+// ── 그룹 묶기: 세부·그룹·옛 값 모두 처리 ──
+assert.equal(groupOf('video'), 'consume')
+assert.equal(groupOf('messenger'), 'connect')
+assert.equal(groupOf('finance'), 'living')
+assert.equal(groupOf('consume'), 'consume')     // 수동 기록 = 그룹 그대로
+// 옛 기록이 리포트에서 사라지지 않아야 한다
+assert.equal(groupOf('goal_work'), 'produce')
+assert.equal(groupOf('study'), 'produce')
+assert.equal(groupOf('rest'), 'living')
+assert.equal(groupOf('sns'), 'connect')          // 옛 'sns' 는 새 SNS 로 합쳐짐
+assert.equal(groupOf('nonsense'), null)
+
+// 모든 세부 분류가 실재하는 그룹에 속하는가
+for (const [id, c] of Object.entries(CATEGORIES)) {
+  assert.ok(GROUPS[c.group], `${id} 의 그룹 '${c.group}' 가 없음`)
+}
+
+// 라벨·이모지·색: 모르는 값도 렌더가 깨지지 않아야 함
+assert.equal(labelOf('video'), '📺 동영상')
+assert.equal(labelOf('rest'), '😴 휴식/식사')   // 옛 값도 라벨 유지
+assert.equal(labelOf('nonsense'), 'nonsense')   // 모르면 원문
+assert.equal(emojiOf('nonsense'), '?')
+assert.equal(colorOf('video'), GROUPS.consume.color)   // 세부는 그룹 색을 따른다
+assert.equal(colorOf('nonsense'), '#6366f1')
 
 console.log('✓ appCategories 검증 통과')
 

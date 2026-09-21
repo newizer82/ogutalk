@@ -3,27 +3,7 @@ import GlassCard from '../components/common/GlassCard'
 import { useWeeklyReport } from '../hooks/useWeeklyReport'
 import { useCheckinReport } from '../hooks/useCheckinReport'
 import { S, gradients } from '../styles/theme'
-
-const ACTIVITY_LABEL = {
-  goal_work: '🎯 목표 할일',
-  study:     '📚 공부/업무',
-  sns:       '📱 SNS/유튜브',
-  rest:      '😴 휴식/식사',
-}
-
-const ACTIVITY_COLOR = {
-  goal_work: '#8b5cf6',
-  study:     '#6366f1',
-  sns:       '#f59e0b',
-  rest:      '#10b981',
-}
-
-const ACTIVITY_EMOJI = {
-  goal_work: '🎯',
-  study:     '📚',
-  sns:       '📱',
-  rest:      '😴',
-}
+import { GROUPS, CATEGORIES, groupOf, labelOf, emojiOf, colorOf } from '../data/appCategories'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -203,7 +183,7 @@ export default function ReportsPage({ userId }) {
                   <div key={key} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ color: '#cbd5e1', fontSize: 12 }}>
-                        {ACTIVITY_LABEL[key] ?? key}
+                        {labelOf(key)}
                       </span>
                       <span style={{ color: '#64748b', fontSize: 11 }}>
                         {hours > 0 ? `${hours}시간 ` : ''}{m}분
@@ -212,7 +192,7 @@ export default function ReportsPage({ userId }) {
                     <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
                       <div style={{
                         width: `${pct}%`, height: '100%', borderRadius: 3,
-                        background: ACTIVITY_COLOR[key] ?? '#6366f1',
+                        background: colorOf(key),
                         transition: 'width 0.4s ease',
                       }} />
                     </div>
@@ -277,18 +257,49 @@ function StatBox({ label, value, color }) {
   )
 }
 
+// ── 분포 막대 한 줄 (그룹·세부 공용) ─────────────────────────────
+function DistributionBar({ item, total, height }) {
+  const pct = total > 0 ? Math.round(item.count / total * 100) : 0
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+        {/* 라벨 앞 이모지는 따로 붙이므로 떼어낸다 */}
+        <span style={{ color: '#cbd5e1', fontSize: 11 }}>{item.emoji} {item.label.replace(/^[^\s]+ /, '')}</span>
+        <span style={{ color: '#64748b', fontSize: 10 }}>{item.count}회 ({pct}%)</span>
+      </div>
+      <div style={{ height, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+        <div style={{
+          width: `${pct}%`, height: '100%', borderRadius: 3,
+          background: item.color,
+          transition: 'width 0.6s ease',
+        }} />
+      </div>
+    </div>
+  )
+}
+
 // ── 오구 체크인 리포트 컴포넌트 ──────────────────────────────────
 function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, loading }) {
   const total = checkins.length
   const todayTotal = todayCheckins.length
 
-  // 활동별 비율 계산
-  const activities = Object.entries(ACTIVITY_LABEL).map(([key, label]) => ({
-    key, label,
-    count: activityCount[key] || 0,
-    color: ACTIVITY_COLOR[key],
-    emoji: ACTIVITY_EMOJI[key],
+  // 그룹 분포 (헤드라인) — 수동(그룹)·자동(세부)·옛 기록을 모두 그룹으로 묶는다.
+  // 이전엔 라벨 목록을 순회해서 목록에 없는 값은 차트에서 조용히 사라졌다.
+  const groupCount = {}
+  for (const [type, n] of Object.entries(activityCount)) {
+    const g = groupOf(type)
+    if (g) groupCount[g] = (groupCount[g] || 0) + n
+  }
+  const groupedTotal = Object.values(groupCount).reduce((s, n) => s + n, 0)
+  const groups = Object.entries(GROUPS).map(([key, g]) => ({
+    key, label: g.label, emoji: g.emoji, color: g.color, count: groupCount[key] || 0,
   })).sort((a, b) => b.count - a.count)
+
+  // 세부 분포 — 자동 기록만 세부 분류를 갖는다(수동은 그룹 단위라 여기 안 나옴)
+  const details = Object.entries(activityCount)
+    .filter(([type, n]) => CATEGORIES[type] && n > 0)
+    .map(([type, n]) => ({ key: type, label: labelOf(type), emoji: emojiOf(type), color: colorOf(type), count: n }))
+    .sort((a, b) => b.count - a.count)
 
   // 24시간 시간대 활동 맵
   const maxHourCount = Math.max(...Object.values(hourCount), 1)
@@ -337,34 +348,25 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
                   color: '#475569', fontSize: 10, marginTop: 2,
                   lineHeight: 1.8, wordBreak: 'break-all', whiteSpace: 'normal',
                 }}>
-                  {todayCheckins.map(c => ACTIVITY_EMOJI[c.activity_type] || '?').join('  ')}
+                  {todayCheckins.map(c => emojiOf(c.activity_type)).join('  ')}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 활동 분포 바 */}
+          {/* 그룹 분포 — "의도적이었나(생산), 순삭이었나(소비)"가 한눈에 보이는 헤드라인 */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동별 분포</div>
-            {activities.map(a => {
-              const pct = total > 0 ? Math.round(a.count / total * 100) : 0
-              return (
-                <div key={a.key} style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <span style={{ color: '#cbd5e1', fontSize: 11 }}>{a.emoji} {a.label.replace(/^[^\s]+ /, '')}</span>
-                    <span style={{ color: '#64748b', fontSize: 10 }}>{a.count}회 ({pct}%)</span>
-                  </div>
-                  <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
-                    <div style={{
-                      width: `${pct}%`, height: '100%', borderRadius: 3,
-                      background: a.color,
-                      transition: 'width 0.6s ease',
-                    }} />
-                  </div>
-                </div>
-              )
-            })}
+            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동 분포</div>
+            {groups.map(a => <DistributionBar key={a.key} item={a} total={groupedTotal} height={6} />)}
           </div>
+
+          {/* 세부 분포 — 자동 기록이 있을 때만 */}
+          {details.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>🔎 세부 (앱 사용 기준)</div>
+              {details.map(a => <DistributionBar key={a.key} item={a} total={groupedTotal} height={4} />)}
+            </div>
+          )}
 
           {/* 시간대별 히트맵 (6~23시) */}
           {Object.keys(hourCount).length > 0 && (
