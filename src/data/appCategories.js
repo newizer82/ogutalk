@@ -237,5 +237,9 @@ const OS_CATEGORY = {
  */
 export function categoryForApp(pkg, overrides = {}, osCategory) {
   if (!pkg) return null
-  return overrides?.[pkg] ?? BUILTIN_CATEGORY[pkg] ?? OS_CATEGORY[osCategory] ?? null
+  // 옛 4분류 팝업에서 저장된 수정값(goal_work·study·rest)은 무시한다 — 분류 기준이 바뀌어
+  // "NAVER=목표 할일" 같은 옛 수정이 새 기준(검색=소비)을 계속 덮어쓰는 것을 막기 위함.
+  const o = overrides?.[pkg]
+  const override = (GROUPS[o] || CATEGORIES[o]) ? o : undefined
+  return override ?? BUILTIN_CATEGORY[pkg] ?? OS_CATEGORY[osCategory] ?? null
 }

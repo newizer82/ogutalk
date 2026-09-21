@@ -109,6 +109,8 @@ assert.equal(groupOf('finance'), 'living')
 assert.equal(groupOf('search'), 'consume')       // 검색·포털은 소비
 assert.equal(groupOf('shopping'), 'produce')     // 구매·주문·예약은 생산
 assert.equal(groupOf('create'), 'produce')       // 촬영·제작
+assert.equal(categoryForApp('com.nhn.android.search', { 'com.nhn.android.search': 'goal_work' }, 7), 'search')  // 옛 수정값은 무시
+assert.equal(categoryForApp('com.nhn.android.search', { 'com.nhn.android.search': 'produce' }, 7), 'produce')   // 새 수정값은 존중
 assert.equal(categoryForApp('com.sec.android.app.camera'), 'create')
 assert.equal(categoryForApp('com.sampleapp'), 'shopping')          // 배민 = 주문
 assert.equal(categoryForApp('com.google.android.apps.docs.editors.sheets'), 'work')
