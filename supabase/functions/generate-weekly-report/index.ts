@@ -72,9 +72,9 @@ serve(async (req) => {
     // 세부 11개·레거시 값을 그룹 4개로 모아 이야기를 고른다.
     const GROUP_OF: Record<string, string> = {
       produce: 'produce', connect: 'connect', consume: 'consume', living: 'living',
-      work: 'produce', learning: 'produce', ai: 'produce', search: 'produce',
+      work: 'produce', learning: 'produce', ai: 'produce', create: 'produce', shopping: 'produce',
       messenger: 'connect', sns: 'connect',
-      video: 'consume', game: 'consume', shopping: 'consume',
+      video: 'consume', game: 'consume', search: 'consume',
       finance: 'living', daily: 'living',
       goal_work: 'produce', study: 'produce', rest: 'living',   // 레거시
     }
@@ -108,8 +108,8 @@ serve(async (req) => {
     // 활동 패턴별 스토리
     const story =
       totalCheckins === 0 ? `이번 주 ${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}, 할일 ${todosTotal}개 중 ${todosCompleted}개를 완료했습니다. 체크인 기록은 없었지만, 꾸준히 앱을 열었다는 것 자체로 시간 인식 습관이 조금씩 자리잡고 있습니다.` :
-      goalMinutes > snsMinutes ? `이번 주는 목표 중심으로 움직인 한 주였습니다. 오구 알람에 ${totalCheckins}번 체크인했고, 그 중 생산적인 활동(업무·학습·AI·검색) 시간이 가장 길었습니다. 할일 ${todosCompleted}/${todosTotal}개 완료, 완료율 ${completionRate}%. 방향이 맞습니다.` :
-      snsMinutes > 120 ? `이번 주 ${totalCheckins}번 체크인 중 SNS·영상·게임·쇼핑 시간이 ${Math.round(snsMinutes/60)}시간으로 가장 많았습니다. 할일 완료율은 ${completionRate}%. 스크린 타임을 줄이면 완료율이 자연스럽게 올라갈 거예요.` :
+      goalMinutes > snsMinutes ? `이번 주는 목표 중심으로 움직인 한 주였습니다. 오구 알람에 ${totalCheckins}번 체크인했고, 그 중 생산적인 활동(업무·학습·촬영·구매/예약) 시간이 가장 길었습니다. 할일 ${todosCompleted}/${todosTotal}개 완료, 완료율 ${completionRate}%. 방향이 맞습니다.` :
+      snsMinutes > 120 ? `이번 주 ${totalCheckins}번 체크인 중 SNS·영상·게임·검색 시간이 ${Math.round(snsMinutes/60)}시간으로 가장 많았습니다. 할일 완료율은 ${completionRate}%. 스크린 타임을 줄이면 완료율이 자연스럽게 올라갈 거예요.` :
       `${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}, 총 ${totalCheckins}번 체크인했습니다. ${topActivityName ? `주로 ${topActivityName}(${topActivityHours}시간)에 시간을 썼고, ` : ''}할일 ${todosCompleted}/${todosTotal}개(${completionRate}%)를 마무리했습니다.`
 
     // 완료율 + 활동 패턴별 제안

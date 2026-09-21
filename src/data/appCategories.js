@@ -1,12 +1,13 @@
 // ── 활동 분류 (2단계) ──────────────────────────────────────────
 // 그룹 4개  : 수동 체크인 팝업이 고르는 값 + 리포트 헤드라인
-// 세부 11개 : 자동 기록(앱 사용시간)이 판정하는 값
+// 세부 12개 : 자동 기록(앱 사용시간)이 판정하는 값
 //
 // 체크인 레코드의 activity_type 한 칸에 그룹 ID든 세부 ID든 그대로 들어간다.
 // 리포트는 groupOf() 로 묶는다 → DB 스키마 변경 없음.
 //
 // 그룹을 나눈 기준은 이 앱의 목적(과몰입 방지)이다 —
 // "이 시간이 의도적이었나(생산), 순삭이었나(소비)"가 한눈에 보여야 한다.
+// 생산 = 무언가를 만들거나 끝낸 행위(문서·메일·촬영·구매·주문·예약), 소비 = 보고 읽기만 한 시간(검색 포함).
 
 export const GROUPS = {
   produce: { label: '⚡ 생산', emoji: '⚡', color: '#6366f1' },
@@ -19,12 +20,13 @@ export const CATEGORIES = {
   work:      { label: '💼 업무',          emoji: '💼', group: 'produce' },
   learning:  { label: '📚 학습·자기계발', emoji: '📚', group: 'produce' },
   ai:        { label: '🤖 AI 도구',       emoji: '🤖', group: 'produce' },
-  search:    { label: '🔍 검색·정보',     emoji: '🔍', group: 'produce' },
+  create:    { label: '📸 촬영·제작',     emoji: '📸', group: 'produce' },
+  shopping:  { label: '🛒 구매·주문·예약', emoji: '🛒', group: 'produce' },
   messenger: { label: '💬 메신저',        emoji: '💬', group: 'connect' },
   sns:       { label: '📱 SNS',           emoji: '📱', group: 'connect' },
   video:     { label: '📺 동영상',        emoji: '📺', group: 'consume' },
   game:      { label: '🎮 게임',          emoji: '🎮', group: 'consume' },
-  shopping:  { label: '🛒 쇼핑',          emoji: '🛒', group: 'consume' },
+  search:    { label: '🔍 검색·정보',     emoji: '🔍', group: 'consume' },
   finance:   { label: '💰 금융·투자',     emoji: '💰', group: 'living' },
   daily:     { label: '🗺️ 생활·이동',     emoji: '🗺️', group: 'living' },
 }
@@ -124,8 +126,8 @@ export const BUILTIN_CATEGORY = {
   'net.daum.android.map':                       'daily',   // 카카오맵
   'com.locnall.KimGiSa':                        'daily',   // 카카오내비
   'com.skt.tmap.ku':                            'daily',   // T맵
-  'com.sampleapp':                              'daily',   // 배달의민족
-  'com.fineapp.yogiyo':                         'daily',
+  'com.sampleapp':                              'shopping',   // 배달의민족
+  'com.fineapp.yogiyo':                         'shopping',
   'com.iloen.melon':                            'daily',   // 멜론
   'com.spotify.music':                          'daily',
   'com.google.android.apps.youtube.music':      'daily',
@@ -147,7 +149,7 @@ export const BUILTIN_CATEGORY = {
   'com.samsung.android.email.provider':         'work',
   'com.nhn.android.mail':                       'work',
   'com.dho.mobilefax':                          'work',
-  'com.canva.editor':                           'work',
+  'com.canva.editor':                           'create',
   'ai.x.grok':                                  'ai',
   'classcard.net':                              'learning',
   'com.naver.labs.translator':                  'learning', // 파파고
@@ -189,13 +191,27 @@ export const BUILTIN_CATEGORY = {
   'com.naver.vibe':                             'daily',
   'com.kakao.taxi':                             'daily',
   'com.kakao.wheel':                            'daily',
-  'com.korail.talk':                            'daily',
+  'com.korail.talk':                            'shopping', // 승차권 예매
   'kt.navi':                                    'daily',
   'socar.Socar':                                'daily',
   'com.android.vending':                        'daily',    // OS 분류는 생산성(7)이라 업무로 새던 것 교정
-  'com.sec.android.app.camera':                 'daily',
+  'com.sec.android.app.camera':                 'create',
   'com.google.android.projection.gearhead':     'daily',    // Android Auto
   'com.golfzon.android':                        'daily',
+  // 📸 촬영·제작 / 🛒 구매·주문·예약 (생산)
+  'com.lemon.lvoverseas':                       'create',   // CapCut
+  'com.nexstreaming.app.kinemasterfree':        'create',
+  'com.darinsoft.vimo':                         'create',
+  'com.coffeebeanventures.easyvoicerecorder':   'create',
+  'com.sec.android.app.voicenote':              'create',   // 삼성 음성 녹음
+  'com.coupang.mobile.eats':                    'shopping',
+  'com.cultsotry.yanolja.nativeapp':            'shopping', // 야놀자
+  'com.klook':                                  'shopping',
+  'com.titicacacorp.triple':                    'shopping', // 트리플
+  'com.hanatour.dotcom':                        'shopping',
+  'com.twayair.m.app':                          'shopping',
+  'com.golfzon.booking':                        'shopping',
+  'com.paytalab.mkseo.passorder':               'shopping', // 패스오더
 }
 
 // ── 안드로이드 OS 분류 → 세부 분류 (내장 목록에 없을 때의 폴백) ───
