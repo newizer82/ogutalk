@@ -80,7 +80,7 @@ export const BUILTIN_CATEGORY = {
   'com.google.android.apps.bard':               'ai',   // Gemini
   'ai.perplexity.app.android':                  'ai',
 
-  // 🔍 검색·정보
+  // 🔍 검색·정보 (소비)
   'com.android.chrome':                         'search',
   'com.sec.android.app.sbrowser':               'search', // 삼성 인터넷
   'com.nhn.android.search':                     'search', // 네이버
@@ -107,7 +107,7 @@ export const BUILTIN_CATEGORY = {
   'com.ss.android.ugc.trill':                   'video',  // TikTok (일부 지역)
   'tv.twitch.android.app':                      'video',
 
-  // 🛒 쇼핑
+  // 🛒 구매·주문·예약 (생산)
   'com.coupang.mobile':                         'shopping',
   'com.musinsa.store':                          'shopping',
   'com.towneers.www':                           'shopping', // 당근
