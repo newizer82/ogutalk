@@ -58,13 +58,20 @@ public class MainActivity extends BridgeActivity {
      * - ogu-custom  : res/raw/ogu_custom.mp3 (사용자 커스텀 알람)
      */
     private void ensureAlarmChannels() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        int savedVer = prefs.getInt(KEY_CHAN_VER, 0);
-        if (savedVer >= CHAN_VERSION) return;
-
         NotificationManager nm =
             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
+
+        // 버전 플래그만 믿지 않고 채널이 실제로 있는지도 본다.
+        // allowBackup 으로 재설치 시 prefs(channel_version=11)는 복원되지만 채널은 복원되지 않아,
+        // 플래그만 보고 건너뛰면 채널 없는 알림이 OS에서 버려진다("No Channel found" → 무음·무진동).
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        int savedVer = prefs.getInt(KEY_CHAN_VER, 0);
+        boolean allExist = nm.getNotificationChannel(CHANNEL_OGU) != null
+            && nm.getNotificationChannel(CHANNEL_OGU_VIB) != null
+            && nm.getNotificationChannel(CHANNEL_CUSTOM) != null
+            && nm.getNotificationChannel(CHANNEL_CUSTOM_VIB) != null;
+        if (savedVer >= CHAN_VERSION && allExist) return;
 
         // 기존 채널 삭제 후 재생성 (Android 8+: 채널 사운드는 생성 후 변경 불가)
         // 모든 LEGACY 채널 정리 — 사용자가 무음 오버라이드 했을 가능성 우회
