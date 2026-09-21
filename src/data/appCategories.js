@@ -131,6 +131,71 @@ export const BUILTIN_CATEGORY = {
   'com.google.android.apps.youtube.music':      'daily',
   'com.sec.android.gallery3d':                  'daily',   // 삼성 갤러리
   'com.google.android.apps.photos':             'daily',
+
+  // ── 실기기(2026-09-21) 설치 앱 기준 추가 ──
+  'notion.id':                                  'work',   // 노션 실제 패키지
+  'com.trello':                                 'work',
+  'com.evernote':                               'work',
+  'us.zoom.videomeetings':                      'work',
+  'com.formagrid.airtable':                     'work',
+  'kr.co.rememberapp':                          'work',
+  'com.gworks.oneapp.works':                    'work',   // 네이버웍스
+  'com.tosslab.jandi.app':                      'work',
+  'com.microsoft.office.officehubrow':          'work',
+  'com.google.android.apps.docs.editors.sheets':'work',
+  'com.samsung.android.app.notes':              'work',
+  'com.samsung.android.email.provider':         'work',
+  'com.nhn.android.mail':                       'work',
+  'com.dho.mobilefax':                          'work',
+  'com.canva.editor':                           'work',
+  'ai.x.grok':                                  'ai',
+  'classcard.net':                              'learning',
+  'com.naver.labs.translator':                  'learning', // 파파고
+  'com.samsung.android.messaging':              'messenger',
+  'com.samsung.android.dialer':                 'messenger', // 전화도 소통
+  'com.samsung.android.incallui':               'messenger',
+  'com.facebook.orca':                          'messenger',
+  'com.discord':                                'messenger',
+  'com.tencent.mm':                             'messenger', // 위챗
+  'com.nhn.android.band':                       'sns',
+  'com.nhn.android.blog':                       'sns',
+  'com.nhn.android.navercafe':                  'sns',
+  'com.psma.videospeedchanger':                 'video',
+  'com.kmplayer':                               'video',
+  'com.nhn.android.naverplayer':                'video',
+  'com.google.android.videos':                  'video',
+  'com.roblox.client':                          'game',
+  'com.nianticlabs.pokemongo':                  'game',
+  'com.devsisters.CookieRunForKakao':           'game',
+  'com.ChillyRoom.DungeonShooter':              'game',
+  'com.alibaba.aliexpresshd':                   'shopping',
+  'com.einnovation.temu':                       'shopping',
+  'com.amazon.mShop.android.shopping':          'shopping',
+  'com.taobao.taobao':                          'shopping',
+  'com.navercorp.navershopping':                'shopping',
+  'com.tmon':                                   'shopping',
+  'net.bucketplace':                            'shopping', // 오늘의집
+  'com.miraeasset.trade':                       'finance',
+  'com.miraeasset.global':                      'finance',
+  'com.kiwoom.heromts':                         'finance',  // 영웅문S#
+  'com.kakaopay.app':                           'finance',
+  'com.kbstar.kbbank':                          'finance',
+  'nh.smart.banking':                           'finance',
+  'com.woori.android.iweb':                     'finance',
+  'com.wooribank.smart.biz':                    'finance',
+  'kr.co.dgb.dgbb':                             'finance',
+  'kr.co.samsungcard.mpocket':                  'finance',
+  'com.ktmusic.geniemusic':                     'daily',
+  'com.naver.vibe':                             'daily',
+  'com.kakao.taxi':                             'daily',
+  'com.kakao.wheel':                            'daily',
+  'com.korail.talk':                            'daily',
+  'kt.navi':                                    'daily',
+  'socar.Socar':                                'daily',
+  'com.android.vending':                        'daily',    // OS 분류는 생산성(7)이라 업무로 새던 것 교정
+  'com.sec.android.app.camera':                 'daily',
+  'com.google.android.projection.gearhead':     'daily',    // Android Auto
+  'com.golfzon.android':                        'daily',
 }
 
 // ── 안드로이드 OS 분류 → 세부 분류 (내장 목록에 없을 때의 폴백) ───

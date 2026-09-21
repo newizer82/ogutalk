@@ -191,6 +191,10 @@ public class UsageStatsPlugin extends Plugin {
         skip.add("com.android.settings");
         skip.add("com.android.permissioncontroller");
         skip.add("com.google.android.permissioncontroller");
+        skip.add("android");                                     // 시스템 대화상자
+        skip.add("com.android.intentresolver");                  // 공유 시트
+        skip.add("com.google.android.packageinstaller");
+        skip.add("com.samsung.android.app.smartcapture");        // 스크린샷
         // 기본 런처는 기기마다 다르다(삼성: com.sec.android.app.launcher) → HOME 인텐트로 찾는다.
         // Android 11+ 는 매니페스트 <queries> 에 HOME 이 선언돼 있어야 결과가 보인다.
         try {
