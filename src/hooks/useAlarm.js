@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, ALARM_TONE_CONFIGS } from '../data/oguData'
 import { saveCheckin as saveCheckinToStore } from '../lib/checkinStore'
+import { logEvent } from '../lib/firebase'
 import {
   IS_NATIVE,
   createOguChannel,
@@ -164,6 +165,9 @@ export function useAlarm({
     setAlarmCount(c => c + 1)
     setShowAlarmPopup(true)
     setAlarmContent(buildContent())
+    // 모든 알람 경로(웹·네이티브·커스텀)의 합류점 — 알람이 실제로 사용자에게 보였는가.
+    // ponytail: 설정 탭의 "테스트 알람"도 여기를 지나 소량 섞인다. 100명 단계에선 무시할 수준이라 구분하지 않음.
+    logEvent('alarm_popup_shown')
   }, [oguTone, oguRepeat, alarmMode, volume, vibStrength])
 
   const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
@@ -208,7 +212,11 @@ export function useAlarm({
 
   // 저장 로직은 checkinStore 가 담당 (자동 체크인과 공유)
   const saveCheckin = useCallback(
-    (activityType, atMs) => saveCheckinToStore(activityType, userId, atMs),
+    (activityType, atMs) => {
+      // 수동 체크인 = 사용자가 팝업에서 직접 고른 것. 자동 기록(useAutoCheckin)과 구분해 비율을 본다.
+      logEvent('checkin_saved', { source: 'manual' })
+      return saveCheckinToStore(activityType, userId, atMs)
+    },
     [userId],
   )
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { IS_NATIVE } from '../lib/capacitor'
+import { logEvent } from '../lib/firebase'
 
 // ── 모듈 레벨 싱글톤 ─────────────────────────────────────────
 // useAuth() 가 여러 컴포넌트에서 호출되어도 딥링크 리스너는 1번만 등록
@@ -96,7 +97,16 @@ export function useAuth() {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 로그인 성공을 가장 정확히 잡을 수 있는 유일한 지점 (이메일·카카오 OAuth 둘 다 여기로 모인다).
+    // 앱 시작 시 복원되는 세션은 INITIAL_SESSION 으로 분리돼 오므로 SIGNED_IN 만 보면 신규 로그인이다.
+    // 다만 앱 복귀 시 SIGNED_IN 이 재발생할 수 있어, 이미 알고 있는 사용자면 세지 않는다.
+    let knownUserId = null
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextId = session?.user?.id ?? null
+      if (event === 'SIGNED_IN' && nextId && nextId !== knownUserId) {
+        logEvent('login_success', { method: session.user.app_metadata?.provider ?? 'unknown' })
+      }
+      knownUserId = nextId
       setUser(session?.user ?? null)
     })
 

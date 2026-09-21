@@ -1,17 +1,18 @@
 import { shareToKakao } from '../../lib/kakao'
 import { IS_NATIVE } from '../../lib/capacitor'
-
-const INSTALL_LINK = 'https://play.google.com/store/apps/details?id=com.ogutalk.app'
+import { logEvent } from '../../lib/firebase'
+import { INSTALL_LINK, SHARE_TEXT, SHARE_TITLE } from '../../lib/shareCopy'
 
 // 네이티브: Capacitor Share (안드로이드 공유 시트) → 카톡·인스타·메시지 등 선택 가능
 // 웹: 카카오 JavaScript SDK (예쁜 카카오 카드)
 async function share(progress) {
+  logEvent('share_click', { channel: IS_NATIVE ? 'system_sheet' : 'kakao_card' })
   if (IS_NATIVE) {
     try {
       const { Share } = await import('@capacitor/share')
       await Share.share({
-        title:       '매시 59분 오구 알람 앱',
-        text:        `나는 오늘 목표 ${progress}% 달성! 같이 써봐요 🕐`,
+        title:       SHARE_TITLE,
+        text:        SHARE_TEXT,
         url:         INSTALL_LINK,
         dialogTitle: '오구톡 공유',
       })

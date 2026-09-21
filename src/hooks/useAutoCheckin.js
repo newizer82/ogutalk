@@ -3,6 +3,7 @@ import { buildSlots, slotKey, floorToSlot, MIN_ACTIVE_MS } from '../lib/checkinS
 import { categoryForApp } from '../data/appCategories'
 import { getUsage, hasUsageAccess } from '../lib/usageStats'
 import { saveCheckin, updateCheckinCategory, loadLocalCheckins } from '../lib/checkinStore'
+import { logEvent } from '../lib/firebase'
 
 const OVERRIDE_KEY = 'ogu_app_category'
 
@@ -103,6 +104,10 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
       // 최근 2시간치만 유지
       const keepFrom = now - 2 * 60 * 60 * 1000
       slotOriginRef.current = slotOriginRef.current.filter(o => o.start >= keepFrom)
+
+      // 소급 1회당 1건 — 슬롯마다 남기면 소급 때 최대 48건이 쏟아져 "몇 번 돌았나"가 가려진다.
+      // 0건이면 남기지 않는다(앱을 열 때마다 찍히는 노이즈 방지).
+      if (saved > 0) logEvent('checkin_saved', { source: 'auto', slots: saved })
 
       setLastRef.current?.(now)
       return saved

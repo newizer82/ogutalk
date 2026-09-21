@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Toggle from '../common/Toggle'
 import { IS_NATIVE } from '../../lib/capacitor'
 import { hasUsageAccess, openUsageSettings } from '../../lib/usageStats'
+import { logEvent } from '../../lib/firebase'
 
 export default function AutoCheckinSection({ enabled, onChange }) {
   const [granted, setGranted] = useState(false)
@@ -16,8 +17,15 @@ export default function AutoCheckinSection({ enabled, onChange }) {
     return () => clearTimeout(t)
   }, [notice])
 
+  // refresh() 는 앱이 포그라운드로 돌아올 때마다 돈다. 그때마다 true 를 받으니
+  // "허용됨"을 그대로 로깅하면 앱을 열 때마다 중복된다 → 미허용→허용 전환 순간에만 남긴다.
+  const prevGranted = useRef(null)
+
   const refresh = useCallback(async () => {
-    setGranted(await hasUsageAccess())
+    const g = await hasUsageAccess()
+    if (prevGranted.current === false && g === true) logEvent('usage_permission_granted')
+    prevGranted.current = g
+    setGranted(g)
   }, [])
 
   // 시스템 설정에서 돌아왔을 때 권한 상태 재확인
@@ -40,6 +48,7 @@ export default function AutoCheckinSection({ enabled, onChange }) {
     if (!armed) return   // 모달 등장 직후 합성 click 은 무시 (disabled 버튼 방어의 이중 안전장치)
     setNotice(false)
     onChange(true)
+    logEvent('auto_checkin_enabled')   // 고지에 동의하고 켠 순간 — 이후 권한 허용까지의 이탈은 usage_permission_granted 와 비교
     if (!granted) await openUsageSettings()
   }
 

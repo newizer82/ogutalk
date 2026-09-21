@@ -4,7 +4,7 @@
 
 const SDK_URL = 'https://developers.kakao.com/sdk/js/kakao.min.js'
 const WEB_LINK     = 'https://ogutalk.vercel.app'
-const INSTALL_LINK = 'https://play.google.com/store/apps/details?id=com.ogutalk.app'
+import { INSTALL_LINK, SHARE_TITLE, SHARE_CARD_DESC, SHARE_BUTTON } from './shareCopy'
 
 async function loadKakao() {
   if (typeof window === 'undefined') throw new Error('브라우저 전용')
@@ -33,13 +33,13 @@ export async function shareToKakao(progress = 0) {
     Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
-        title:       '매시 59분 오구 알람 앱',
-        description: `나는 오늘 목표 ${progress}% 달성! 같이 써봐요`,
+        title:       SHARE_TITLE,
+        description: SHARE_CARD_DESC,
         imageUrl:    `${WEB_LINK}/icon-512.png?v=1.3.1`,  // 이미지 호스팅
         link: { mobileWebUrl: INSTALL_LINK, webUrl: INSTALL_LINK },  // 카드 클릭 → Play Store
       },
       buttons: [{
-        title: '오구톡 설치하기',
+        title: SHARE_BUTTON,
         link:  { mobileWebUrl: INSTALL_LINK, webUrl: INSTALL_LINK },
       }],
     })

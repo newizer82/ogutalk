@@ -2,24 +2,25 @@
 // - shareApp(): 링크만 공유 → 안드로이드 시트 (인스타·X·Threads·복사 등)
 // - sharePromoImage(): 홍보 이미지 첨부 공유 → 인스타 스토리에 이미지 자동 로드
 import { IS_NATIVE } from './capacitor'
+import { logEvent } from './firebase'
+import { INSTALL_LINK, SHARE_TEXT as APP_TEXT, SHARE_TITLE } from './shareCopy'
 
-const INSTALL_LINK = 'https://play.google.com/store/apps/details?id=com.ogutalk.app'
-const APP_TEXT     = '매시 59분 오구 알람으로 시간감각을 되찾다.\n오구톡 🕐'
 const PROMO_IMG    = '/promo.png'   // public/promo.png (없으면 icon-512.png 폴백)
 
 // ── 링크 공유 (안드로이드 공유 시트) ────────────────────────────
 export async function shareApp() {
+  logEvent('share_click', { channel: 'link' })
   try {
     if (IS_NATIVE) {
       const { Share } = await import('@capacitor/share')
       await Share.share({
-        title:       '오구톡',
+        title:       SHARE_TITLE,
         text:        APP_TEXT,
         url:         INSTALL_LINK,
         dialogTitle: '앱 공유',
       })
     } else if (navigator.share) {
-      await navigator.share({ title: '오구톡', text: APP_TEXT, url: INSTALL_LINK })
+      await navigator.share({ title: SHARE_TITLE, text: APP_TEXT, url: INSTALL_LINK })
     } else {
       // 웹 fallback — 링크 복사
       await navigator.clipboard.writeText(`${APP_TEXT}\n${INSTALL_LINK}`)
@@ -35,6 +36,7 @@ export async function shareApp() {
 // ── 홍보 이미지 공유 (인스타 스토리 등) ────────────────────────
 // public/promo.png 를 device 임시 파일로 복사 후 Share.files 로 첨부
 export async function sharePromoImage() {
+  logEvent('share_click', { channel: 'image' })
   try {
     // 이미지 fetch → base64
     const res = await fetch(PROMO_IMG).catch(() => fetch('/icon-512.png'))   // 폴백
@@ -53,7 +55,7 @@ export async function sharePromoImage() {
       })
 
       await Share.share({
-        title:       '오구톡',
+        title:       SHARE_TITLE,
         text:        APP_TEXT,
         url:         INSTALL_LINK,
         files:       [file.uri],
@@ -62,7 +64,7 @@ export async function sharePromoImage() {
     } else if (navigator.share && navigator.canShare) {
       const file = new File([blob], 'ogutalk-promo.png', { type: 'image/png' })
       if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: '오구톡', text: APP_TEXT, files: [file] })
+        await navigator.share({ title: SHARE_TITLE, text: APP_TEXT, files: [file] })
       } else {
         downloadBlob(blob, 'ogutalk-promo.png')
       }
