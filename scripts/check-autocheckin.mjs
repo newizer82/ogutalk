@@ -7,6 +7,9 @@ import {
   GROUPS, CATEGORIES, BUILTIN_CATEGORY,
 } from '../src/data/appCategories.js'
 import { buildCheckinEntry } from '../src/lib/checkinEntry.js'
+import {
+  minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
+} from '../src/lib/alarmContext.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
 
@@ -146,3 +149,73 @@ console.log('✓ appCategories 검증 통과')
 }
 
 console.log('✓ checkinStore 검증 통과')
+
+// ── v1.8 알람 컨텍스트: 상태 판정 · 오늘 누적 · 다음 할일 ──────────
+{
+  const H = (h, m) => new Date(2026, 9, 7, h, m, 0, 0).getTime()
+  const rec = (type, h, m) => ({ activity_type: type, created_at: new Date(H(h, m)).toISOString() })
+  const now = H(20, 59)
+
+  // 1건이 대표하는 시간: 자동(:00/:30)=30분, 수동(그 외)=60분
+  assert.equal(minutesOf(rec('video', 20, 30)), 30)
+  assert.equal(minutesOf(rec('video', 20, 0)),  30)
+  assert.equal(minutesOf(rec('consume', 19, 59)), 60)
+
+  // 오늘 누적: 어제 기록과 모르는 값은 빼고 센다
+  {
+    const yesterday = { activity_type: 'video', created_at: new Date(H(20, 30) - 86400000).toISOString() }
+    const { total, byGroup } = todayTotals(
+      [rec('video', 20, 30), rec('work', 10, 0), rec('nonsense', 11, 0), yesterday], now)
+    assert.equal(byGroup.consume, 30)
+    assert.equal(byGroup.produce, 30)
+    assert.equal(total, 60, '모르는 값은 누적에서 제외')
+  }
+
+  // 순삭: 자동 요약의 소비 앱 40분 이상
+  {
+    const m = alarmMood({ checkins: [], autoSummary: { category: 'video', label: '유튜브', minutes: 52 }, now })
+    assert.equal(m.mood, 'binge')
+    assert.equal(moodHeadline(m), '유튜브 52분째예요')
+  }
+  // 같은 소비라도 짧으면 순삭이 아니다 (기록 연속도 없음)
+  assert.equal(
+    alarmMood({ checkins: [], autoSummary: { category: 'video', label: '유튜브', minutes: 12 }, now }).mood,
+    'normal')
+  // 자동 기록이 꺼져 있어도 최근 2슬롯이 소비면 순삭
+  assert.equal(alarmMood({ checkins: [rec('video', 20, 30), rec('sns', 20, 0)], now }).mood, 'normal',
+    'SNS는 소통 — 연속 소비가 아니다')
+  assert.equal(alarmMood({ checkins: [rec('video', 20, 30), rec('game', 20, 0)], now }).mood, 'binge')
+
+  // 집중: 생산이 2슬롯 이상 이어짐 → 칭찬 문구
+  {
+    const m = alarmMood({ checkins: [rec('work', 20, 30), rec('ai', 20, 0)], now })
+    assert.equal(m.mood, 'focus')
+    assert.ok(moodHeadline(m).includes('집중'))
+  }
+  // 오래된 기록은 연속으로 치지 않는다 (100분 창)
+  assert.equal(alarmMood({ checkins: [rec('work', 17, 0), rec('work', 17, 30)], now }).mood, 'normal')
+
+  // 다음 할일: 마감 지난 것 > 마감 가까운 것 > 우선순위 > 먼저 만든 것
+  {
+    const todos = [
+      { id: 'a', title: '마감 없음·높음', priority: 'high',   created_at: '2026-10-01' },
+      { id: 'b', title: '내일 마감',      priority: 'low',    due_date: '2026-10-08' },
+      { id: 'c', title: '어제 마감',      priority: 'medium', due_date: '2026-10-06' },
+      { id: 'd', title: '완료됨',         priority: 'high',   due_date: '2026-10-01', completed: true },
+    ]
+    assert.equal(pickNextTodo(todos, now).id, 'c')
+    assert.equal(pickNextTodo(todos.filter(t => t.id !== 'c'), now).id, 'b')
+    assert.equal(pickNextTodo([todos[0]], now).id, 'a')
+    assert.equal(pickNextTodo([todos[3]], now), null, '완료된 할일은 제안하지 않는다')
+    assert.equal(pickNextTodo([], now), null)
+    assert.equal(todoHint(todos[2], now), '1일 지남')
+    assert.equal(todoHint(todos[1], now), '내일 마감')
+    assert.equal(todoHint(todos[0], now), '우선순위 높음')
+  }
+
+  assert.equal(formatMinutes(0), '0분')
+  assert.equal(formatMinutes(40), '40분')
+  assert.equal(formatMinutes(190), '3시간 10분')
+  assert.equal(formatMinutes(120), '2시간')
+}
+console.log('✓ alarmContext 검증 통과')

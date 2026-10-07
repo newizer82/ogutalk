@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useGoals } from './hooks/useGoals'
@@ -7,6 +7,9 @@ import { useAutoCheckin } from './hooks/useAutoCheckin'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
+import { loadLocalCheckins } from './lib/checkinStore'
+import { alarmMood, todayTotals as sumToday, pickNextTodo } from './lib/alarmContext'
+import { logEvent } from './lib/firebase'
 import { IS_NATIVE } from './lib/capacitor'
 import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
@@ -260,6 +263,8 @@ export default function App() {
     ? todos.map(t => ({ ...t, priority: t.priority || 'medium' }))
     : localTodos
   const activeTodosForAlarm = activeTodos.filter(t => !t.completed).length
+
+
   // 카카오 공유 메시지용 진행률 (완료/전체)
   const todoPct = activeTodos.length
     ? Math.round(activeTodos.filter(t => t.completed || t.done).length / activeTodos.length * 100)
@@ -283,6 +288,26 @@ export default function App() {
     lastBackfillAt,
     setLastBackfillAt,
   })
+  // ── v1.8 알람 팝업 컨텍스트 ────────────────────────────────────
+  // 팝업이 뜨는 순간에만 계산한다 (매 렌더 localStorage 를 읽지 않도록).
+  // lastHourSummary 는 소급 기록이 끝나면 채워지므로 의존성에 둔다.
+  const popupContext = useMemo(() => {
+    if (!showAlarmPopup) return { mood: null, totals: null, nextTodo: null }
+    const checkins = loadLocalCheckins()
+    const now = Date.now()
+    return {
+      mood:     alarmMood({ checkins, autoSummary: autoCheckin ? lastHourSummary : null, now }),
+      totals:   sumToday(checkins, now),
+      nextTodo: pickNextTodo(activeTodos, now),
+    }
+  }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos])
+
+  const handleTodoDoneFromPopup = useCallback((todo) => {
+    if (!todo) return
+    logEvent('todo_done_from_popup')
+    if (userId) toggleTodo(todo.id, true)
+    else setLocalTodos(p => p.map(t => (t.id === todo.id ? { ...t, completed: true } : t)))
+  }, [userId, toggleTodo])
   // 권한이 없다고 확정된 경우(false)에만 즉시 수동 모드로 — 미확인(null)인 동안은
   // 자동 모드로 간주해 "준비 중" 화면을 보여주고, 수동 4버튼이 잠깐 떴다 사라지는 것을 막는다
   const autoCheckinMode = autoCheckin && hasAccess !== false
@@ -574,6 +599,10 @@ export default function App() {
           autoSummary={autoCheckin ? lastHourSummary : null}
           onCorrect={correctLastHour}
           autoMode={autoCheckinMode}
+          mood={popupContext.mood}
+          todayTotals={popupContext.totals}
+          nextTodo={popupContext.nextTodo}
+          onTodoDone={handleTodoDoneFromPopup}
         />
       )}
 

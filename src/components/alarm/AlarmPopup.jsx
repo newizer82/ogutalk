@@ -3,6 +3,7 @@ import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
+import { moodHeadline, formatMinutes, todoHint } from '../../lib/alarmContext'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -13,9 +14,13 @@ const ACTIVITIES = Object.entries(GROUPS).map(([id, g]) => ({ id, label: g.label
 // 세부 분류만 보이면 "검색·정보"가 어느 그룹(소비)인지 몰라 사용자가 굳이 다시 고르게 된다 → 그룹을 앞에 붙인다
 const summaryLabel = c => (GROUPS[c] ? labelOf(c) : `${labelOf(groupOf(c))} · ${labelOf(c)}`)
 
+// 상태별 머리말 색 — 순삭은 경고색, 집중은 성공색, 평소는 기본
+const MOOD_COLOR = { binge: '#fbbf24', focus: '#34d399', normal: '#f1f5f9' }
+
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
   autoSummary = null, onCorrect = null, autoMode = false,
+  mood = null, todayTotals = null, nextTodo = null, onTodoDone = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -23,6 +28,30 @@ export default function AlarmPopup({
 
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
+  const [todoDone, setTodoDone]   = useState(false)
+  const [correcting, setCorrecting] = useState(false)
+
+  // 집중 중이면 할일을 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
+  // 분류를 고치는 중이거나 이미 체크인한 뒤에도 감춘다 (팝업이 곧 닫힘).
+  const showTodo = !!nextTodo && !!onTodoDone
+    && mood?.mood !== 'focus' && !correcting && !checkedIn
+
+  const headline = {
+    text:  moodHeadline(mood),
+    color: MOOD_COLOR[mood?.mood] ?? MOOD_COLOR.normal,
+  }
+
+  // 집중 중엔 재촉하지 않고, 순삭 중엔 다음 행동을 가리킨다
+  const subline = !correcting && mood?.mood === 'focus' ? '방해하지 않을게요, 계속 가세요'
+    : !correcting && mood?.mood === 'binge' ? '한 가지만 끝내고 다시 보셔도 돼요'
+    : '폰을 안 썼다면 그냥 닫아도 돼요'
+
+  const handleTodoDone = () => {
+    if (todoDone) return
+    setTodoDone(true)
+    onTodoDone(nextTodo)
+    setTimeout(onClose, 900)
+  }
 
   const handleCheckin = (activityId) => {
     if (checkedIn) return
@@ -32,8 +61,6 @@ export default function AlarmPopup({
     // 선택 즉시 닫기 (피드백을 위한 짧은 200ms만 유지)
     setTimeout(onClose, 200)
   }
-
-  const [correcting, setCorrecting] = useState(false)
 
   const handleCorrect = (activityId) => {
     onCorrect?.(activityId)
@@ -84,7 +111,7 @@ export default function AlarmPopup({
           {OGU_TONES[oguTone]?.emoji} 오구! 정각이 다가옵니다
         </div>
 
-        {pendingCount > 0 && (
+        {pendingCount > 0 && !showTodo && mood?.mood !== 'focus' && (
           <GlassCard style={{
             marginBottom: 10, textAlign: 'left',
             background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
@@ -117,11 +144,14 @@ export default function AlarmPopup({
           ) : autoSummary && !correcting ? (
             /* 자동 기록 모드 — 아무것도 누르지 않아도 이미 기록됨 */
             <>
-              <div style={{ fontSize: 17, fontWeight: 900, color: '#f1f5f9', marginBottom: 8, letterSpacing: '-0.5px' }}>
-                지난 1시간
+              <div style={{
+                fontSize: 17, fontWeight: 900, marginBottom: 8, letterSpacing: '-0.5px',
+                color: headline.color,
+              }}>
+                {headline.text}
               </div>
-              <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
-                {autoSummary.label} {autoSummary.minutes}분
+              <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                지난 1시간 · {autoSummary.label} {autoSummary.minutes}분
               </div>
               <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
                 {autoSummary.category
@@ -142,11 +172,16 @@ export default function AlarmPopup({
           ) : (
             /* 수동 모드 (권한 없음·기능 OFF) 또는 수정 중 */
             <>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#f1f5f9', marginBottom: 6, textAlign: 'center', letterSpacing: '-0.5px' }}>
-                ⏱️ 이번 시간 뭐 하셨어요?
+              <div style={{
+                // 상태 문구는 기본 문구보다 길다 → 한 글자만 넘어가는 줄바꿈을 막는다
+                fontSize: 18, fontWeight: 900, marginBottom: 6, textAlign: 'center',
+                letterSpacing: '-0.5px', wordBreak: 'keep-all', lineHeight: 1.35,
+                color: correcting ? '#f1f5f9' : headline.color,
+              }}>
+                {correcting ? '⏱️ 이번 시간 뭐 하셨어요?' : headline.text}
               </div>
               <div style={{ color: '#64748b', fontSize: 12, marginBottom: 14, textAlign: 'center' }}>
-                폰을 안 썼다면 그냥 닫아도 돼요
+                {subline}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {ACTIVITIES.map(a => (
@@ -175,7 +210,65 @@ export default function AlarmPopup({
               ✓ 기록 완료!
             </div>
           )}
+
+          {/* 오늘 누적 — "지금 1시간"만 보면 하루가 어디로 샜는지 안 보인다 */}
+          {todayTotals?.total > 0 && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', gap: 1 }}>
+                {Object.entries(GROUPS).map(([id, g]) => {
+                  const w = (todayTotals.byGroup[id] / todayTotals.total) * 100
+                  return w > 0
+                    ? <div key={id} style={{ width: `${w}%`, background: g.color }} />
+                    : null
+                })}
+              </div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', marginTop: 7,
+                color: '#94a3b8', fontSize: 12, fontVariantNumeric: 'tabular-nums',
+              }}>
+                <span>오늘 {labelOf('produce')} {formatMinutes(todayTotals.byGroup.produce)}</span>
+                <span>{labelOf('consume')} {formatMinutes(todayTotals.byGroup.consume)}</span>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* 지금 하나만 — 팝업이 "몇 분 썼다"로 끝나지 않고 다음 행동 하나로 이어지게 한다.
+            탭 한 번으로 끝내고 앱 화면으로 보내지 않는다 (1분 개입 유지). */}
+        {showTodo && (
+          <div style={{
+            marginBottom: 12, padding: '14px', borderRadius: 16, textAlign: 'left',
+            background: todoDone ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${todoDone ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
+                {todoDone ? '✓ 하나 해냈어요' : '지금 하나만'}
+              </div>
+              <div style={{
+                color: '#e2e8f0', fontSize: 14, fontWeight: 700, lineHeight: 1.35,
+                textDecoration: todoDone ? 'line-through' : 'none', opacity: todoDone ? 0.6 : 1,
+              }}>
+                {nextTodo.title}
+              </div>
+              {!todoDone && todoHint(nextTodo) && (
+                <div style={{ color: '#64748b', fontSize: 11, marginTop: 3 }}>{todoHint(nextTodo)}</div>
+              )}
+            </div>
+            {!todoDone && (
+              <button
+                onClick={handleTodoDone}
+                style={{
+                  flexShrink: 0, padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: gradients.button, color: '#fff', fontSize: 13, fontWeight: 800,
+                }}
+              >
+                완료
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 모든 모드 공통 닫기 — 이전엔 팝업 안에 닫기가 없어서
             수동은 "무엇이든 골라야" 닫혔고(폰을 안 쓴 시간이 틀린 기록으로 남음),
