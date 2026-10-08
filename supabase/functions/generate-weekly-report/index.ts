@@ -75,7 +75,7 @@ serve(async (req) => {
       work: 'produce', learning: 'produce', ai: 'produce', create: 'produce', shopping: 'produce',
       messenger: 'connect', sns: 'connect',
       video: 'consume', game: 'consume', search: 'consume',
-      finance: 'living', daily: 'living',
+      finance: 'living', daily: 'living', health: 'living',
       goal_work: 'produce', study: 'produce', rest: 'living',   // 레거시
     }
     const activityLabel: Record<string, string> = {

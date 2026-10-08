@@ -319,3 +319,44 @@ console.log('✓ oguScore 검증 통과')
   delete globalThis.localStorage
 }
 console.log('✓ dayLog 검증 통과')
+
+// ── 분류표 확장 (v1.9.1): 생산적 활용 앱이 미분류로 새지 않는지 ──
+{
+  // 독서·강의는 학습(생산) — 미분류면 리포트와 오구 지수에서 통째로 사라진다
+  for (const pkg of ['kr.co.millie.millieshelf', 'kr.co.influential.youngkangapp',
+                     'com.initialcoms.ridi', 'com.inflab.inflearn', 'net.pedaling.class101',
+                     'com.udemy.android', 'org.coursera.android']) {
+    assert.equal(categoryForApp(pkg), 'learning', pkg)
+    assert.equal(groupOf(categoryForApp(pkg)), 'produce', pkg)
+  }
+
+  // 기록·제작
+  assert.equal(categoryForApp('com.naver.clova.minute'), 'create')        // 클로바노트
+  assert.equal(categoryForApp('com.psma.videospeedchanger'), 'create')    // 편집 도구 (video → create 교정)
+  assert.equal(categoryForApp('com.adobe.scan.android'), 'create')
+
+  // 업무·정리
+  assert.equal(categoryForApp('com.todoist'), 'work')
+  assert.equal(categoryForApp('com.alt.goodmorning'), 'work')            // 루티너리
+  assert.equal(categoryForApp('com.rainist.banksalad2'), 'finance')      // 뱅크샐러드
+
+  // 건강·운동 신설 — 운동 시간은 소비가 아니다
+  assert.ok(CATEGORIES.health, 'health 분류가 있어야 한다')
+  assert.equal(groupOf('health'), 'living')
+  assert.equal(categoryForApp('com.sec.android.app.shealth'), 'health')
+  assert.equal(categoryForApp('com.strava'), 'health')
+  assert.equal(categoryForApp('com.golfzon.android'), 'health')          // 골프 (daily → health 교정)
+  assert.equal(categoryForApp('com.golfzon.booking'), 'shopping', '예약은 구매·주문·예약 그대로')
+
+  // 소비 쪽 누락도 메웠는지 (소비가 과소평가되면 절제 점수가 거짓이 된다)
+  for (const pkg of ['com.cjenm.tving', 'com.wavve.pooq', 'com.nhn.android.webtoon', 'me.zepeto.main']) {
+    assert.equal(groupOf(categoryForApp(pkg)), 'consume', pkg)
+  }
+  assert.equal(groupOf(categoryForApp('com.linkedin.android')), 'connect')
+
+  // 내장 목록 전체가 유효한 분류를 가리키는지 + 중복 키가 없는지
+  const entries = Object.entries(BUILTIN_CATEGORY)
+  for (const [pkg, cat] of entries) assert.ok(CATEGORIES[cat], `${pkg} → ${cat}`)
+  assert.ok(entries.length >= 180, `매핑 수 ${entries.length}`)
+}
+console.log('✓ 분류표 확장 검증 통과')

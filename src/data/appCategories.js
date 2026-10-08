@@ -1,6 +1,6 @@
 // ── 활동 분류 (2단계) ──────────────────────────────────────────
 // 그룹 4개  : 수동 체크인 팝업이 고르는 값 + 리포트 헤드라인
-// 세부 12개 : 자동 기록(앱 사용시간)이 판정하는 값
+// 세부 13개 : 자동 기록(앱 사용시간)이 판정하는 값
 //
 // 체크인 레코드의 activity_type 한 칸에 그룹 ID든 세부 ID든 그대로 들어간다.
 // 리포트는 groupOf() 로 묶는다 → DB 스키마 변경 없음.
@@ -28,6 +28,7 @@ export const CATEGORIES = {
   game:      { label: '🎮 게임',          emoji: '🎮', group: 'consume' },
   search:    { label: '🔍 검색·정보',     emoji: '🔍', group: 'consume' },
   finance:   { label: '💰 금융·투자',     emoji: '💰', group: 'living' },
+  health:    { label: '🏃 건강·운동',     emoji: '🏃', group: 'living' },
   daily:     { label: '🗺️ 생활·이동',     emoji: '🗺️', group: 'living' },
 }
 
@@ -162,7 +163,6 @@ export const BUILTIN_CATEGORY = {
   'com.nhn.android.band':                       'sns',
   'com.nhn.android.blog':                       'sns',
   'com.nhn.android.navercafe':                  'sns',
-  'com.psma.videospeedchanger':                 'video',
   'com.kmplayer':                               'video',
   'com.nhn.android.naverplayer':                'video',
   'com.google.android.videos':                  'video',
@@ -194,10 +194,86 @@ export const BUILTIN_CATEGORY = {
   'com.korail.talk':                            'shopping', // 승차권 예매
   'kt.navi':                                    'daily',
   'socar.Socar':                                'daily',
+
+  // ── 생산적 활용 앱 보강 (2026-10-09) ──
+  // 독서·강의·어학 — 읽고 듣는 시간도 생산이다 (미분류면 리포트에서 사라진다)
+  'kr.co.millie.millieshelf':                   'learning', // 밀리의 서재
+  'kr.co.influential.youngkangapp':             'learning', // 윌라
+  'com.initialcoms.ridi':                       'learning', // 리디북스
+  'com.inflab.inflearn':                        'learning', // 인프런
+  'net.pedaling.class101':                      'learning', // 클래스101
+  'com.udemy.android':                          'learning',
+  'org.coursera.android':                       'learning',
+  'com.google.android.apps.classroom':          'learning',
+
+  // 기록·제작 — 음성 메모, 문서 스캔, 영상 편집
+  'com.naver.clova.minute':                     'create',   // 클로바노트
+  'com.transcribe.audio.to.text':               'create',
+  'com.psma.videospeedchanger':                 'create',   // 편집 도구 (기존 video → create 로 교정)
+  'imagetopdf.pdfconverter.jpgtopdf.pdfeditor': 'create',
+  'pdf.converter.imagetopdf.jpgtopdf':          'create',
+  'com.adobe.scan.android':                     'create',
+  'com.google.android.apps.docs.editors.slides':'create',
+
+  // 업무·정리 도구
+  'com.todoist':                                'work',
+  'com.ticktick.task':                          'work',
+  'com.alt.goodmorning':                        'work',     // 루티너리 (습관 루틴)
+  'com.workflowy.android':                      'work',
+  'com.infraware.office.reader.team':           'work',     // 폴라리스 오피스
+  'com.microsoft.skydrive':                     'work',     // OneDrive
+  'com.dropbox.android':                        'work',
+  'com.estmob.android.sendanywhere':            'work',
+  'com.nbpcorp.ncp.workplace':                  'work',
+  'com.logmein.gotowebinar':                    'work',
+
+  // 금융
+  'com.rainist.banksalad2':                     'finance',  // 뱅크샐러드
+  'com.kbcard.kbbusinesscard':                  'finance',
+  'com.wooricard.wpay':                         'finance',
+  'com.lotte.lpay':                             'finance',
+  'com.naverfin.payapp':                        'finance',  // 네이버페이
+  'nh.smart.nhallonepay':                       'finance',
+  'kr.or.nps.smart':                            'finance',  // 국민연금
+  'com.fusionmedia.investing':                  'finance',
+  'com.miso':                                   'finance',
+
+  // 🏃 건강·운동 (신설) — 운동 시간은 소비가 아니다
+  'com.sec.android.app.shealth':                'health',   // 삼성 헬스
+  'com.samsung.android.shealthmonitor':         'health',
+  'com.google.android.apps.fitness':            'health',
+  'com.strava':                                 'health',
+  'com.nike.plusgps':                           'health',
+  'com.fitbit.FitbitMobile':                    'health',
+  'com.golfzon.android':                        'health',   // 골프 (기존 daily → 운동으로 교정)
+  'com.golfzon.booking':                        'shopping', // 예약은 구매·주문·예약 그대로
+  'com.golfbuddy.smartcaddie':                  'health',
+  'com.smellab.kimcaddie':                      'health',
+
+  // 생활·행정
+  'kr.go.minwon.m':                             'daily',    // 정부24
+  'kr.go.nts.android':                          'daily',    // 홈택스
+  'kr.or.nhic':                                 'daily',    // 건강보험
+  'com.ktcs.whowho':                            'daily',
+  'com.alphainventor.filemanager':              'daily',
+
+  // 소비 — 분류가 없으면 소비 시간이 과소평가된다
+  'com.kakao.story':                            'sns',
+  'com.linkedin.android':                       'sns',
+  'com.google.android.apps.youtube.kids':       'video',
+  'com.disney.disneyplus':                      'video',
+  'com.wavve.pooq':                             'video',    // 웨이브
+  'com.frograms.wplay':                         'video',    // 왓챠
+  'com.cjenm.tving':                            'video',    // 티빙
+  'com.nhn.android.webtoon':                    'video',    // 네이버 웹툰 (읽는 소비)
+  'com.kakao.page':                             'video',    // 카카오페이지
+  'me.zepeto.main':                             'game',
+  'com.supersolid.penguin':                     'game',
+  'com.cjin.pokegenie.standard':                'game',
+  'com.kt.esports':                             'game',
   'com.android.vending':                        'daily',    // OS 분류는 생산성(7)이라 업무로 새던 것 교정
   'com.sec.android.app.camera':                 'create',
   'com.google.android.projection.gearhead':     'daily',    // Android Auto
-  'com.golfzon.android':                        'daily',
   // 📸 촬영·제작 / 🛒 구매·주문·예약 (생산)
   'com.lemon.lvoverseas':                       'create',   // CapCut
   'com.nexstreaming.app.kinemasterfree':        'create',
@@ -210,7 +286,6 @@ export const BUILTIN_CATEGORY = {
   'com.titicacacorp.triple':                    'shopping', // 트리플
   'com.hanatour.dotcom':                        'shopping',
   'com.twayair.m.app':                          'shopping',
-  'com.golfzon.booking':                        'shopping',
   'com.paytalab.mkseo.passorder':               'shopping', // 패스오더
 }
 
