@@ -3,7 +3,7 @@
 > ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
 > 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
 >
-> 마지막 업데이트: 2026-10-09 (v1.9.2 — 건강·운동을 생산으로)
+> 마지막 업데이트: 2026-10-09 (v1.9.3 — 리포트·팝업 기록 소스 통합)
 
 ---
 
@@ -80,6 +80,7 @@ public.alarm_settings    - 알람 시간대 (7~23시 기본)     [사용]
 public.goals             - 연/월/주/일 목표              [사용]
 public.todos             - 할일                          [사용]
 public.notification_log  - 알림 기록 (체크인 저장)       [사용]
+                           ※ 리포트는 서버+로컬을 mergeCheckins 로 합쳐 읽는다 (서버 저장 실패 대비)
 public.economic_tips     - 경제 상식 (10건 입력됨)       [사용]
 public.user_preferences  - 사용자 환경설정               [사용]
 ```

@@ -6,7 +6,7 @@ import {
   categoryForApp, groupOf, labelOf, emojiOf, colorOf,
   GROUPS, CATEGORIES, BUILTIN_CATEGORY,
 } from '../src/data/appCategories.js'
-import { buildCheckinEntry } from '../src/lib/checkinEntry.js'
+import { buildCheckinEntry, mergeCheckins } from '../src/lib/checkinEntry.js'
 import {
   minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
 } from '../src/lib/alarmContext.js'
@@ -361,3 +361,20 @@ console.log('✓ dayLog 검증 통과')
   assert.ok(entries.length >= 180, `매핑 수 ${entries.length}`)
 }
 console.log('✓ 분류표 확장 검증 통과')
+
+// ── 서버·로컬 기록 합치기 (팝업과 리포트가 다른 말을 하지 않도록) ──
+{
+  const server = [{ activity_type: 'work',  created_at: '2026-10-09T08:00:00+00:00' }]
+  const local  = [
+    { activity_type: 'video', created_at: '2026-10-09T08:00:00.000Z' },  // 같은 시각 → 서버 우선
+    { activity_type: 'game',  created_at: '2026-10-09T09:00:00.000Z' },  // 서버에 없는 기록
+  ]
+  const merged = mergeCheckins(server, local)
+  assert.equal(merged.length, 2, '같은 시각은 한 건으로')
+  assert.equal(merged.find(r => r.created_at.startsWith('2026-10-09T08')).activity_type, 'work', '서버 우선')
+  assert.ok(merged.some(r => r.activity_type === 'game'), '서버에 없는 로컬 기록도 남는다')
+  assert.ok(new Date(merged[0].created_at) >= new Date(merged[1].created_at), '최신순 정렬')
+  assert.deepEqual(mergeCheckins([], []), [])
+  assert.equal(mergeCheckins([], [{ activity_type: 'x', created_at: 'bad' }]).length, 0, '깨진 시각은 버린다')
+}
+console.log('✓ mergeCheckins 검증 통과')

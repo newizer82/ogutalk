@@ -36,8 +36,10 @@ export default function AlarmPopup({
   const showTodo = !!nextTodo && !!onTodoDone
     && mood?.mood !== 'focus' && !correcting && !checkedIn
 
+  // 자동 기록 모드에서는 고를 버튼이 없다 → 평소 상태에서 질문을 던지면 답할 곳이 없어 보인다
+  const autoView = !!autoSummary && !correcting
   const headline = {
-    text:  moodHeadline(mood),
+    text:  autoView && mood?.mood !== 'binge' && mood?.mood !== 'focus' ? '지난 1시간' : moodHeadline(mood),
     color: MOOD_COLOR[mood?.mood] ?? MOOD_COLOR.normal,
   }
 
@@ -151,7 +153,7 @@ export default function AlarmPopup({
                 {headline.text}
               </div>
               <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                지난 1시간 · {autoSummary.label} {autoSummary.minutes}분
+                {headline.text === '지난 1시간' ? '' : '지난 1시간 · '}{autoSummary.label} {autoSummary.minutes}분
               </div>
               <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
                 {autoSummary.category

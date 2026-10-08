@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { mergeCheckins } from '../lib/checkinEntry'
 
 // 최근 7일(1주일) notification_log 를 가져와서 집계
 export function useCheckinReport(userId) {
