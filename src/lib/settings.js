@@ -28,6 +28,9 @@ export const DEFAULT_SETTINGS = {
   // 자동 활동 기록 (UsageStats) — 기본 꺼짐, 사용자가 고지 동의 후 켠다
   autoCheckin:    false,
   lastBackfillAt: null,     // 마지막 소급 기록 시각 (epoch ms)
+  // 오구 지수 목표 (분) — 남이 정한 기준이 아니라 사용자의 기준과 비교한다
+  produceTarget:  120,
+  consumeLimit:   120,
 }
 
 // ── 마이그레이션: 옛 6개 키 → 새 통합 키 ───────────────────────

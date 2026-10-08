@@ -10,6 +10,9 @@ import { buildCheckinEntry } from '../src/lib/checkinEntry.js'
 import {
   minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
 } from '../src/lib/alarmContext.js'
+import {
+  oguScore, produceScore, restraintScore, actionScore, DEFAULT_GOALS,
+} from '../src/lib/oguScore.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
 
@@ -219,3 +222,100 @@ console.log('✓ checkinStore 검증 통과')
   assert.equal(formatMinutes(120), '2시간')
 }
 console.log('✓ alarmContext 검증 통과')
+
+// ── 오구 지수 ────────────────────────────────────────────────────
+{
+  const D = (h, m) => new Date(2026, 9, 8, h, m, 0, 0).getTime()
+  const now = D(22, 0)
+  const slot = (h, m, type) => ({ activity_type: type, created_at: new Date(D(h, m)).toISOString() })
+  // 자동 기록 1건 = 30분
+  const slots = (type, n, startH) => Array.from({ length: n }, (_, i) =>
+    slot(startH + Math.floor(i / 2), (i % 2) * 30, type))
+
+  // 생산 점수: 목표(120분) 대비 비율
+  assert.equal(produceScore(0), 0)
+  assert.equal(produceScore(60), 20)
+  assert.equal(produceScore(120), 40)
+  assert.equal(produceScore(300), 40, '목표를 넘겨도 만점까지만')
+
+  // 절제 점수: 한도 이하 만점, 초과 30분마다 -5
+  assert.equal(restraintScore(0), 30)
+  assert.equal(restraintScore(120), 30)
+  assert.equal(restraintScore(150), 25)
+  assert.equal(restraintScore(121), 25, '1분만 넘어도 한 칸 깎인다')
+  assert.equal(restraintScore(330), 0)
+  assert.equal(restraintScore(600), 0, '0점 아래로는 내려가지 않는다')
+
+  // 실행 점수: 할일 최대 3건 + 알람 반응
+  assert.equal(actionScore({}), 0)
+  assert.equal(actionScore({ doneCount: 2 }), 14)
+  assert.equal(actionScore({ doneCount: 9 }), 21, '할일은 3건까지만')
+  assert.equal(actionScore({ doneCount: 3, actedOnAlarm: true }), 30)
+
+  // 전체: 생산 2시간(4슬롯) + 소비 1시간(2슬롯) + 할일 2건 + 알람 반응
+  {
+    const r = oguScore({
+      checkins: [...slots('work', 4, 9), ...slots('video', 2, 20)],
+      doneCount: 2, actedOnAlarm: true, now,
+    })
+    assert.equal(r.parts.produce, 40)
+    assert.equal(r.parts.restraint, 30)
+    assert.equal(r.parts.action, 23)
+    assert.equal(r.score, 93)
+    assert.equal(r.grade, '오늘 잘 썼어요')
+  }
+
+  // 폰을 거의 안 쓴 날: 감점 대상이 아니다 (절제 만점, 생산은 0)
+  {
+    const r = oguScore({ checkins: [], now })
+    assert.equal(r.parts.restraint, 30, '폰을 안 쓴 시간은 벌점이 아니다')
+    assert.equal(r.score, 30)
+  }
+
+  // 소비만 5시간: 절제 0점, 조언은 소비를 짚는다
+  {
+    const r = oguScore({ checkins: slots('video', 10, 13), now })
+    assert.equal(r.parts.restraint, 0)
+    assert.ok(r.advice.includes('소비'), r.advice)
+    assert.equal(r.grade, '오늘은 쉬어간 날이에요')
+  }
+
+  // 목표를 사용자가 바꾸면 점수도 따라간다
+  assert.equal(
+    oguScore({ checkins: slots('work', 2, 9), goals: { produceTarget: 60, consumeLimit: 120 }, now }).parts.produce,
+    40, '목표 60분이면 1시간으로 만점')
+
+  // 만점이면 잔소리 대신 격려
+  assert.ok(oguScore({
+    checkins: [...slots('work', 4, 9)], doneCount: 3, actedOnAlarm: true, now,
+  }).advice.includes('내일도'))
+}
+console.log('✓ oguScore 검증 통과')
+
+// ── 스트릭 (dayLog 는 localStorage 를 쓰므로 최소 스텁으로 검증) ──
+{
+  const store = {}
+  globalThis.localStorage = {
+    getItem: k => store[k] ?? null,
+    setItem: (k, v) => { store[k] = String(v) },
+  }
+  const { streakDays, saveDayScore, logTodoDone, todayLog } = await import('../src/lib/dayLog.js')
+  const day = n => Date.now() - n * 86400000
+
+  // 오늘 아직 기준 미만이어도 어제까지의 연속은 유지된다
+  saveDayScore(70, day(1)); saveDayScore(80, day(2)); saveDayScore(40, day(3))
+  assert.equal(streakDays(60), 2, '어제·그제 2일 연속')
+
+  saveDayScore(90, day(0))
+  assert.equal(streakDays(60), 3, '오늘까지 3일 연속')
+
+  saveDayScore(30, day(0))
+  assert.equal(streakDays(60), 2, '오늘 점수가 낮으면 어제까지만 센다')
+
+  // 할일 완료는 오늘 로그에 쌓이고 알람 반응도 함께 표시된다
+  logTodoDone(); logTodoDone()
+  assert.equal(todayLog().doneCount, 2)
+  assert.equal(todayLog().actedOnAlarm, true)
+  delete globalThis.localStorage
+}
+console.log('✓ dayLog 검증 통과')

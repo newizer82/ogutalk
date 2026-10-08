@@ -20,7 +20,7 @@ const MOOD_COLOR = { binge: '#fbbf24', focus: '#34d399', normal: '#f1f5f9' }
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
   autoSummary = null, onCorrect = null, autoMode = false,
-  mood = null, todayTotals = null, nextTodo = null, onTodoDone = null,
+  mood = null, todayTotals = null, nextTodo = null, onTodoDone = null, dayScore = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -232,6 +232,30 @@ export default function AlarmPopup({
             </div>
           )}
         </div>
+
+        {/* 하루 마감(22시) — 리포트를 열지 않아도 오늘 점수를 한 번은 본다 */}
+        {dayScore && (
+          <div style={{
+            marginBottom: 12, padding: '14px 16px', borderRadius: 16, textAlign: 'left',
+            background: 'rgba(255,255,255,0.05)', border: `1px solid ${dayScore.color}55`,
+            display: 'flex', alignItems: 'center', gap: 14,
+          }}>
+            <div style={{
+              fontSize: 30, fontWeight: 900, color: dayScore.color, lineHeight: 1,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {dayScore.score}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 800, wordBreak: 'keep-all' }}>
+                오늘의 오구 지수 · {dayScore.grade}
+              </div>
+              <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
+                {dayScore.advice}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 지금 하나만 — 팝업이 "몇 분 썼다"로 끝나지 않고 다음 행동 하나로 이어지게 한다.
             탭 한 번으로 끝내고 앱 화면으로 보내지 않는다 (1분 개입 유지). */}

@@ -1,18 +1,38 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import { useWeeklyReport } from '../hooks/useWeeklyReport'
 import { useCheckinReport } from '../hooks/useCheckinReport'
 import { S, gradients } from '../styles/theme'
 import { GROUPS, CATEGORIES, groupOf, labelOf, emojiOf, colorOf } from '../data/appCategories'
+import OguScoreCard from '../components/report/OguScoreCard'
+import { oguScore } from '../lib/oguScore'
+import ScoreBasisModal from '../components/report/ScoreBasisModal'
+import { todayLog, yesterdayScore, streakDays, saveDayScore } from '../lib/dayLog'
 
 const pad = n => String(n).padStart(2, '0')
 
-export default function ReportsPage({ userId }) {
+export default function ReportsPage({ userId, autoCheckin = false, goals }) {
   const { reports, loading, error, generateReport } = useWeeklyReport(userId)
   const { checkins, todayCheckins, activityCount, hourCount, loading: checkinLoading } = useCheckinReport(userId)
   const [selectedIdx, setSelectedIdx] = useState(0)
 
   const report = reports[selectedIdx] ?? null
+
+  // 오구 지수 — 오늘 기록 + 앱이 관찰한 행동으로 계산 (측정한 것만 점수로 쓴다)
+  const [basisOpen, setBasisOpen] = useState(false)
+  const score = useMemo(() => {
+    const log = todayLog()
+    const r = oguScore({
+      checkins, doneCount: log.doneCount, actedOnAlarm: log.actedOnAlarm,
+      goals, measured: autoCheckin,
+    })
+    // 하루가 거의 끝난 뒤의 점수만 저장한다 — 오전 점수를 그날 점수로 남기면
+    // 내일의 "어제보다" 비교가 늘 과소평가된다.
+    if (new Date().getHours() >= 21) saveDayScore(r.score)
+    return r
+  }, [checkins, autoCheckin, goals])
+  const prevScore = useMemo(() => yesterdayScore(), [])
+  const streak    = useMemo(() => streakDays(), [score.score])
 
   const handleGenerate = async () => {
     if (!userId) return
@@ -24,6 +44,7 @@ export default function ReportsPage({ userId }) {
   if (!userId) {
     return (
       <div>
+        <OguScoreCard result={score} yesterday={prevScore} streak={streak} onOpenApps={() => setBasisOpen(true)} />
         <CheckinReport
           checkins={checkins}
           todayCheckins={todayCheckins}
@@ -44,6 +65,9 @@ export default function ReportsPage({ userId }) {
             🔐 설정 탭에서 로그인해주세요
           </div>
         </div>
+        {basisOpen && (
+          <ScoreBasisModal checkins={checkins} onClose={() => setBasisOpen(false)} />
+        )}
       </div>
     )
   }
@@ -51,6 +75,7 @@ export default function ReportsPage({ userId }) {
   return (
     <div>
       {/* ── 오구 체크인 리포트 ── */}
+      <OguScoreCard result={score} yesterday={prevScore} streak={streak} onOpenApps={() => setBasisOpen(true)} />
       <CheckinReport
         checkins={checkins}
         todayCheckins={todayCheckins}
@@ -244,6 +269,9 @@ export default function ReportsPage({ userId }) {
           )}
         </>
       )}
+        {basisOpen && (
+          <ScoreBasisModal checkins={checkins} onClose={() => setBasisOpen(false)} />
+        )}
     </div>
   )
 }

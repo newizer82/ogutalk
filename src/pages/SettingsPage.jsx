@@ -7,6 +7,7 @@ import { gradients, S } from '../styles/theme'
 import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm, openUrl } from '../lib/capacitor'
 import { supabase } from '../lib/supabase'
 import AutoCheckinSection from '../components/settings/AutoCheckinSection'
+import ScoreGoalSection from '../components/settings/ScoreGoalSection'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -44,6 +45,8 @@ export default function SettingsPage({
   userId = null,
   todoPct = 0,
   autoCheckin = false, setAutoCheckin,
+  produceTarget = 120, setProduceTarget,
+  consumeLimit = 120, setConsumeLimit,
 }) {
   // 프로필 카드 클릭 시 로그아웃 메뉴 토글
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
@@ -504,6 +507,11 @@ export default function SettingsPage({
       </div>
 
       <AutoCheckinSection enabled={autoCheckin} onChange={setAutoCheckin} />
+
+      <ScoreGoalSection
+        produceTarget={produceTarget} setProduceTarget={setProduceTarget}
+        consumeLimit={consumeLimit} setConsumeLimit={setConsumeLimit}
+      />
 
       {/* ── 약관·정보 (제일 마지막에 배치) ── */}
       <SettingSection title="ℹ️ 약관 및 정보">
