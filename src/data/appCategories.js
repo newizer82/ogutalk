@@ -7,7 +7,7 @@
 //
 // 그룹을 나눈 기준은 이 앱의 목적(과몰입 방지)이다 —
 // "이 시간이 의도적이었나(생산), 순삭이었나(소비)"가 한눈에 보여야 한다.
-// 생산 = 무언가를 만들거나 끝낸 행위(문서·메일·촬영·구매·주문·예약), 소비 = 보고 읽기만 한 시간(검색 포함).
+// 생산 = 무언가를 만들거나 끝낸 행위(문서·메일·촬영·구매·예약·운동), 소비 = 보고 읽기만 한 시간(검색 포함).
 
 export const GROUPS = {
   produce: { label: '⚡ 생산', emoji: '⚡', color: '#6366f1' },
@@ -22,13 +22,13 @@ export const CATEGORIES = {
   ai:        { label: '🤖 AI 도구',       emoji: '🤖', group: 'produce' },
   create:    { label: '📸 촬영·제작',     emoji: '📸', group: 'produce' },
   shopping:  { label: '🛒 구매·주문·예약', emoji: '🛒', group: 'produce' },
+  health:    { label: '🏃 건강·운동',     emoji: '🏃', group: 'produce' },
   messenger: { label: '💬 메신저',        emoji: '💬', group: 'connect' },
   sns:       { label: '📱 SNS',           emoji: '📱', group: 'connect' },
   video:     { label: '📺 동영상',        emoji: '📺', group: 'consume' },
   game:      { label: '🎮 게임',          emoji: '🎮', group: 'consume' },
   search:    { label: '🔍 검색·정보',     emoji: '🔍', group: 'consume' },
   finance:   { label: '💰 금융·투자',     emoji: '💰', group: 'living' },
-  health:    { label: '🏃 건강·운동',     emoji: '🏃', group: 'living' },
   daily:     { label: '🗺️ 생활·이동',     emoji: '🗺️', group: 'living' },
 }
 
@@ -238,7 +238,7 @@ export const BUILTIN_CATEGORY = {
   'com.fusionmedia.investing':                  'finance',
   'com.miso':                                   'finance',
 
-  // 🏃 건강·운동 (신설) — 운동 시간은 소비가 아니다
+  // 🏃 건강·운동 — 운동은 해낸 일이다 (v1.9.2: 생활 → 생산)
   'com.sec.android.app.shealth':                'health',   // 삼성 헬스
   'com.samsung.android.shealthmonitor':         'health',
   'com.google.android.apps.fitness':            'health',

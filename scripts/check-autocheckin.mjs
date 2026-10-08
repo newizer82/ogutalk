@@ -342,10 +342,11 @@ console.log('✓ dayLog 검증 통과')
 
   // 건강·운동 신설 — 운동 시간은 소비가 아니다
   assert.ok(CATEGORIES.health, 'health 분류가 있어야 한다')
-  assert.equal(groupOf('health'), 'living')
+  assert.equal(groupOf('health'), 'produce', '운동은 해낸 일 — 생산으로 센다')
   assert.equal(categoryForApp('com.sec.android.app.shealth'), 'health')
   assert.equal(categoryForApp('com.strava'), 'health')
   assert.equal(categoryForApp('com.golfzon.android'), 'health')          // 골프 (daily → health 교정)
+  assert.equal(groupOf(categoryForApp('com.strava')), 'produce')         // 운동 시간은 생산 점수에 들어간다
   assert.equal(categoryForApp('com.golfzon.booking'), 'shopping', '예약은 구매·주문·예약 그대로')
 
   // 소비 쪽 누락도 메웠는지 (소비가 과소평가되면 절제 점수가 거짓이 된다)

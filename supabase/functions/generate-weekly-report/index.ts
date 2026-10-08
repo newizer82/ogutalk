@@ -73,9 +73,10 @@ serve(async (req) => {
     const GROUP_OF: Record<string, string> = {
       produce: 'produce', connect: 'connect', consume: 'consume', living: 'living',
       work: 'produce', learning: 'produce', ai: 'produce', create: 'produce', shopping: 'produce',
+      health: 'produce',
       messenger: 'connect', sns: 'connect',
       video: 'consume', game: 'consume', search: 'consume',
-      finance: 'living', daily: 'living', health: 'living',
+      finance: 'living', daily: 'living',
       goal_work: 'produce', study: 'produce', rest: 'living',   // 레거시
     }
     const activityLabel: Record<string, string> = {
