@@ -609,6 +609,17 @@ export default function App() {
         )}
         {activeTab === 'alarms' && (
           <AlarmsPage
+            oguTone={oguTone}
+            setOguTone={setOguTone}
+            oguRepeat={oguRepeat}
+            setOguRepeat={setOguRepeat}
+            setAlarmMode={setAlarmMode}
+            setVolume={setVolume}
+            setVibStrength={setVibStrength}
+            alarmHours={alarmHours}
+            setAlarmHours={setAlarmHours}
+            playSound={playOguSound}
+            userId={userId}
             alarmMode={alarmMode}
             vibStrength={vibStrength}
             volume={volume}
@@ -653,6 +664,7 @@ export default function App() {
             setProduceTarget={setProduceTarget}
             consumeLimit={consumeLimit}
             setConsumeLimit={setConsumeLimit}
+            onTabChange={setActiveTab}
             onTestAlarm={fireAlarm}
             todos={activeTodos}
             goals={localGoals}

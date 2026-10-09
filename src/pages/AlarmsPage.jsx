@@ -98,6 +98,8 @@ function TonePicker({ value, onChange, volume = 0.8 }) {
   )
 }
 
+import OguAlarmSettings from '../components/alarm/OguAlarmSettings'
+
 export default function AlarmsPage({
   alarmMode    = 'both',
   vibStrength  = 'medium',
@@ -109,7 +111,14 @@ export default function AlarmsPage({
   // v1.2.1: 진짜 글로벌 커스텀 알람 방식 (모든 알람에 즉시 적용)
   customAlarmMode    = 'both',
   setCustomAlarmMode = () => {},
+  // 오구 알람 설정 — 설정 탭에서 옮겨왔다 (알람은 알람 탭 한 곳에서)
+  oguTone, setOguTone, oguRepeat, setOguRepeat,
+  setAlarmMode, setVolume, setVibStrength,
+  alarmHours = {}, setAlarmHours,
+  playSound, userId = null,
 }) {
+  // 상단 고정 선택: 오구 알람 / 커스텀 알람
+  const [mode, setMode] = useState('ogu')
   const addAlarm    = onAddAlarm
   const toggleAlarm = onToggleAlarm
   const deleteAlarm = onDeleteAlarm
@@ -245,13 +254,48 @@ export default function AlarmsPage({
 
   return (
     <div>
+      {/* ── 상단 고정 선택 — 알람에 관한 것은 이 탭 한 곳에서 다 된다 ── */}
       <div style={{
-        marginBottom: 14, padding: '10px 14px', borderRadius: 12,
-        background: 'rgba(255,107,44,0.08)', border: '1px solid rgba(255,107,44,0.12)',
-        color: '#8E8E93', fontSize: 11, lineHeight: 1.6,
+        position: 'sticky', top: 0, zIndex: 5, background: '#FFFFFF', paddingBottom: 12,
       }}>
-        💡 매시 59분 오구톡 알람 설정은 <b style={{ color: '#D9531B' }}>설정 탭</b>에서 변경할 수 있어요.
+        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: '#F4F4F7' }}>
+          {[
+            { id: 'ogu',    label: '⏱️ 오구 알람' },
+            { id: 'custom', label: '🔔 커스텀 알람' },
+          ].map(t => {
+            const on = mode === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => setMode(t.id)}
+                style={{
+                  flex: 1, padding: '10px 8px', borderRadius: 11, cursor: 'pointer', border: 'none',
+                  background: on ? '#FFFFFF' : 'transparent',
+                  color: on ? '#111111' : '#8E8E93',
+                  fontSize: 13.5, fontWeight: 800,
+                  boxShadow: on ? '0 1px 3px rgba(17,17,17,0.08)' : 'none',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      {mode === 'ogu' && (
+        <OguAlarmSettings
+          oguTone={oguTone} setOguTone={setOguTone}
+          oguRepeat={oguRepeat} setOguRepeat={setOguRepeat}
+          alarmMode={alarmMode} setAlarmMode={setAlarmMode}
+          volume={volume} setVolume={setVolume}
+          vibStrength={vibStrength} setVibStrength={setVibStrength}
+          alarmHours={alarmHours} setAlarmHours={setAlarmHours}
+          playSound={playSound} userId={userId}
+        />
+      )}
+
+      {mode === 'custom' && (<>
 
       {/* ── 커스텀 알람 방식 (진짜 글로벌 — 등록된 모든 커스텀 알람에 즉시 적용) ── */}
       <Section title="🔔 커스텀 알람 방식">
@@ -651,6 +695,7 @@ export default function AlarmsPage({
           </div>
         </div>
       )}
+      </>)}
     </div>
   )
 }
