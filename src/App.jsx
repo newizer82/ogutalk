@@ -360,7 +360,9 @@ export default function App() {
     if (!mission) return
     completeMission(mission.id)
     logEvent('mission_done', { from: 'alarm' })
-    logTodoDone()   // 오구 지수의 "해낸 것" 에도 들어간다
+    // 미션은 '미션' 칸으로만 센다 — 여기서 logTodoDone() 을 부르면
+    // 알람에서 미션을 끝낸 날만 '내 할일' 10점이 공짜로 붙어 경로마다 점수가 달라진다
+    logAlarmAction()
   }, [])
 
   const handleTodoDoneFromPopup = useCallback((todo) => {
