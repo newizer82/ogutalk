@@ -3,7 +3,9 @@ import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
-import { moodHeadline, formatMinutes, todoHint } from '../../lib/alarmContext'
+import { moodHeadline, formatMinutes, todoHint, eventLine } from '../../lib/alarmContext'
+import { mapUrlFor } from '../../lib/calendar'
+import { openUrl } from '../../lib/capacitor'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -21,6 +23,7 @@ export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
   autoSummary = null, onCorrect = null, autoMode = false,
   mood = null, todayTotals = null, nextTodo = null, onTodoDone = null, dayScore = null,
+  nextEvent = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -234,6 +237,39 @@ export default function AlarmPopup({
             </div>
           )}
         </div>
+
+        {/* 다음 일정 — 오구톡 할일에는 시각·장소가 없다. 캘린더가 그 빈칸을 메운다 */}
+        {nextEvent && (
+          <div style={{
+            marginBottom: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'left',
+            background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.35)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>📅</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 700, wordBreak: 'keep-all' }}>
+                {eventLine(nextEvent)}
+              </div>
+              {!nextEvent.ongoing && (
+                <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                  {nextEvent.startsInMin}분 뒤{nextEvent.location ? ` · ${nextEvent.location}` : ''}
+                </div>
+              )}
+            </div>
+            {nextEvent.location && (
+              <button
+                onClick={() => openUrl(mapUrlFor(nextEvent.location))}
+                style={{
+                  flexShrink: 0, padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)',
+                  color: '#cbd5e1', fontSize: 12, fontWeight: 700,
+                }}
+              >
+                길찾기
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 하루 마감(22시) — 리포트를 열지 않아도 오늘 점수를 한 번은 본다 */}
         {dayScore && (

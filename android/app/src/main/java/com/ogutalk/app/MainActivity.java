@@ -44,6 +44,7 @@ public class MainActivity extends BridgeActivity {
         // 커스텀 플러그인 등록 (super.onCreate 전에 호출 필수)
         registerPlugin(AudioFocusPlugin.class);
         registerPlugin(UsageStatsPlugin.class);
+        registerPlugin(CalendarPlugin.class);
         super.onCreate(savedInstanceState);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ensureAlarmChannels();

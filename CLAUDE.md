@@ -3,7 +3,7 @@
 > ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
 > 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
 >
-> 마지막 업데이트: 2026-10-09 (v1.9.3 — 리포트·팝업 기록 소스 통합)
+> 마지막 업데이트: 2026-10-09 (v1.10.0 — 캘린더 연동)
 
 ---
 
@@ -287,6 +287,20 @@ const theme = {
   선택지에 그룹(4)과 세부(12)를 모두 넣어야 한다 — 팝업은 그룹 ID 를 저장한다.
 ```
 
+### 10. 캘린더 연동 (v1.10.0, 기본 OFF)
+
+```
+오구톡 할일에는 시각·장소가 없다 → 캘린더가 그 빈칸을 메운다.
+- CalendarPlugin(네이티브): CalendarContract.Instances 로 [start,end] 구간 조회
+  Events 가 아니라 Instances 인 이유는 반복 일정의 회차를 펼쳐 받기 위함
+- src/lib/calendar.js: usageStats.js 와 같은 규칙 — registerPlugin Proxy 를 async 밖으로 내보내지 않는다
+- pickUpcomingEvent(): 진행 중 > 90분 내 시작 순, 종일 일정 제외
+- 팝업이 열릴 때만 1회 조회 (매 렌더 조회 금지 — 배터리·권한 노출 최소화)
+- READ_CALENDAR 는 실행 중 요청 권한. 사전 고지 모달 → 허용 → calendarSync=true
+- 일정 내용은 저장하지 않고 화면에만 쓴다. 서버 전송 없음 (처리방침에 명시)
+- 측정 이벤트: calendar_connected
+```
+
 ---
 
 ## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)
@@ -343,6 +357,7 @@ localStorage 키 (현재 6개 — 통합 후보):
 
 설정 값 (settings.js, autoCheckin 기본 false):
   autoCheckin (자동 활동 기록 on/off), lastBackfillAt (마지막 소급 기록 시각)
+  calendarSync (캘린더 연동 on/off), produceTarget·consumeLimit (오구 지수 목표)
 
 서버 상태:
   user (Supabase Auth) → todos, goals 가 자동으로 user_id 분기

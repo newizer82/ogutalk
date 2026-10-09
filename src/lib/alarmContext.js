@@ -142,3 +142,30 @@ export function formatMinutes(min) {
   if (!h) return `${m}분`
   return m ? `${h}시간 ${m}분` : `${h}시간`
 }
+
+// ── 캘린더 일정 (v1.10) ──────────────────────────────────────────
+// 팝업은 "다음 1시간"을 책임진다 → 지금 진행 중이거나 곧 시작하는 일정 하나만 고른다.
+
+/** 지금 진행 중 > 곧 시작 순으로 일정 1건. 종일 일정은 알람에 띄우지 않는다(시각이 없다) */
+export function pickUpcomingEvent(events = [], now = Date.now(), withinMs = 90 * 60 * 1000) {
+  const usable = events.filter(e => e && !e.allDay && e.title && e.endMs > now)
+  if (!usable.length) return null
+  const ongoing = usable
+    .filter(e => e.startMs <= now)
+    .sort((a, b) => a.endMs - b.endMs)
+  if (ongoing.length) return { ...ongoing[0], ongoing: true, startsInMin: 0 }
+
+  const soon = usable
+    .filter(e => e.startMs > now && e.startMs - now <= withinMs)
+    .sort((a, b) => a.startMs - b.startMs)
+  if (!soon.length) return null
+  return { ...soon[0], ongoing: false, startsInMin: Math.round((soon[0].startMs - now) / 60000) }
+}
+
+/** "15:00 강남 미팅" 처럼 한 줄로 */
+export function eventLine(e) {
+  if (!e) return ''
+  const d = new Date(e.startMs)
+  const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return e.ongoing ? `${e.title} 진행 중` : `${hhmm} ${e.title}`
+}

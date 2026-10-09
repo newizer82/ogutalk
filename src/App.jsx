@@ -8,7 +8,8 @@ import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
 import { loadLocalCheckins } from './lib/checkinStore'
-import { alarmMood, todayTotals as sumToday, pickNextTodo } from './lib/alarmContext'
+import { alarmMood, todayTotals as sumToday, pickNextTodo, pickUpcomingEvent } from './lib/alarmContext'
+import { getEvents } from './lib/calendar'
 import { oguScore } from './lib/oguScore'
 import { todayLog, logTodoDone, logAlarmAction, saveDayScore } from './lib/dayLog'
 import { logEvent } from './lib/firebase'
@@ -195,7 +196,7 @@ export default function App() {
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
   const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
-          autoCheckin, lastBackfillAt, produceTarget, consumeLimit } = settings
+          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -212,6 +213,7 @@ export default function App() {
   const setOguRepeat    = v => updateSetting('oguRepeat', v)
   const setAlarmMode   = v => updateSetting('alarmMode', v)
   const setAutoCheckin    = v => updateSetting('autoCheckin', v)
+  const setCalendarSync   = v => updateSetting('calendarSync', v)
   const setProduceTarget  = v => updateSetting('produceTarget', v)
   const setConsumeLimit   = v => updateSetting('consumeLimit', v)
   const setLastBackfillAt = v => updateSetting('lastBackfillAt', v)
@@ -314,6 +316,18 @@ export default function App() {
       dayScore: score,
     }
   }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos, produceTarget, consumeLimit])
+
+  // 캘린더: 팝업이 열릴 때만 다음 90분을 한 번 읽는다
+  const [nextEvent, setNextEvent] = useState(null)
+  useEffect(() => {
+    if (!showAlarmPopup || !calendarSync) { setNextEvent(null); return }
+    let alive = true
+    const now = Date.now()
+    getEvents(now - 60 * 60 * 1000, now + 90 * 60 * 1000, 10)
+      .then(list => { if (alive) setNextEvent(pickUpcomingEvent(list, Date.now())) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [showAlarmPopup, calendarSync])
 
   const handleTodoDoneFromPopup = useCallback((todo) => {
     if (!todo) return
@@ -589,6 +603,8 @@ export default function App() {
             setAlarmHours={setAlarmHours}
             autoCheckin={autoCheckin}
             setAutoCheckin={setAutoCheckin}
+            calendarSync={calendarSync}
+            setCalendarSync={setCalendarSync}
             produceTarget={produceTarget}
             setProduceTarget={setProduceTarget}
             consumeLimit={consumeLimit}
@@ -622,6 +638,7 @@ export default function App() {
           nextTodo={popupContext.nextTodo}
           onTodoDone={handleTodoDoneFromPopup}
           dayScore={popupContext.dayScore}
+          nextEvent={nextEvent}
         />
       )}
 

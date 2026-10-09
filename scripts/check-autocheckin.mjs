@@ -9,6 +9,7 @@ import {
 import { buildCheckinEntry, mergeCheckins } from '../src/lib/checkinEntry.js'
 import {
   minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
+  pickUpcomingEvent, eventLine,
 } from '../src/lib/alarmContext.js'
 import {
   oguScore, produceScore, restraintScore, actionScore, DEFAULT_GOALS,
@@ -378,3 +379,33 @@ console.log('✓ 분류표 확장 검증 통과')
   assert.equal(mergeCheckins([], [{ activity_type: 'x', created_at: 'bad' }]).length, 0, '깨진 시각은 버린다')
 }
 console.log('✓ mergeCheckins 검증 통과')
+
+// ── 캘린더 일정 고르기 (v1.10) ───────────────────────────────────
+{
+  const T = (h, m) => new Date(2026, 9, 9, h, m, 0, 0).getTime()
+  const now = T(14, 59)
+  const ev = (title, sh, sm, eh, em, extra = {}) =>
+    ({ title, startMs: T(sh, sm), endMs: T(eh, em), allDay: false, location: '', ...extra })
+
+  // 곧 시작하는 일정을 고른다
+  {
+    const e = pickUpcomingEvent([ev('강남 미팅', 15, 0, 16, 0)], now)
+    assert.equal(e.title, '강남 미팅')
+    assert.equal(e.startsInMin, 1)
+    assert.equal(eventLine(e), '15:00 강남 미팅')
+  }
+  // 진행 중인 일정이 곧 시작할 일정보다 먼저다
+  {
+    const e = pickUpcomingEvent([ev('다음 회의', 15, 30, 16, 0), ev('진행 중 회의', 14, 0, 15, 30)], now)
+    assert.equal(e.title, '진행 중 회의')
+    assert.equal(e.ongoing, true)
+    assert.equal(eventLine(e), '진행 중 회의 진행 중')
+  }
+  // 끝난 일정, 종일 일정, 너무 먼 일정은 제외
+  assert.equal(pickUpcomingEvent([ev('끝난 회의', 13, 0, 14, 0)], now), null)
+  assert.equal(pickUpcomingEvent([ev('생일', 0, 0, 23, 59, { allDay: true })], now), null, '종일 일정은 알람에 안 띄운다')
+  assert.equal(pickUpcomingEvent([ev('내일 준비', 18, 0, 19, 0)], now), null, '90분 밖은 아직 알릴 때가 아니다')
+  assert.equal(pickUpcomingEvent([], now), null)
+  assert.equal(pickUpcomingEvent([{ title: '', startMs: T(15, 0), endMs: T(16, 0) }], now), null, '제목 없는 데이터는 버린다')
+}
+console.log('✓ 캘린더 일정 검증 통과')

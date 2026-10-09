@@ -82,6 +82,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 배터리 최적화 면제 요청 (앱이 화이트리스트에 등록될 수 있도록) -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- 기기 캘린더 일정 읽기 (읽기 전용 — 사용자가 설정에서 켤 때만 요청) -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
     <!-- 앱별 사용시간 조회 (사용자가 설정에서 '사용정보 접근'을 직접 허용해야 함) -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />

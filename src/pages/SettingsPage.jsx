@@ -7,6 +7,7 @@ import { gradients, S } from '../styles/theme'
 import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm, openUrl } from '../lib/capacitor'
 import { supabase } from '../lib/supabase'
 import AutoCheckinSection from '../components/settings/AutoCheckinSection'
+import CalendarSection from '../components/settings/CalendarSection'
 import ScoreGoalSection from '../components/settings/ScoreGoalSection'
 
 const pad = n => String(n).padStart(2, '0')
@@ -45,6 +46,7 @@ export default function SettingsPage({
   userId = null,
   todoPct = 0,
   autoCheckin = false, setAutoCheckin,
+  calendarSync = false, setCalendarSync,
   produceTarget = 120, setProduceTarget,
   consumeLimit = 120, setConsumeLimit,
 }) {
@@ -507,6 +509,8 @@ export default function SettingsPage({
       </div>
 
       <AutoCheckinSection enabled={autoCheckin} onChange={setAutoCheckin} />
+
+      <CalendarSection enabled={calendarSync} onChange={setCalendarSync} />
 
       <ScoreGoalSection
         produceTarget={produceTarget} setProduceTarget={setProduceTarget}
