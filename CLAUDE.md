@@ -3,7 +3,7 @@
 > ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
 > 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
 >
-> 마지막 업데이트: 2026-10-09 (v1.12.0 — 화이트 테마 + 홈 히어로 "오늘 내 시간")
+> 마지막 업데이트: 2026-10-09 (v1.13.0 — 홈 배너)
 
 ---
 
@@ -82,6 +82,7 @@ public.todos             - 할일                          [사용]
 public.notification_log  - 알림 기록 (체크인 저장)       [사용]
                            ※ 리포트는 서버+로컬을 mergeCheckins 로 합쳐 읽는다 (서버 저장 실패 대비)
 public.economic_tips     - 경제 상식 (10건 입력됨)       [사용]
+public.banners           - 홈 배너 (공개 읽기)           [사용, v1.13.0]
 public.user_preferences  - 사용자 환경설정               [사용]
 ```
 
@@ -317,6 +318,18 @@ src/data/missions.js (60개) + missionPick.js(순수) + missionStore.js(localSto
 - 노출: 홈(접기 가능) + 할일 탭 + 알람("지금 하나만" 이 할일 없을 때 미션으로 폴백)
 - 첫 알람 안내는 claimFirstAlarm() — "묻는 순간 소모되는" 함수다.
   useMemo 안에서 부르면 리렌더 때 두 번째 호출이 false 를 받아 안내가 사라진다 → useEffect 에서만 부를 것
+```
+
+### 12. 홈 배너 (v1.13.0)
+
+```
+src/data/banners.js(내장 기본) + bannerPick.js(순수) + BannerCarousel.jsx
+- 자리는 홈에 하나뿐 — 알람 앱의 홈이 광고판이 되면 "지금 하나만"이 가려진다
+- 외부 광고는 넣지 않는다 (AdMob 배너와 별개. 이 자리는 오구톡 자체 소식 전용)
+- 최대 4장, 이벤트는 동시에 한 장만, ends_at 지나면 자동 소멸
+- Supabase banners 테이블 → 실패/미생성 시 DEFAULT_BANNERS 로 폴백 (홈이 비지 않게)
+- 자동 전환 5초, 터치 중 정지, prefers-reduced-motion 이면 정지
+- 테이블은 공개 읽기(RLS SELECT true) — 비로그인 사용자도 본다. 쓰기는 대시보드에서만
 ```
 
 ---

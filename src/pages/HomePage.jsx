@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
 import TodayTimeHero from '../components/home/TodayTimeHero'
+import BannerCarousel from '../components/home/BannerCarousel'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
@@ -95,6 +96,9 @@ export default function HomePage({
         nowLabel={nowLabel}
         onOpenReport={() => onTabChange('report')}
       />
+
+      {/* 배너 — 자리는 홈에 하나뿐 */}
+      <BannerCarousel onTabChange={onTabChange} />
 
       {/* 알람 시간대 한 줄 — 설정으로 가는 입구만 남긴다 */}
       <button

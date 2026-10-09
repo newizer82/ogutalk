@@ -16,6 +16,8 @@ import {
 } from '../src/lib/oguScore.js'
 import { pickMissions, seedOf, dayOffsetKey } from '../src/lib/missionPick.js'
 import { MISSIONS, AREAS } from '../src/data/missions.js'
+import { pickBanners, hiddenToday } from '../src/lib/bannerPick.js'
+import { DEFAULT_BANNERS, BANNER_KINDS } from '../src/data/banners.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
 
@@ -511,3 +513,40 @@ console.log('✓ 오구 지수 5:9 검증 통과')
   assert.equal(dayOffsetKey('2026-03-01', -1), '2026-02-28')
 }
 console.log('✓ 오늘의 미션 검증 통과')
+
+// ── 배너 고르기 ──────────────────────────────────────────────────
+{
+  const now = new Date(2026, 9, 9, 12, 0, 0).getTime()
+  const day = 86400000
+  const b = (id, extra = {}) => ({ id, text: id, kind: 'notice', ...extra })
+
+  // 기간이 지난 배너는 코드 수정 없이 사라진다 (이 기능의 가장 큰 위험)
+  assert.deepEqual(
+    pickBanners([b('지남', { ends_at: new Date(now - day).toISOString() }), b('상시')], now).map(x => x.id),
+    ['상시'])
+  assert.deepEqual(
+    pickBanners([b('아직', { starts_at: new Date(now + day).toISOString() }), b('지금')], now).map(x => x.id),
+    ['지금'])
+  assert.equal(pickBanners([b('끈것', { active: false })], now).length, 0)
+  assert.equal(pickBanners([{ id: 'x', kind: 'notice' }], now).length, 0, '문구 없는 행은 버린다')
+
+  // 이벤트는 한 장만
+  {
+    const picked = pickBanners([b('e1', { kind: 'event', sort: 1 }), b('e2', { kind: 'event', sort: 2 }), b('n1', { sort: 3 })], now)
+    assert.deepEqual(picked.map(x => x.id), ['e1', 'n1'])
+  }
+  // 최대 4장, sort 순
+  {
+    const many = [5, 4, 3, 2, 1].map(n => b('b' + n, { sort: n }))
+    assert.deepEqual(pickBanners(many, now).map(x => x.id), ['b1', 'b2', 'b3', 'b4'])
+  }
+  // 오늘 하루 안 보기는 날짜가 바뀌면 풀린다
+  assert.equal(hiddenToday('2026-10-09', now), true)
+  assert.equal(hiddenToday('2026-10-08', now), false)
+  assert.equal(hiddenToday(null, now), false)
+
+  // 내장 배너는 모두 유효해야 한다 (기본값이 깨지면 홈이 빈다)
+  assert.ok(pickBanners(DEFAULT_BANNERS, now).length >= 3)
+  for (const d of DEFAULT_BANNERS) assert.ok(BANNER_KINDS[d.kind], `${d.id} → ${d.kind}`)
+}
+console.log('✓ 배너 검증 통과')
