@@ -48,6 +48,19 @@ export function logAlarmAction(now = Date.now()) {
   write(map)
 }
 
+/**
+ * 오늘 알람이 처음 뜬 것인가 (첫 알람에만 미션 안내를 한 줄 붙인다).
+ * 물어보는 쪽이 기록까지 남긴다 — 한 번 true 를 받으면 그날은 다시 true 가 되지 않는다.
+ */
+export function claimFirstAlarm(now = Date.now()) {
+  const map = read()
+  const k = dayKey(now)
+  if (map[k]?.alarmShown) return false
+  map[k] = { doneCount: 0, actedOnAlarm: false, ...map[k], alarmShown: true }
+  write(map)
+  return true
+}
+
 /** 연속 달성 일수 — 오늘(없으면 어제)부터 거슬러 threshold 이상인 날을 센다 */
 export function streakDays(threshold = 60, now = Date.now()) {
   const map = read()

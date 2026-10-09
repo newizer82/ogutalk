@@ -23,7 +23,7 @@ export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
   autoSummary = null, autoMode = false,
   mood = null, todayTotals = null, nextTodo = null, onTodoDone = null, dayScore = null,
-  nextEvent = null,
+  nextEvent = null, nextMission = null, onMissionDone = null, missionIntro = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -33,10 +33,11 @@ export default function AlarmPopup({
   const [checkedIn, setCheckedIn] = useState(false)
   const [todoDone, setTodoDone]   = useState(false)
 
-  // 집중 중이면 할일을 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
-  // 분류를 고치는 중이거나 이미 체크인한 뒤에도 감춘다 (팝업이 곧 닫힘).
-  const showTodo = !!nextTodo && !!onTodoDone
-    && mood?.mood !== 'focus' && !checkedIn
+  // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 미션.
+  // 집중 중에는 아무것도 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
+  const suggestTodo    = !!nextTodo && !!onTodoDone
+  const suggestMission = !suggestTodo && !!nextMission && !!onMissionDone
+  const showTodo = (suggestTodo || suggestMission) && mood?.mood !== 'focus' && !checkedIn
 
   // 자동 기록 모드에서는 고를 버튼이 없다 → 평소 상태에서 질문을 던지면 답할 곳이 없어 보인다
   // 분류가 잡힌 자동 요약이 있으면 보여주기만 한다 (고치기는 리포트의 "무엇이 생산으로 잡혔나" 에서)
@@ -54,7 +55,8 @@ export default function AlarmPopup({
   const handleTodoDone = () => {
     if (todoDone) return
     setTodoDone(true)
-    onTodoDone(nextTodo)
+    if (suggestTodo) onTodoDone(nextTodo)
+    else onMissionDone(nextMission)
     setTimeout(onClose, 900)
   }
 
@@ -220,6 +222,17 @@ export default function AlarmPopup({
           )}
         </div>
 
+        {/* 하루 첫 알람에만 — 오늘 미션이 준비됐다는 것만 한 줄로 알린다 */}
+        {missionIntro && (
+          <div style={{
+            marginBottom: 10, padding: '9px 12px', borderRadius: 12,
+            background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
+            color: '#c7d2fe', fontSize: 12.5, fontWeight: 700, textAlign: 'left',
+          }}>
+            🎯 {missionIntro}
+          </div>
+        )}
+
         {/* 다음 일정 — 오구톡 할일에는 시각·장소가 없다. 캘린더가 그 빈칸을 메운다 */}
         {nextEvent && (
           <div style={{
@@ -291,16 +304,18 @@ export default function AlarmPopup({
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
-                {todoDone ? '✓ 하나 해냈어요' : '지금 하나만'}
+                {todoDone ? '✓ 하나 해냈어요' : (suggestTodo ? '지금 하나만' : '🎯 오늘의 미션')}
               </div>
               <div style={{
                 color: '#e2e8f0', fontSize: 14, fontWeight: 700, lineHeight: 1.35,
                 textDecoration: todoDone ? 'line-through' : 'none', opacity: todoDone ? 0.6 : 1,
               }}>
-                {nextTodo.title}
+                {suggestTodo ? nextTodo.title : nextMission.text}
               </div>
-              {!todoDone && todoHint(nextTodo) && (
-                <div style={{ color: '#64748b', fontSize: 11, marginTop: 3 }}>{todoHint(nextTodo)}</div>
+              {!todoDone && (suggestTodo ? todoHint(nextTodo) : '5분이면 돼요') && (
+                <div style={{ color: '#64748b', fontSize: 11, marginTop: 3 }}>
+                  {suggestTodo ? todoHint(nextTodo) : '5분이면 돼요'}
+                </div>
               )}
             </div>
             {!todoDone && (

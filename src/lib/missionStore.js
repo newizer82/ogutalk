@@ -73,3 +73,9 @@ export function shuffleMissions(stage = null, now = Date.now()) {
   write({ ...s, ids: picked.map(m => m.id), done: [], shuffled: true })
   return true
 }
+
+/** 아직 안 한 미션 하나 (알람의 "지금 하나만" 이 할일 대신 제안할 것) */
+export function nextUndoneMission(stage = null, now = Date.now()) {
+  const { missions, done } = todayMissions(stage, now)
+  return missions.find(m => !done.includes(m.id)) ?? null
+}

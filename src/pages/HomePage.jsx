@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import MissionCard from '../components/todos/MissionCard'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
@@ -39,6 +40,7 @@ const cardStyle = {
 }
 
 export default function HomePage({
+  lifeStage = null,
   alarmCount = 0,
   todos = [],
   onTabChange,
@@ -145,6 +147,9 @@ export default function HomePage({
           </div>
         </div>
       </section>
+
+      {/* ── 오늘의 미션 (접을 수 있음) ── */}
+      <MissionCard stage={lifeStage} collapsible />
 
       {/* ── 카드 2: 할일 현황 ── */}
       <section style={cardStyle}>

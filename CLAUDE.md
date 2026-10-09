@@ -311,6 +311,9 @@ src/data/missions.js (60개) + missionPick.js(순수) + missionStore.js(localSto
 - 풀이 마르면 조건을 풀어서라도 3개를 채운다 (빈칸보다 낫다)
 - 미션은 todos 에 넣지 않는다 — 매일 3개씩 쌓이면 내 할일 목록과 완료율이 오염된다
 - 생애주기(lifeStage)는 선택. 성별 분리는 하지 않는다.
+- 노출: 홈(접기 가능) + 할일 탭 + 알람("지금 하나만" 이 할일 없을 때 미션으로 폴백)
+- 첫 알람 안내는 claimFirstAlarm() — "묻는 순간 소모되는" 함수다.
+  useMemo 안에서 부르면 리렌더 때 두 번째 호출이 false 를 받아 안내가 사라진다 → useEffect 에서만 부를 것
 ```
 
 ---

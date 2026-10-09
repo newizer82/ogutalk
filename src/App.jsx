@@ -11,7 +11,8 @@ import { loadLocalCheckins } from './lib/checkinStore'
 import { alarmMood, todayTotals as sumToday, pickNextTodo, pickUpcomingEvent } from './lib/alarmContext'
 import { getEvents } from './lib/calendar'
 import { oguScore } from './lib/oguScore'
-import { todayLog, logTodoDone, logAlarmAction, saveDayScore } from './lib/dayLog'
+import { todayLog, logTodoDone, logAlarmAction, saveDayScore, claimFirstAlarm } from './lib/dayLog'
+import { todayMissions, nextUndoneMission, completeMission } from './lib/missionStore'
 import { logEvent } from './lib/firebase'
 import { IS_NATIVE } from './lib/capacitor'
 import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
@@ -315,9 +316,23 @@ export default function App() {
       mood:     alarmMood({ checkins, autoSummary: autoCheckin ? lastHourSummary : null, now }),
       totals:   sumToday(checkins, now),
       nextTodo: pickNextTodo(activeTodos, now),
+      nextMission: nextUndoneMission(lifeStage, now),
       dayScore: score,
     }
-  }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos, produceTarget, consumeLimit])
+  }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos, produceTarget, consumeLimit, lifeStage])
+
+  // 하루 첫 알람에만 미션 안내 한 줄.
+  // claimFirstAlarm 은 "묻는 순간 소모되는" 함수라 렌더 계산(useMemo) 안에서 부르면 안 된다 —
+  // 리렌더로 계산이 한 번 더 돌면 두 번째 호출이 false 를 받아 안내가 사라진다.
+  const [missionIntro, setMissionIntro] = useState(null)
+  useEffect(() => {
+    if (!showAlarmPopup) { setMissionIntro(null); return }
+    if (!claimFirstAlarm()) return
+    const m = todayMissions(lifeStage)
+    if (m.missions.length) {
+      setMissionIntro(`오늘의 미션 ${m.missions.length}개가 준비됐어요 (${m.done.length}/${m.missions.length})`)
+    }
+  }, [showAlarmPopup, lifeStage])
 
   // 캘린더: 팝업이 열릴 때만 다음 90분을 한 번 읽는다
   const [nextEvent, setNextEvent] = useState(null)
@@ -330,6 +345,13 @@ export default function App() {
       .catch(() => {})
     return () => { alive = false }
   }, [showAlarmPopup, calendarSync])
+
+  const handleMissionDoneFromPopup = useCallback((mission) => {
+    if (!mission) return
+    completeMission(mission.id)
+    logEvent('mission_done', { from: 'alarm' })
+    logTodoDone()   // 오구 지수의 "해낸 것" 에도 들어간다
+  }, [])
 
   const handleTodoDoneFromPopup = useCallback((todo) => {
     if (!todo) return
@@ -515,6 +537,7 @@ export default function App() {
       >
         {activeTab === 'home' && (
           <HomePage
+            lifeStage={lifeStage}
             alarmCount={alarmCount}
             todos={activeTodos}
             goals={localGoals}
@@ -643,6 +666,9 @@ export default function App() {
           onTodoDone={handleTodoDoneFromPopup}
           dayScore={popupContext.dayScore}
           nextEvent={nextEvent}
+          nextMission={popupContext.nextMission}
+          onMissionDone={handleMissionDoneFromPopup}
+          missionIntro={missionIntro}
         />
       )}
 
