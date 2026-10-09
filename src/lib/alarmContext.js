@@ -169,3 +169,15 @@ export function eventLine(e) {
   const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   return e.ongoing ? `${e.title} 진행 중` : `${hhmm} ${e.title}`
 }
+
+/**
+ * 장소를 알람 카드 한 줄에 맞게 줄인다.
+ * 캘린더 장소는 "대구 달서구청, 대한민국 대구광역시 달서구 월성2동 학산로 45" 처럼
+ * 이름 + 전체 주소가 통째로 들어와 카드가 세 줄로 불어난다 → 쉼표 앞(장소 이름)만 쓴다.
+ */
+export function shortPlace(location = '', max = 18) {
+  // location 이 null 로 올 수 있다 — 기본값은 undefined 일 때만 쓰이므로 String(null)="null" 이 된다
+  const head = String(location ?? '').split(',')[0].trim()
+  if (!head) return ''
+  return head.length > max ? head.slice(0, max - 1) + '…' : head
+}

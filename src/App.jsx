@@ -288,7 +288,8 @@ export default function App() {
   } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
 
   // 자동 체크인 소급 기록 (앱 사용시간 기반)
-  const { runBackfill, lastHourSummary, correctLastHour, hasAccess } = useAutoCheckin({
+  // correctLastHour 는 팝업에서 뺐다 — 분류 수정은 리포트의 근거 화면에서 한다
+  const { runBackfill, lastHourSummary, hasAccess } = useAutoCheckin({
     enabled: autoCheckin,
     userId,
     lastBackfillAt,
@@ -631,7 +632,6 @@ export default function App() {
           onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
           onCheckin={(a) => { logAlarmAction(); return saveCheckin(a) }}
           autoSummary={autoCheckin ? lastHourSummary : null}
-          onCorrect={(a) => { logAlarmAction(); return correctLastHour(a) }}
           autoMode={autoCheckinMode}
           mood={popupContext.mood}
           todayTotals={popupContext.totals}

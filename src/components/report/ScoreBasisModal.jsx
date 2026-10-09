@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { CATEGORIES, GROUPS, groupOf, labelOf } from '../../data/appCategories'
+import { useState, useEffect } from 'react'
+import { CATEGORIES, GROUPS, groupOf, labelOf, categoryForApp } from '../../data/appCategories'
+import { getUsage } from '../../lib/usageStats'
 import { minutesOf, formatMinutes } from '../../lib/alarmContext'
 
 // 점수를 매기려면 근거를 보여줘야 한다 — "무엇이 생산으로 잡혔나" 에 답하는 화면.
+// v1.10.1: 알람 팝업의 "다르게 기록" 을 없앤 대신, 잘못 잡힌 앱을 여기서 고친다.
 // 레코드에는 앱 이름이 없으므로(사용시간 원본을 저장하지 않는다는 제약),
 // 오늘 기록을 분류별로 펼쳐 보여주고, 앱별 수정값은 따로 관리한다.
 const OVERRIDE_KEY = 'ogu_app_category'
@@ -16,6 +18,17 @@ function saveOverrides(map) {
 
 export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClose }) {
   const [overrides, setOverrides] = useState(loadOverrides)
+  const [apps, setApps] = useState([])
+
+  // 오늘 많이 쓴 앱 — 분류를 고칠 대상이다 (네이티브·권한 없으면 빈 배열)
+  useEffect(() => {
+    let alive = true
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    getUsage(dayStart.getTime(), Date.now(), 12)
+      .then(list => { if (alive) setApps(list) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   const start = new Date(now); start.setHours(0, 0, 0, 0)
   const byType = {}
@@ -97,13 +110,67 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
           </div>
         )}
 
+        {/* 오늘 많이 쓴 앱 — 여기서 분류를 고치면 다음부터 그 앱에 자동 적용된다 */}
+        {apps.length > 0 && (
+          <>
+            <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 2 }}>
+              오늘 많이 쓴 앱
+            </div>
+            <div style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>
+              분류가 틀렸다면 바꿔주세요. 다음부터 그 앱에 자동으로 적용돼요.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {apps.map(a => {
+                const cat = categoryForApp(a.pkg, overrides, a.category)
+                return (
+                  <div key={a.pkg} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.04)',
+                  }}>
+                    <span style={{
+                      flex: 1, minWidth: 0, color: '#e2e8f0', fontSize: 13, fontWeight: 600,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {a.label}
+                    </span>
+                    <span style={{ color: '#64748b', fontSize: 11, flexShrink: 0 }}>
+                      {Math.round(a.seconds / 60)}분
+                    </span>
+                    <select
+                      value={cat ?? ''}
+                      onChange={e => changeOverride(a.pkg, e.target.value)}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)', color: cat ? '#e2e8f0' : '#fb923c',
+                        border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                        padding: '5px 6px', fontSize: 12, maxWidth: 130,
+                      }}
+                    >
+                      {!cat && <option value="" style={{ background: '#0f172a' }}>미분류</option>}
+                      <optgroup label="그룹" style={{ background: '#0f172a' }}>
+                        {Object.entries(GROUPS).map(([id, g]) => (
+                          <option key={id} value={id} style={{ background: '#0f172a' }}>{g.label}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="세부" style={{ background: '#0f172a' }}>
+                        {Object.entries(CATEGORIES).map(([id, c]) => (
+                          <option key={id} value={id} style={{ background: '#0f172a' }}>{c.label}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
         {/* 내가 고친 앱 분류 — 지금까지는 알람 팝업에서만 고칠 수 있었다 */}
         <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 6 }}>
           내가 고친 앱 분류
         </div>
         {overrideList.length === 0 ? (
           <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>
-            아직 없어요. 알람 팝업에서 "다르게 기록"을 누르면 그 앱이 여기에 쌓입니다.
+            아직 없어요. 위에서 앱 분류를 바꾸면 여기에 쌓입니다.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

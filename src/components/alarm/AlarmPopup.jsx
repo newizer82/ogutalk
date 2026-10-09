@@ -3,7 +3,7 @@ import GlassCard from '../common/GlassCard'
 import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
-import { moodHeadline, formatMinutes, todoHint, eventLine } from '../../lib/alarmContext'
+import { moodHeadline, formatMinutes, todoHint, eventLine, shortPlace } from '../../lib/alarmContext'
 import { mapUrlFor } from '../../lib/calendar'
 import { openUrl } from '../../lib/capacitor'
 
@@ -21,7 +21,7 @@ const MOOD_COLOR = { binge: '#fbbf24', focus: '#34d399', normal: '#f1f5f9' }
 
 export default function AlarmPopup({
   alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
-  autoSummary = null, onCorrect = null, autoMode = false,
+  autoSummary = null, autoMode = false,
   mood = null, todayTotals = null, nextTodo = null, onTodoDone = null, dayScore = null,
   nextEvent = null,
 }) {
@@ -32,23 +32,23 @@ export default function AlarmPopup({
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [todoDone, setTodoDone]   = useState(false)
-  const [correcting, setCorrecting] = useState(false)
 
   // 집중 중이면 할일을 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
   // 분류를 고치는 중이거나 이미 체크인한 뒤에도 감춘다 (팝업이 곧 닫힘).
   const showTodo = !!nextTodo && !!onTodoDone
-    && mood?.mood !== 'focus' && !correcting && !checkedIn
+    && mood?.mood !== 'focus' && !checkedIn
 
   // 자동 기록 모드에서는 고를 버튼이 없다 → 평소 상태에서 질문을 던지면 답할 곳이 없어 보인다
-  const autoView = !!autoSummary && !correcting
+  // 분류가 잡힌 자동 요약이 있으면 보여주기만 한다 (고치기는 리포트의 "무엇이 생산으로 잡혔나" 에서)
+  const autoView = !!autoSummary && !!autoSummary.category
   const headline = {
     text:  autoView && mood?.mood !== 'binge' && mood?.mood !== 'focus' ? '지난 1시간' : moodHeadline(mood),
     color: MOOD_COLOR[mood?.mood] ?? MOOD_COLOR.normal,
   }
 
   // 집중 중엔 재촉하지 않고, 순삭 중엔 다음 행동을 가리킨다
-  const subline = !correcting && mood?.mood === 'focus' ? '방해하지 않을게요, 계속 가세요'
-    : !correcting && mood?.mood === 'binge' ? '한 가지만 끝내고 다시 보셔도 돼요'
+  const subline = mood?.mood === 'focus' ? '방해하지 않을게요, 계속 가세요'
+    : mood?.mood === 'binge' ? '한 가지만 끝내고 다시 보셔도 돼요'
     : '폰을 안 썼다면 그냥 닫아도 돼요'
 
   const handleTodoDone = () => {
@@ -64,13 +64,6 @@ export default function AlarmPopup({
     setCheckedIn(true)
     if (onCheckin) onCheckin(activityId)
     // 선택 즉시 닫기 (피드백을 위한 짧은 200ms만 유지)
-    setTimeout(onClose, 200)
-  }
-
-  const handleCorrect = (activityId) => {
-    onCorrect?.(activityId)
-    setCorrecting(false)
-    setCheckedIn(true)
     setTimeout(onClose, 200)
   }
 
@@ -135,7 +128,7 @@ export default function AlarmPopup({
           borderRadius: 20, padding: '18px 14px',
           boxShadow: '0 0 24px rgba(99,102,241,0.12)',
         }}>
-          {autoMode && !autoSummary && !correcting ? (
+          {autoMode && !autoSummary ? (
             /* 자동 모드지만 아직 소급 계산이 끝나지 않음 — 수동 4버튼이 잠깐 떴다 사라지며
                같은 슬롯에 중복 기록되는 것을 막기 위해 계산이 끝날 때까지 버튼을 감춘다 */
             <div style={{ padding: '10px 0 4px' }}>
@@ -146,7 +139,7 @@ export default function AlarmPopup({
                 잠시만요, 방금 쓴 앱을 확인하고 있어요
               </div>
             </div>
-          ) : autoSummary && !correcting ? (
+          ) : autoView ? (
             /* 자동 기록 모드 — 아무것도 누르지 않아도 이미 기록됨 */
             <>
               <div style={{
@@ -158,32 +151,21 @@ export default function AlarmPopup({
               <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                 {headline.text === '지난 1시간' ? '' : '지난 1시간 · '}{autoSummary.label} {autoSummary.minutes}분
               </div>
-              <div style={{ color: autoSummary.category ? '#34d399' : '#fb923c', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
-                {autoSummary.category
-                  ? `✓ ${summaryLabel(autoSummary.category)} 으로 기록했어요`
-                  : '아직 분류되지 않은 앱이에요'}
+              <div style={{ color: '#34d399', fontSize: 13, fontWeight: 700 }}>
+                ✓ {summaryLabel(autoSummary.category)} 으로 기록했어요
               </div>
-              <button
-                onClick={() => setCorrecting(true)}
-                style={{
-                  width: '100%', padding: '12px', borderRadius: 12, cursor: 'pointer',
-                  border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
-                  color: '#cbd5e1', fontSize: 13, fontWeight: 700,
-                }}
-              >
-                {autoSummary.category ? '다르게 기록' : '분류 선택하기'}
-              </button>
             </>
           ) : (
-            /* 수동 모드 (권한 없음·기능 OFF) 또는 수정 중 */
+            /* 수동 모드 (권한 없음·기능 OFF) 또는 자동 요약이 미분류인 경우 —
+               미분류 앱은 기록되지 않으므로 그 시간이 통째로 사라지지 않게 직접 고르게 한다 */
             <>
               <div style={{
                 // 상태 문구는 기본 문구보다 길다 → 한 글자만 넘어가는 줄바꿈을 막는다
                 fontSize: 18, fontWeight: 900, marginBottom: 6, textAlign: 'center',
                 letterSpacing: '-0.5px', wordBreak: 'keep-all', lineHeight: 1.35,
-                color: correcting ? '#f1f5f9' : headline.color,
+                color: headline.color,
               }}>
-                {correcting ? '⏱️ 이번 시간 뭐 하셨어요?' : headline.text}
+                {headline.text}
               </div>
               <div style={{ color: '#64748b', fontSize: 12, marginBottom: 14, textAlign: 'center' }}>
                 {subline}
@@ -192,7 +174,7 @@ export default function AlarmPopup({
                 {ACTIVITIES.map(a => (
                   <button
                     key={a.id}
-                    onClick={() => (correcting ? handleCorrect(a.id) : handleCheckin(a.id))}
+                    onClick={() => handleCheckin(a.id)}
                     style={{
                       padding: '14px 6px', borderRadius: 14, border: 'none', cursor: 'pointer',
                       fontSize: 13, fontWeight: 700, lineHeight: 1.3,
@@ -251,8 +233,11 @@ export default function AlarmPopup({
                 {eventLine(nextEvent)}
               </div>
               {!nextEvent.ongoing && (
-                <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                  {nextEvent.startsInMin}분 뒤{nextEvent.location ? ` · ${nextEvent.location}` : ''}
+                <div style={{
+                color: '#94a3b8', fontSize: 12, marginTop: 2,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                  {nextEvent.startsInMin}분 뒤{nextEvent.location ? ` · ${shortPlace(nextEvent.location)}` : ''}
                 </div>
               )}
             </div>

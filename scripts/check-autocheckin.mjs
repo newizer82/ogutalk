@@ -9,7 +9,7 @@ import {
 import { buildCheckinEntry, mergeCheckins } from '../src/lib/checkinEntry.js'
 import {
   minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
-  pickUpcomingEvent, eventLine,
+  pickUpcomingEvent, eventLine, shortPlace,
 } from '../src/lib/alarmContext.js'
 import {
   oguScore, produceScore, restraintScore, actionScore, DEFAULT_GOALS,
@@ -409,3 +409,14 @@ console.log('✓ mergeCheckins 검증 통과')
   assert.equal(pickUpcomingEvent([{ title: '', startMs: T(15, 0), endMs: T(16, 0) }], now), null, '제목 없는 데이터는 버린다')
 }
 console.log('✓ 캘린더 일정 검증 통과')
+
+// ── 장소 한 줄 줄이기 ────────────────────────────────────────────
+{
+  assert.equal(shortPlace('대구 달서구청, 대한민국 대구광역시 달서구 월성2동 학산로 45'), '대구 달서구청')
+  assert.equal(shortPlace('강남역'), '강남역')
+  assert.equal(shortPlace(''), '')
+  assert.equal(shortPlace(null), '')
+  assert.equal(shortPlace('아주아주아주아주아주아주아주긴장소이름입니다'), '아주아주아주아주아주아주아주긴장소…')
+  assert.equal(shortPlace('  스타벅스 역삼점  , 서울'), '스타벅스 역삼점')
+}
+console.log('✓ shortPlace 검증 통과')
