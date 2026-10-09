@@ -140,7 +140,7 @@ export function adviceFor({ phone, done, missionDone, missionTotal, goals }) {
   }
   if (missionDone < missionTotal) {
     const left = missionTotal - missionDone
-    return `오늘의 미션 ${left}개가 남았어요. 하나에 5분이면 돼요.`
+    return `오늘의 추천 미션 ${left}개가 남았어요. 하나에 5분이면 돼요.`
   }
   if (!done.parts.todoDone) return '내 할일을 하나만 끝내도 10점이 올라가요.'
   if (!done.parts.goalKept) return '이번 주 목표를 한 번 들여다보면 10점이에요.'

@@ -340,7 +340,7 @@ export default function App() {
     if (!claimFirstAlarm()) return
     const m = todayMissions(lifeStage)
     if (m.missions.length) {
-      setMissionIntro(`오늘의 미션 ${m.missions.length}개가 준비됐어요 (${m.done.length}/${m.missions.length})`)
+      setMissionIntro(`오늘의 추천 미션 ${m.missions.length}개가 준비됐어요 (${m.done.length}/${m.missions.length})`)
     }
   }, [showAlarmPopup, lifeStage])
 

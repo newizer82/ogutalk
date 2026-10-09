@@ -35,7 +35,7 @@ export const DEFAULT_BANNERS = [
     id: 'mission',
     kind: 'tip',
     emoji: '🎯',
-    text: '5분이면 끝나는 오늘의 미션 3개',
+    text: '5분이면 끝나는 오늘의 추천 미션 3개',
     action: { tab: 'todos' },
     sort: 30,
   },

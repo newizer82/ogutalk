@@ -65,9 +65,9 @@ export default function ScoreGoalSection({
         value={consumeLimit} onChange={setConsumeLimit} color="#B4740F"
       />
 
-      {/* 생애주기 — 오늘의 미션을 고를 때만 쓴다. 성별로는 나누지 않는다(편견만 생기고 관리도 번거롭다) */}
+      {/* 생애주기 — 오늘의 추천 미션을 고를 때만 쓴다. 성별로는 나누지 않는다(편견만 생기고 관리도 번거롭다) */}
       <div style={{ height: 1, background: 'rgba(0,0,0,0.035)', margin: '6px 0 12px' }} />
-      <div style={{ color: '#111111', fontSize: 14, fontWeight: 700, marginBottom: 3 }}>🧩 오늘의 미션 맞춤</div>
+      <div style={{ color: '#111111', fontSize: 14, fontWeight: 700, marginBottom: 3 }}>🧩 오늘의 추천 미션 맞춤</div>
       <div style={{ color: '#9A9AA0', fontSize: 12, marginBottom: 10 }}>
         고르면 그 시기에 맞는 미션이 섞여요. 안 골라도 괜찮아요.
       </div>

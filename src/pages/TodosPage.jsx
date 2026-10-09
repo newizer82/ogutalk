@@ -166,7 +166,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
 
   return (
     <div>
-      {/* 오늘의 미션 — 내가 만든 할일과 섞지 않는다 (매일 3개씩 쌓이면 목록이 오염된다) */}
+      {/* 오늘의 추천 미션 — 내가 만든 할일과 섞지 않는다 (매일 3개씩 쌓이면 목록이 오염된다) */}
       <MissionCard stage={lifeStage} />
       <WeeklyGoalCard />
 

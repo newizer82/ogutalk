@@ -3,7 +3,7 @@ import { AREAS } from '../../data/missions'
 import { todayMissions, completeMission, undoMission, shuffleMissions } from '../../lib/missionStore'
 import { logEvent } from '../../lib/firebase'
 
-// 오늘의 미션 — 무엇을 할지 고민하지 않게 매일 3개를 대신 골라준다.
+// 오늘의 추천 미션 — 무엇을 할지 고민하지 않게 매일 3개를 대신 골라준다.
 // 몸·정리·머리에서 하나씩, 모두 5분 컷.
 export default function MissionCard({ stage = null, onChange, collapsible = false }) {
   // 홈에서는 접을 수 있게 — 홈은 시계와 할일이 먼저 보여야 한다.
@@ -51,7 +51,7 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
       background: '#FFFFFF', border: '1px solid #ECECEF',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: '#111111' }}>🎯 오늘의 미션</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#111111' }}>🎯 오늘의 추천 미션</span>
         <span style={{
           fontSize: 12, fontWeight: 700, color: doneCount === total ? '#1E7A58' : '#8E8E93',
           fontVariantNumeric: 'tabular-nums',
@@ -62,7 +62,7 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
         {collapsible && (
           <button
             onClick={toggleOpen}
-            aria-label={open ? '오늘의 미션 접기' : '오늘의 미션 펼치기'}
+            aria-label={open ? '오늘의 추천 미션 접기' : '오늘의 추천 미션 펼치기'}
             style={{ border: 'none', background: 'transparent', color: '#9A9AA0', fontSize: 13, cursor: 'pointer', padding: '2px 6px' }}
           >
             {open ? '▲' : '▼'}

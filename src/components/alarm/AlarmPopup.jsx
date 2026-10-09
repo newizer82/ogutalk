@@ -33,7 +33,7 @@ export default function AlarmPopup({
   const [checkedIn, setCheckedIn] = useState(false)
   const [todoDone, setTodoDone]   = useState(false)
 
-  // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 미션.
+  // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 추천 미션.
   // 집중 중에는 아무것도 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
   const suggestTodo    = !!nextTodo && !!onTodoDone
   const suggestMission = !suggestTodo && !!nextMission && !!onMissionDone
@@ -304,7 +304,7 @@ export default function AlarmPopup({
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
-                {todoDone ? '✓ 하나 해냈어요' : (suggestTodo ? '지금 하나만' : '🎯 오늘의 미션')}
+                {todoDone ? '✓ 하나 해냈어요' : (suggestTodo ? '지금 하나만' : '🎯 오늘의 추천 미션')}
               </div>
               <div style={{
                 color: '#e2e8f0', fontSize: 14, fontWeight: 700, lineHeight: 1.35,

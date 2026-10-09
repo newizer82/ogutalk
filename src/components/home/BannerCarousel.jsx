@@ -89,7 +89,11 @@ export default function BannerCarousel({ onTabChange }) {
   }
 
   return (
-    <div style={{ marginBottom: 12 }}>
+    // 배너 영역만 옅은 주황 바탕 — 흰 카드가 흰 배경에 묻히지 않게 한다
+    <div style={{
+      marginBottom: 12, padding: '10px 10px 4px', borderRadius: 20,
+      background: '#FFF4EC', border: '1px solid #FFE1CE',
+    }}>
       <div
         ref={railRef}
         onScroll={onScroll}

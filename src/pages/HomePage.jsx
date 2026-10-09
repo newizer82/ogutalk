@@ -116,7 +116,7 @@ export default function HomePage({
         <span style={{ fontSize: 16, color: '#C7C7CC' }}>›</span>
       </button>
 
-      {/* ── 오늘의 미션 (접을 수 있음) ── */}
+      {/* ── 오늘의 추천 미션 (접을 수 있음) ── */}
       <MissionCard stage={lifeStage} collapsible />
 
       {/* ── 카드 2: 할일 현황 ── */}
