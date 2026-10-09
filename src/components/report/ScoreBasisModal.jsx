@@ -3,7 +3,7 @@ import { CATEGORIES, GROUPS, groupOf, labelOf, categoryForApp } from '../../data
 import { getUsage } from '../../lib/usageStats'
 import { minutesOf, formatMinutes } from '../../lib/alarmContext'
 
-// 점수를 매기려면 근거를 보여줘야 한다 — "무엇이 생산으로 잡혔나" 에 답하는 화면.
+// 점수를 매기려면 근거를 보여줘야 한다 — "오늘 시간이 어디로 갔나" 에 답하는 화면.
 // v1.10.1: 알람 팝업의 "다르게 기록" 을 없앤 대신, 잘못 잡힌 앱을 여기서 고친다.
 // 레코드에는 앱 이름이 없으므로(사용시간 원본을 저장하지 않는다는 제약),
 // 오늘 기록을 분류별로 펼쳐 보여주고, 앱별 수정값은 따로 관리한다.

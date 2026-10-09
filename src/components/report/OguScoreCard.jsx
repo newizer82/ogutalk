@@ -24,7 +24,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
   return (
     <div style={{
       background: '#FFFFFF',
-      border: '1px solid rgba(255,107,44,0.2)',
+      border: '1px solid #ECECEF',
       borderRadius: 20, padding: 20, marginBottom: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
@@ -124,7 +124,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
         💡 {advice}
       </div>
 
-      {/* 근거 — 점수를 매기려면 무엇이 생산으로 잡혔는지 보여줘야 한다 */}
+      {/* 근거 — 점수를 매기려면 무엇이 성장으로 잡혔는지 보여줘야 한다 */}
       <div style={{
         marginTop: 10, display: 'flex', justifyContent: 'space-between',
         alignItems: 'center', gap: 10, flexWrap: 'wrap',
@@ -142,7 +142,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
             }}
           >
-            무엇이 생산으로 잡혔나 →
+            오늘 시간이 어디로 갔나 →
           </button>
         )}
       </div>

@@ -40,7 +40,7 @@ export default function AlarmPopup({
   const showTodo = (suggestTodo || suggestMission) && mood?.mood !== 'focus' && !checkedIn
 
   // 자동 기록 모드에서는 고를 버튼이 없다 → 평소 상태에서 질문을 던지면 답할 곳이 없어 보인다
-  // 분류가 잡힌 자동 요약이 있으면 보여주기만 한다 (고치기는 리포트의 "무엇이 생산으로 잡혔나" 에서)
+  // 분류가 잡힌 자동 요약이 있으면 보여주기만 한다 (고치기는 리포트의 "오늘 시간이 어디로 갔나" 에서)
   const autoView = !!autoSummary && !!autoSummary.category
   const headline = {
     text:  autoView && mood?.mood !== 'binge' && mood?.mood !== 'focus' ? '지난 1시간' : moodHeadline(mood),
