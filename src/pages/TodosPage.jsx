@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import TextWithLinks from '../components/common/TextWithLinks'
 import { S } from '../styles/theme'
+import MissionCard from '../components/todos/MissionCard'
+import WeeklyGoalCard from '../components/todos/WeeklyGoalCard'
 
 function PremiumLock({ onUnlock }) {
   return (
@@ -94,7 +96,7 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
   )
 }
 
-export default function TodosPage({ todos = [], userId, isPremium, setIsPremium, onAdd, onToggle, onUpdate, onDelete }) {
+export default function TodosPage({ todos = [], userId, isPremium, setIsPremium, onAdd, onToggle, onUpdate, onDelete, lifeStage = null }) {
   const [showForm, setShowForm]   = useState(false)
   const [todoType, setTodoType]   = useState('weekly')  // 'weekly' | 'task'
   const [input, setInput]         = useState('')
@@ -164,6 +166,10 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
 
   return (
     <div>
+      {/* 오늘의 미션 — 내가 만든 할일과 섞지 않는다 (매일 3개씩 쌓이면 목록이 오염된다) */}
+      <MissionCard stage={lifeStage} />
+      <WeeklyGoalCard />
+
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>✅ 할일 관리</div>

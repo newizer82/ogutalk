@@ -8,10 +8,12 @@ import OguScoreCard from '../components/report/OguScoreCard'
 import { oguScore } from '../lib/oguScore'
 import ScoreBasisModal from '../components/report/ScoreBasisModal'
 import { todayLog, yesterdayScore, streakDays, saveDayScore } from '../lib/dayLog'
+import { todayMissions } from '../lib/missionStore'
+import { goalKeptThisWeek } from '../components/todos/WeeklyGoalCard'
 
 const pad = n => String(n).padStart(2, '0')
 
-export default function ReportsPage({ userId, autoCheckin = false, goals }) {
+export default function ReportsPage({ userId, autoCheckin = false, goals, lifeStage = null }) {
   const { reports, loading, error, generateReport } = useWeeklyReport(userId)
   const { checkins, todayCheckins, activityCount, hourCount, loading: checkinLoading } = useCheckinReport(userId)
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -22,15 +24,20 @@ export default function ReportsPage({ userId, autoCheckin = false, goals }) {
   const [basisOpen, setBasisOpen] = useState(false)
   const score = useMemo(() => {
     const log = todayLog()
+    const m = todayMissions(lifeStage)
     const r = oguScore({
-      checkins, doneCount: log.doneCount, actedOnAlarm: log.actedOnAlarm,
-      goals, measured: autoCheckin,
+      checkins, goals, measured: autoCheckin,
+      missionDone:  m.done.length,
+      missionTotal: m.missions.length,
+      todoDone:     log.doneCount,
+      goalKept:     goalKeptThisWeek(),
+      actedOnAlarm: log.actedOnAlarm,
     })
     // 하루가 거의 끝난 뒤의 점수만 저장한다 — 오전 점수를 그날 점수로 남기면
     // 내일의 "어제보다" 비교가 늘 과소평가된다.
     if (new Date().getHours() >= 21) saveDayScore(r.score)
     return r
-  }, [checkins, autoCheckin, goals])
+  }, [checkins, autoCheckin, goals, lifeStage])
   const prevScore = useMemo(() => yesterdayScore(), [])
   const streak    = useMemo(() => streakDays(), [score.score])
 

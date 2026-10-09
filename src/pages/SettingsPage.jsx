@@ -47,6 +47,7 @@ export default function SettingsPage({
   todoPct = 0,
   autoCheckin = false, setAutoCheckin,
   calendarSync = false, setCalendarSync,
+  lifeStage = null, setLifeStage,
   produceTarget = 120, setProduceTarget,
   consumeLimit = 120, setConsumeLimit,
 }) {
@@ -515,6 +516,7 @@ export default function SettingsPage({
       <ScoreGoalSection
         produceTarget={produceTarget} setProduceTarget={setProduceTarget}
         consumeLimit={consumeLimit} setConsumeLimit={setConsumeLimit}
+        lifeStage={lifeStage} setLifeStage={setLifeStage}
       />
 
       {/* ── 약관·정보 (제일 마지막에 배치) ── */}

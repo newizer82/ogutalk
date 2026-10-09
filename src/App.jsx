@@ -196,7 +196,7 @@ export default function App() {
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
   const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
-          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync } = settings
+          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync, lifeStage } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -214,6 +214,7 @@ export default function App() {
   const setAlarmMode   = v => updateSetting('alarmMode', v)
   const setAutoCheckin    = v => updateSetting('autoCheckin', v)
   const setCalendarSync   = v => updateSetting('calendarSync', v)
+  const setLifeStage      = v => updateSetting('lifeStage', v)
   const setProduceTarget  = v => updateSetting('produceTarget', v)
   const setConsumeLimit   = v => updateSetting('consumeLimit', v)
   const setLastBackfillAt = v => updateSetting('lastBackfillAt', v)
@@ -534,6 +535,7 @@ export default function App() {
         )}
         {activeTab === 'todos' && (
           <TodosPage
+            lifeStage={lifeStage}
             todos={activeTodos}
             userId={userId}  // ← 추가
             isPremium={isPremium}
@@ -580,7 +582,7 @@ export default function App() {
           />
         )}
         {activeTab === 'reports' && (
-          <ReportsPage userId={userId} autoCheckin={autoCheckin} goals={{ produceTarget, consumeLimit }} />
+          <ReportsPage userId={userId} autoCheckin={autoCheckin} goals={{ produceTarget, consumeLimit }} lifeStage={lifeStage} />
         )}
         {activeTab === 'settings' && (
           <SettingsPage
@@ -606,6 +608,8 @@ export default function App() {
             setAutoCheckin={setAutoCheckin}
             calendarSync={calendarSync}
             setCalendarSync={setCalendarSync}
+            lifeStage={lifeStage}
+            setLifeStage={setLifeStage}
             produceTarget={produceTarget}
             setProduceTarget={setProduceTarget}
             consumeLimit={consumeLimit}

@@ -12,8 +12,10 @@ import {
   pickUpcomingEvent, eventLine, shortPlace,
 } from '../src/lib/alarmContext.js'
 import {
-  oguScore, produceScore, restraintScore, actionScore, DEFAULT_GOALS,
+  oguScore, phoneScore, doneScore, nineMinutes, NINE, WEIGHTS,
 } from '../src/lib/oguScore.js'
+import { pickMissions, seedOf, dayOffsetKey } from '../src/lib/missionPick.js'
+import { MISSIONS, AREAS } from '../src/data/missions.js'
 
 const at = (h, m) => new Date(2026, 8, 20, h, m, 0, 0).getTime()
 
@@ -224,74 +226,6 @@ console.log('✓ checkinStore 검증 통과')
 }
 console.log('✓ alarmContext 검증 통과')
 
-// ── 오구 지수 ────────────────────────────────────────────────────
-{
-  const D = (h, m) => new Date(2026, 9, 8, h, m, 0, 0).getTime()
-  const now = D(22, 0)
-  const slot = (h, m, type) => ({ activity_type: type, created_at: new Date(D(h, m)).toISOString() })
-  // 자동 기록 1건 = 30분
-  const slots = (type, n, startH) => Array.from({ length: n }, (_, i) =>
-    slot(startH + Math.floor(i / 2), (i % 2) * 30, type))
-
-  // 생산 점수: 목표(120분) 대비 비율
-  assert.equal(produceScore(0), 0)
-  assert.equal(produceScore(60), 20)
-  assert.equal(produceScore(120), 40)
-  assert.equal(produceScore(300), 40, '목표를 넘겨도 만점까지만')
-
-  // 절제 점수: 한도 이하 만점, 초과 30분마다 -5
-  assert.equal(restraintScore(0), 30)
-  assert.equal(restraintScore(120), 30)
-  assert.equal(restraintScore(150), 25)
-  assert.equal(restraintScore(121), 25, '1분만 넘어도 한 칸 깎인다')
-  assert.equal(restraintScore(330), 0)
-  assert.equal(restraintScore(600), 0, '0점 아래로는 내려가지 않는다')
-
-  // 실행 점수: 할일 최대 3건 + 알람 반응
-  assert.equal(actionScore({}), 0)
-  assert.equal(actionScore({ doneCount: 2 }), 14)
-  assert.equal(actionScore({ doneCount: 9 }), 21, '할일은 3건까지만')
-  assert.equal(actionScore({ doneCount: 3, actedOnAlarm: true }), 30)
-
-  // 전체: 생산 2시간(4슬롯) + 소비 1시간(2슬롯) + 할일 2건 + 알람 반응
-  {
-    const r = oguScore({
-      checkins: [...slots('work', 4, 9), ...slots('video', 2, 20)],
-      doneCount: 2, actedOnAlarm: true, now,
-    })
-    assert.equal(r.parts.produce, 40)
-    assert.equal(r.parts.restraint, 30)
-    assert.equal(r.parts.action, 23)
-    assert.equal(r.score, 93)
-    assert.equal(r.grade, '오늘 잘 썼어요')
-  }
-
-  // 폰을 거의 안 쓴 날: 감점 대상이 아니다 (절제 만점, 생산은 0)
-  {
-    const r = oguScore({ checkins: [], now })
-    assert.equal(r.parts.restraint, 30, '폰을 안 쓴 시간은 벌점이 아니다')
-    assert.equal(r.score, 30)
-  }
-
-  // 소비만 5시간: 절제 0점, 조언은 소비를 짚는다
-  {
-    const r = oguScore({ checkins: slots('video', 10, 13), now })
-    assert.equal(r.parts.restraint, 0)
-    assert.ok(r.advice.includes('소비'), r.advice)
-    assert.equal(r.grade, '오늘은 쉬어간 날이에요')
-  }
-
-  // 목표를 사용자가 바꾸면 점수도 따라간다
-  assert.equal(
-    oguScore({ checkins: slots('work', 2, 9), goals: { produceTarget: 60, consumeLimit: 120 }, now }).parts.produce,
-    40, '목표 60분이면 1시간으로 만점')
-
-  // 만점이면 잔소리 대신 격려
-  assert.ok(oguScore({
-    checkins: [...slots('work', 4, 9)], doneCount: 3, actedOnAlarm: true, now,
-  }).advice.includes('내일도'))
-}
-console.log('✓ oguScore 검증 통과')
 
 // ── 스트릭 (dayLog 는 localStorage 를 쓰므로 최소 스텁으로 검증) ──
 {
@@ -420,3 +354,160 @@ console.log('✓ 캘린더 일정 검증 통과')
   assert.equal(shortPlace('  스타벅스 역삼점  , 서울'), '스타벅스 역삼점')
 }
 console.log('✓ shortPlace 검증 통과')
+
+// ── 오구 지수 5:9 ────────────────────────────────────────────────
+{
+  const D = (h, m) => new Date(2026, 9, 9, h, m, 0, 0).getTime()
+  const now = D(22, 0)
+  // 자동 기록 1건 = 30분
+  const slots = (type, n, startH) => Array.from({ length: n }, (_, i) => ({
+    activity_type: type,
+    created_at: new Date(D(startH + Math.floor(i / 2), (i % 2) * 30)).toISOString(),
+  }))
+
+  // 9분류에 소비(동영상·게임·검색)는 들어가지 않는다
+  assert.ok(NINE.includes('work') && NINE.includes('health') && NINE.includes('messenger'))
+  assert.ok(!NINE.includes('video') && !NINE.includes('game') && !NINE.includes('search'))
+  assert.equal(NINE.length, 9, `9분류여야 한다 (현재 ${NINE.length})`)
+
+  // 9 영역: 시간 35 + 다양성 15
+  {
+    // 업무 2시간(목표 달성) + 학습·운동·금융 각 30분 → 4칸 = 다양성 만점
+    const checkins = [...slots('work', 4, 9), ...slots('learning', 1, 13),
+                      ...slots('health', 1, 14), ...slots('finance', 1, 15)]
+    const p = phoneScore(checkins, { produceTarget: 120, consumeLimit: 120 }, now)
+    assert.equal(p.time, 35, '목표를 넘기면 시간 만점')
+    assert.equal(p.filled, 4)
+    assert.equal(p.variety, 15, '4칸이면 다양성 만점')
+    assert.equal(p.penalty, 0)
+    assert.equal(p.total, 50)
+  }
+  // 한 가지만 길게 하면 시간은 차도 다양성이 빈다
+  {
+    const p = phoneScore(slots('work', 8, 9), { produceTarget: 120, consumeLimit: 120 }, now)
+    assert.equal(p.time, 35)
+    assert.equal(p.variety, Math.round(15 / 4), '1칸이면 다양성 1/4')
+  }
+  // 소비 초과 감점은 10점까지만
+  {
+    const p = phoneScore([...slots('work', 4, 9), ...slots('video', 12, 13)],
+                         { produceTarget: 120, consumeLimit: 120 }, now)
+    assert.equal(p.penalty, 10, '초과가 아무리 커도 감점은 10점 상한')
+    assert.ok(p.total < 50)
+  }
+  // 폰을 안 쓴 날은 감점 없음 (0점일 뿐)
+  assert.equal(phoneScore([], {}, now).penalty, 0)
+
+  // 5 영역: 각 10점
+  {
+    const d = doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, goalKept: true, actedOnAlarm: true })
+    assert.equal(d.total, 50, '다섯 가지를 다 하면 50점')
+    const one = doneScore({ missionDone: 1, missionTotal: 3 })
+    assert.equal(one.parts.missionOne, 10)
+    assert.equal(one.parts.missionAll, 0, '3개 완주해야 두 번째 10점')
+    assert.equal(doneScore({}).total, 0)
+  }
+
+  // 전체: 5 와 9 가 반반
+  {
+    const r = oguScore({
+      checkins: [...slots('work', 4, 9), ...slots('learning', 1, 13),
+                 ...slots('health', 1, 14), ...slots('ai', 1, 15)],
+      goals: { produceTarget: 120, consumeLimit: 120 },
+      missionDone: 3, missionTotal: 3, todoDone: 2, goalKept: true, actedOnAlarm: true, now,
+    })
+    assert.equal(r.phone.total, 50)
+    assert.equal(r.done.total, 50)
+    assert.equal(r.score, 100)
+    assert.equal(r.grade, '오늘 잘 썼어요')
+  }
+
+  // 조언: 소비 초과 > 미션 > 할일 > 목표 순으로 "지금 바꿀 수 있는 것"
+  {
+    const over = oguScore({ checkins: slots('video', 12, 10), now })
+    assert.ok(over.advice.includes('샜어요'), over.advice)
+    const noMission = oguScore({ checkins: slots('work', 4, 9), missionDone: 1, now })
+    assert.ok(noMission.advice.includes('미션'), noMission.advice)
+    const noTodo = oguScore({ checkins: slots('work', 4, 9), missionDone: 3, now })
+    assert.ok(noTodo.advice.includes('할일'), noTodo.advice)
+  }
+
+  // nineMinutes: 그룹으로 기록된 수동 체크인은 다양성 칸에 넣지 않는다
+  {
+    const n = nineMinutes([...slots('produce', 2, 9), ...slots('work', 1, 11)], now)
+    assert.deepEqual(Object.keys(n), ['work'], '그룹 기록은 어느 칸인지 알 수 없다')
+  }
+  // 그래도 시간 점수에는 들어간다 (수동 기록이 버려지면 안 된다)
+  assert.ok(phoneScore(slots('produce', 4, 9), { produceTarget: 120 }, now).time > 0)
+}
+console.log('✓ 오구 지수 5:9 검증 통과')
+
+// ── 오늘의 미션 고르기 ───────────────────────────────────────────
+{
+  const day = '2026-10-09'
+  const areas = Object.keys(AREAS)
+
+  // 몸·정리·머리에서 하나씩
+  {
+    const picked = pickMissions(day, {}, null)
+    assert.equal(picked.length, 3)
+    assert.deepEqual(picked.map(m => m.area).sort(), [...areas].sort())
+  }
+  // 같은 날이면 몇 번을 돌려도 같은 결과 (렌더마다 바뀌면 안 된다)
+  assert.deepEqual(pickMissions(day, {}, null).map(m => m.id),
+                   pickMissions(day, {}, null).map(m => m.id))
+  // 날이 바뀌면 조합도 바뀐다
+  assert.notDeepEqual(pickMissions(day, {}, null).map(m => m.id),
+                      pickMissions('2026-10-10', {}, null).map(m => m.id))
+  // 셔플(salt)하면 다른 조합
+  assert.notDeepEqual(pickMissions(day, {}, null, 0).map(m => m.id),
+                      pickMissions(day, {}, null, 1).map(m => m.id))
+
+  // 생애주기를 안 고르면 전용 미션은 안 나온다
+  {
+    const ids = pickMissions(day, {}, null).map(m => m.id)
+    assert.ok(ids.every(id => !MISSIONS.find(m => m.id === id)?.stage))
+  }
+  // 고르면 해당 단계 미션만 섞인다 (남의 단계는 안 나온다)
+  {
+    const picked = pickMissions(day, {}, 'senior')
+    assert.ok(picked.every(m => !m.stage || m.stage === 'senior'))
+  }
+
+  // 최근 14일에 나온 미션은 다시 안 뽑는다
+  {
+    const first = pickMissions(day, {}, null)
+    const recent = Object.fromEntries(first.map(m => [m.id, day]))
+    const second = pickMissions('2026-10-10', { recent }, null)
+    assert.ok(second.every(m => !recent[m.id]), '최근 미션 재등장 금지')
+  }
+  // 15일 전 기록은 풀린다
+  {
+    const old = dayOffsetKey(day, -15)
+    const m0 = pickMissions(day, {}, null)[0]
+    const again = pickMissions(day, { recent: { [m0.id]: old } }, null)
+    assert.equal(again[0].id, m0.id, '14일이 지나면 다시 나올 수 있다')
+  }
+  // 3번 건너뛴 미션은 제외
+  {
+    const m0 = pickMissions(day, {}, null)[0]
+    const after = pickMissions(day, { skips: { [m0.id]: 3 } }, null)
+    assert.notEqual(after[0].id, m0.id)
+    assert.equal(after.length, 3, '제외해도 세 개는 채운다')
+  }
+  // 풀이 말라도 빈칸을 만들지 않는다
+  {
+    const allRecent = Object.fromEntries(MISSIONS.map(m => [m.id, day]))
+    assert.equal(pickMissions(day, { recent: allRecent }, null).length, 3)
+  }
+
+  // id 중복 금지 (최근 기록·건너뛴 횟수가 id 로 남는다)
+  {
+    const ids = MISSIONS.map(m => m.id)
+    assert.equal(new Set(ids).size, ids.length)
+    assert.ok(MISSIONS.length >= 55, `미션 수 ${MISSIONS.length}`)
+  }
+  assert.equal(seedOf('2026-10-09'), seedOf('2026-10-09'))
+  assert.equal(dayOffsetKey('2026-03-01', -1), '2026-02-28')
+}
+console.log('✓ 오늘의 미션 검증 통과')

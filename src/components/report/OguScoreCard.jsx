@@ -3,10 +3,13 @@ import { formatMinutes } from '../../lib/alarmContext'
 import { WEIGHTS } from '../../lib/oguScore'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
-const PARTS = [
-  { key: 'produce',   label: '생산 시간', color: GROUPS.produce.color },
-  { key: 'restraint', label: '절제',      color: GROUPS.consume.color },
-  { key: 'action',    label: '실행',      color: GROUPS.connect.color },
+// 이름 그대로 5 : 9 구조로 보여준다 (매시 59분)
+const DONE_ITEMS = [
+  { key: 'missionOne',  label: '미션 1개' },
+  { key: 'missionAll',  label: '미션 완주' },
+  { key: 'todoDone',    label: '내 할일' },
+  { key: 'goalKept',    label: '이번 주 목표' },
+  { key: 'alarmAnswer', label: '알람 응답' },
 ]
 
 const SIZE = 132, STROKE = 11
@@ -15,7 +18,7 @@ const C = 2 * Math.PI * R
 
 export default function OguScoreCard({ result, yesterday = null, streak = 0, onOpenApps }) {
   if (!result) return null
-  const { score, parts, grade, color, advice, byGroup, measured, measuredMinutes } = result
+  const { score, phone, done, grade, color, advice, byGroup, measured, measuredMinutes } = result
   const diff = yesterday === null ? null : score - yesterday
 
   return (
@@ -65,25 +68,50 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 12 }}>
-            {PARTS.map(p => (
-              <div key={p.key}>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  fontSize: 12, color: '#94a3b8', marginBottom: 3,
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  <span>{p.label}</span>
-                  <span>{parts[p.key]} / {WEIGHTS[p.key]}</span>
-                </div>
-                <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
-                  <div style={{
-                    width: `${(parts[p.key] / WEIGHTS[p.key]) * 100}%`, height: '100%',
-                    borderRadius: 3, background: p.color, transition: 'width .5s ease',
-                  }} />
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 12 }}>
+            {/* 9 — 폰으로 한 생산 활동 */}
+            <div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', fontSize: 12,
+                color: '#94a3b8', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
+              }}>
+                <span>📱 폰 활용 <span style={{ color: '#64748b' }}>9분류</span></span>
+                <span>{phone.total} / 50</span>
               </div>
-            ))}
+              <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+                <div style={{
+                  width: `${(phone.total / 50) * 100}%`, height: '100%', borderRadius: 3,
+                  background: GROUPS.produce.color, transition: 'width .5s ease',
+                }} />
+              </div>
+              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+                시간 {phone.time}/{WEIGHTS.time} · 다양성 {phone.filled}칸 {phone.variety}/{WEIGHTS.variety}
+                {phone.penalty > 0 && <span style={{ color: '#fb923c' }}> · 소비 −{phone.penalty}</span>}
+              </div>
+            </div>
+
+            {/* 5 — 내가 해낸 것 */}
+            <div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', fontSize: 12,
+                color: '#94a3b8', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
+              }}>
+                <span>✅ 해낸 것 <span style={{ color: '#64748b' }}>5가지</span></span>
+                <span>{done.total} / 50</span>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {DONE_ITEMS.map(it => (
+                  <div key={it.key} style={{
+                    flex: 1, height: 6, borderRadius: 3,
+                    background: done.parts[it.key] ? GROUPS.connect.color : 'rgba(255,255,255,0.08)',
+                    transition: 'background .3s ease',
+                  }} />
+                ))}
+              </div>
+              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+                {DONE_ITEMS.filter(it => done.parts[it.key]).map(it => it.label).join(' · ') || '아직 없어요'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
