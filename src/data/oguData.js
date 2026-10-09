@@ -1,6 +1,6 @@
 // ── 오구 사운드 톤 설정
 export const OGU_TONES = {
-  오구: { label: '오구',  emoji: '⏱️', desc: '벌써 이 시간이!',  color: '#FFB37A' },
+  오구: { label: '오구',  emoji: '⏱️', desc: '벌써 이 시간이!',  color: '#D9531B' },
   여유: { label: '여유',  emoji: '😌', desc: '느리고 부드럽게',  color: '#1E7A58' },
   바쁨: { label: '바쁨',  emoji: '⚡', desc: '빠르고 긴박하게',  color: '#B4740F' },
   유쾌: { label: '유쾌',  emoji: '😄', desc: '밝고 경쾌하게',    color: '#D9531B' },

@@ -89,7 +89,7 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
         {/* 삭제 */}
         <span
           onClick={() => onDelete(todo.id)}
-          style={{ color: '#F1F1F4', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+          style={{ color: '#9A9AA0', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
         >×</span>
       </div>
     </GlassCard>
@@ -253,7 +253,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
         <>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#B4740F', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>📌 기한 있는 할일</span>
-            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({tasks.length})</span>
+            <span style={{ color: '#9A9AA0', fontWeight: 400 }}>({tasks.length})</span>
           </div>
           {tasks.map(t => (
             <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
@@ -266,10 +266,10 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
         <>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#D9531B', margin: tasks.length > 0 ? '16px 0 8px' : '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>📅 이번 주 할일</span>
-            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({weekly.length})</span>
+            <span style={{ color: '#9A9AA0', fontWeight: 400 }}>({weekly.length})</span>
           </div>
           {weekly.length === 0 ? (
-            <div style={{ color: '#F1F1F4', fontSize: 12, textAlign: 'center', padding: '16px 0', marginBottom: 8 }}>
+            <div style={{ color: '#9A9AA0', fontSize: 12, textAlign: 'center', padding: '16px 0', marginBottom: 8 }}>
               주간 할일을 추가해보세요
             </div>
           ) : (
@@ -285,7 +285,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
         <>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#1E7A58', margin: '16px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>✅ 완료됨</span>
-            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({completed.length})</span>
+            <span style={{ color: '#9A9AA0', fontWeight: 400 }}>({completed.length})</span>
           </div>
           {completed.map(t => (
             <TodoItem key={t.id} todo={t} onToggle={onToggle} onDelete={onDelete} />

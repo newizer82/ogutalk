@@ -202,8 +202,8 @@ export default function SettingsPage({
             style={{
               padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: '2px solid rgba(192,132,252,0.5)',
-              background: 'rgba(192,132,252,0.12)',
-              color: '#FFB37A', width: '100%',
+              background: 'rgba(255,107,44,0.1)',
+              color: '#D9531B', width: '100%',
               display: 'flex', alignItems: 'center', gap: 12,
             }}
           >

@@ -269,7 +269,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
               <div style={{ color: '#B4740F', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
                 💡 다음 주 제안
               </div>
-              <div style={{ color: '#fef3c7', fontSize: 14, lineHeight: 1.7 }}>
+              <div style={{ color: '#111111', fontSize: 14, lineHeight: 1.7 }}>
                 {report.suggestions}
               </div>
             </GlassCard>
@@ -423,7 +423,7 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
                   )
                 })}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#F1F1F4', fontSize: 8, marginTop: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9A9AA0', fontSize: 8, marginTop: 3 }}>
                 <span>00시</span><span>12시</span><span>23시</span>
               </div>
             </div>
