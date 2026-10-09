@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
+
+// 버전 표기의 단일 출처는 android/app/build.gradle 의 versionName 이다.
+// 화면에 따로 적어두면 빌드 버전과 어긋난다(실제로 v1.7.0 으로 멈춰 있었다).
+const APP_VERSION = (readFileSync('android/app/build.gradle', 'utf8')
+  .match(/versionName\s+"([^"]+)"/)?.[1]) ?? '0.0.0'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   esbuild: { drop: ['console', 'debugger'] },   // production 빌드에서 자동 제거
   plugins: [
     react(),
