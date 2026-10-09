@@ -14,7 +14,7 @@ const styles = {
     width: 22,
     height: 22,
     borderRadius: '50%',
-    border: `2px solid ${done ? theme.status.success : '#475569'}`,
+    border: `2px solid ${done ? theme.status.success : '#B0B0B6'}`,
     background: done ? theme.status.success : 'transparent',
     display: 'flex',
     alignItems: 'center',
@@ -33,7 +33,7 @@ const styles = {
   deleteBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#475569',
+    color: '#B0B0B6',
     fontSize: 18,
     cursor: 'pointer',
     padding: '0 2px',
@@ -45,7 +45,7 @@ export default function TodoItem({ todo, onToggle, onDelete }) {
   return (
     <div style={styles.item}>
       <div style={styles.checkbox(todo.completed)} onClick={() => onToggle(todo.id, todo.completed)}>
-        {todo.completed && <span style={{ color: '#0f172a', fontSize: 13, fontWeight: 800 }}>✓</span>}
+        {todo.completed && <span style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 800 }}>✓</span>}
       </div>
       <span style={styles.title(todo.completed)}>{todo.title}</span>
       <button style={styles.deleteBtn} onClick={() => onDelete(todo.id)}>×</button>

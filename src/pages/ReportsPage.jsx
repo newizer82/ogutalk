@@ -61,14 +61,14 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
         />
         <div style={{
           marginTop: 8, padding: '14px 18px', borderRadius: 14, textAlign: 'center',
-          background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)',
+          background: 'rgba(255,107,44,0.06)', border: '1px solid rgba(255,107,44,0.12)',
         }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>📊</div>
-          <div style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>주간 리포트</div>
-          <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}>
+          <div style={{ color: '#8E8E93', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>주간 리포트</div>
+          <div style={{ color: '#9A9AA0', fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}>
             로그인하면 할일·활동 패턴을<br />자동 분석한 주간 리포트를 받을 수 있어요.
           </div>
-          <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 700 }}>
+          <div style={{ color: '#D9531B', fontSize: 12, fontWeight: 700 }}>
             🔐 설정 탭에서 로그인해주세요
           </div>
         </div>
@@ -94,8 +94,8 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
       {/* ── 주간 리포트 헤더 ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>📊 주간 리포트</div>
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>나의 한 주를 자동 분석합니다</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#3A3A3E' }}>📊 주간 리포트</div>
+          <div style={{ fontSize: 11, color: '#B0B0B6', marginTop: 2 }}>나의 한 주를 자동 분석합니다</div>
         </div>
         <button
           onClick={handleGenerate}
@@ -118,11 +118,11 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
           marginBottom: 12, padding: '14px 16px', borderRadius: 14,
           background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
         }}>
-          <div style={{ color: '#f87171', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ 리포트 생성 실패</div>
+          <div style={{ color: '#D23B2E', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ 리포트 생성 실패</div>
           <div style={{ color: '#fca5a5', fontSize: 12, lineHeight: 1.6 }}>{error}</div>
-          <div style={{ color: '#64748b', fontSize: 11, marginTop: 8, lineHeight: 1.6 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 11, marginTop: 8, lineHeight: 1.6 }}>
             💡 Supabase 대시보드 → SQL Editor에서<br />
-            <code style={{ color: '#818cf8', fontSize: 10 }}>v0.7.0_weekly_reports.sql</code> 마이그레이션이 실행됐는지 확인하세요.
+            <code style={{ color: '#D9531B', fontSize: 10 }}>v0.7.0_weekly_reports.sql</code> 마이그레이션이 실행됐는지 확인하세요.
           </div>
         </div>
       )}
@@ -131,7 +131,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
       {!loading && reports.length === 0 && !error && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div style={{ fontSize: 52, marginBottom: 12 }}>📊</div>
-          <div style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
             아직 리포트가 없어요.<br />
             버튼을 눌러 이번 주 리포트를 생성해보세요!
           </div>
@@ -160,9 +160,9 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
                 padding: '5px 12px', borderRadius: 20, border: 'none',
                 fontSize: 11, fontWeight: 600, cursor: 'pointer',
                 background: selectedIdx === i
-                  ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
-                  : 'rgba(255,255,255,0.06)',
-                color: selectedIdx === i ? 'white' : '#64748b',
+                  ? 'linear-gradient(135deg,#FF6B2C,#E8762C)'
+                  : 'rgba(0,0,0,0.035)',
+                color: selectedIdx === i ? 'white' : '#9A9AA0',
               }}
             >
               {r.year}년 {r.week_number}주차
@@ -183,18 +183,18 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
             }}>
               {report.year}년 {report.week_number}주차
             </div>
-            <div style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: '#B0B0B6', fontSize: 11, marginTop: 2 }}>
               {report.start_date} ~ {report.end_date}
             </div>
           </div>
 
           {/* 완료율 요약 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-            <StatBox label="할일 완료율" value={`${report.completion_rate}%`} color="#a78bfa" />
+            <StatBox label="할일 완료율" value={`${report.completion_rate}%`} color="#FFA05C" />
             <StatBox
               label="완료 / 전체"
               value={`${report.todos_completed} / ${report.todos_total}`}
-              color="#34d399"
+              color="#1E7A58"
             />
           </div>
 
@@ -214,14 +214,14 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
                 return (
                   <div key={key} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ color: '#cbd5e1', fontSize: 12 }}>
+                      <span style={{ color: '#3A3A3E', fontSize: 12 }}>
                         {labelOf(key)}
                       </span>
-                      <span style={{ color: '#64748b', fontSize: 11 }}>
+                      <span style={{ color: '#9A9AA0', fontSize: 11 }}>
                         {hours > 0 ? `${hours}시간 ` : ''}{m}분
                       </span>
                     </div>
-                    <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ height: 5, borderRadius: 3, background: 'rgba(0,0,0,0.035)' }}>
                       <div style={{
                         width: `${pct}%`, height: '100%', borderRadius: 3,
                         background: colorOf(key),
@@ -237,10 +237,10 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
           {/* 하이라이트 */}
           {report.highlights && (
             <GlassCard style={{ marginBottom: 12, padding: 20 }}>
-              <div style={{ color: '#a78bfa', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ color: '#FFA05C', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
                 ✨ 이번 주 하이라이트
               </div>
-              <div style={{ color: '#e2e8f0', fontSize: 14, lineHeight: 1.7 }}>
+              <div style={{ color: '#111111', fontSize: 14, lineHeight: 1.7 }}>
                 {report.highlights}
               </div>
             </GlassCard>
@@ -249,10 +249,10 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
           {/* 스토리 */}
           {report.story && (
             <GlassCard style={{ marginBottom: 12, padding: 20 }}>
-              <div style={{ color: '#fbbf24', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ color: '#B4740F', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
                 📖 이번 주 이야기
               </div>
-              <div style={{ color: '#e2e8f0', fontSize: 14, lineHeight: 1.7 }}>
+              <div style={{ color: '#111111', fontSize: 14, lineHeight: 1.7 }}>
                 {report.story}
               </div>
             </GlassCard>
@@ -266,7 +266,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
               background: 'rgba(251,191,36,0.06)',
               border: '1px solid rgba(251,191,36,0.18)',
             }}>
-              <div style={{ color: '#fbbf24', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ color: '#B4740F', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>
                 💡 다음 주 제안
               </div>
               <div style={{ color: '#fef3c7', fontSize: 14, lineHeight: 1.7 }}>
@@ -286,7 +286,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
 function StatBox({ label, value, color }) {
   return (
     <GlassCard style={{ textAlign: 'center', padding: 14 }}>
-      <div style={{ color: '#475569', fontSize: 10, marginBottom: 6 }}>{label}</div>
+      <div style={{ color: '#B0B0B6', fontSize: 10, marginBottom: 6 }}>{label}</div>
       <div style={{ color, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{value}</div>
     </GlassCard>
   )
@@ -299,10 +299,10 @@ function DistributionBar({ item, total, height }) {
     <div style={{ marginBottom: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
         {/* 라벨 앞 이모지는 따로 붙이므로 떼어낸다 */}
-        <span style={{ color: '#cbd5e1', fontSize: 11 }}>{item.emoji} {item.label.replace(/^[^\s]+ /, '')}</span>
-        <span style={{ color: '#64748b', fontSize: 10 }}>{item.count}회 ({pct}%)</span>
+        <span style={{ color: '#3A3A3E', fontSize: 11 }}>{item.emoji} {item.label.replace(/^[^\s]+ /, '')}</span>
+        <span style={{ color: '#9A9AA0', fontSize: 10 }}>{item.count}회 ({pct}%)</span>
       </div>
-      <div style={{ height, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
+      <div style={{ height, borderRadius: 3, background: 'rgba(0,0,0,0.035)' }}>
         <div style={{
           width: `${pct}%`, height: '100%', borderRadius: 3,
           background: item.color,
@@ -344,23 +344,23 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>⏱️ 오구 체크인 기록</div>
-          <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 1주일)</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E' }}>⏱️ 오구 체크인 기록</div>
+          <div style={{ fontSize: 10, color: '#B0B0B6', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 1주일)</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#818cf8', lineHeight: 1 }}>{total}</div>
-          <div style={{ fontSize: 9, color: '#475569', marginTop: 2 }}>총 체크인</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#D9531B', lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: 9, color: '#B0B0B6', marginTop: 2 }}>총 체크인</div>
         </div>
       </div>
 
       {loading && (
-        <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, padding: '20px 0' }}>⏳ 불러오는 중...</div>
+        <div style={{ textAlign: 'center', color: '#B0B0B6', fontSize: 12, padding: '20px 0' }}>⏳ 불러오는 중...</div>
       )}
 
       {!loading && total === 0 && (
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>⏱️</div>
-          <div style={{ color: '#475569', fontSize: 12 }}>
+          <div style={{ color: '#B0B0B6', fontSize: 12 }}>
             아직 체크인 기록이 없어요.<br />
             알람이 울릴 때 활동을 선택해보세요!
           </div>
@@ -373,14 +373,14 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
           {todayTotal > 0 && (
             <div style={{
               marginBottom: 14, padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+              background: 'rgba(255,107,44,0.08)', border: '1px solid rgba(255,107,44,0.14)',
               display: 'flex', alignItems: 'center', gap: 10,
             }}>
               <span style={{ fontSize: 18 }}>📅</span>
               <div style={{ minWidth: 0 }}>
-                <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 700 }}>오늘 체크인 {todayTotal}회</div>
+                <div style={{ color: '#D9531B', fontSize: 12, fontWeight: 700 }}>오늘 체크인 {todayTotal}회</div>
                 <div style={{
-                  color: '#475569', fontSize: 10, marginTop: 2,
+                  color: '#B0B0B6', fontSize: 10, marginTop: 2,
                   lineHeight: 1.8, wordBreak: 'break-all', whiteSpace: 'normal',
                 }}>
                   {todayCheckins.map(c => emojiOf(c.activity_type)).join('  ')}
@@ -391,14 +391,14 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
 
           {/* 그룹 분포 — "의도적이었나(생산), 순삭이었나(소비)"가 한눈에 보이는 헤드라인 */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동 분포</div>
+            <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동 분포</div>
             {groups.map(a => <DistributionBar key={a.key} item={a} total={groupedTotal} height={6} />)}
           </div>
 
           {/* 세부 분포 — 자동 기록이 있을 때만 */}
           {details.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>🔎 세부 (앱 사용 기준)</div>
+              <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>🔎 세부 (앱 사용 기준)</div>
               {details.map(a => <DistributionBar key={a.key} item={a} total={groupedTotal} height={4} />)}
             </div>
           )}
@@ -406,7 +406,7 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
           {/* 시간대별 히트맵 (6~23시) */}
           {Object.keys(hourCount).length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>🕐 시간대별 알람 활동</div>
+              <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 6 }}>🕐 시간대별 알람 활동</div>
               <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 28 }}>
                 {Array.from({ length: 24 }, (_, h) => {
                   const cnt = hourCount[h] || 0
@@ -417,13 +417,13 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
                       height: cnt > 0 ? `${Math.round(heightPct * 24)}px` : '4px',
                       background: cnt > 0
                         ? `rgba(129,140,248,${0.3 + heightPct * 0.7})`
-                        : 'rgba(255,255,255,0.04)',
+                        : 'rgba(0,0,0,0.025)',
                       transition: 'height 0.3s ease',
                     }} />
                   )
                 })}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155', fontSize: 8, marginTop: 3 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#F1F1F4', fontSize: 8, marginTop: 3 }}>
                 <span>00시</span><span>12시</span><span>23시</span>
               </div>
             </div>

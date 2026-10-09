@@ -23,8 +23,8 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
 
   return (
     <div style={{
-      background: 'linear-gradient(180deg, rgba(99,102,241,0.12), rgba(30,41,59,0.35))',
-      border: '1px solid rgba(99,102,241,0.28)',
+      background: '#FFFFFF',
+      border: '1px solid rgba(255,107,44,0.2)',
       borderRadius: 20, padding: 20, marginBottom: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
@@ -32,7 +32,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
         <div style={{ position: 'relative', width: SIZE, height: SIZE, flexShrink: 0 }}>
           <svg width={SIZE} height={SIZE} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
             <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none"
-              stroke="rgba(255,255,255,0.08)" strokeWidth={STROKE} />
+              stroke="rgba(0,0,0,0.05)" strokeWidth={STROKE} />
             <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none"
               stroke={color} strokeWidth={STROKE} strokeLinecap="round"
               strokeDasharray={C} strokeDashoffset={C * (1 - score / 100)}
@@ -45,24 +45,24 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
             <div style={{ fontSize: 38, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {score}
             </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>오구 지수</div>
+            <div style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>오구 지수</div>
           </div>
         </div>
 
         {/* 등급 · 어제 대비 · 세 칸 */}
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{grade}</span>
+            <span style={{ fontSize: 17, fontWeight: 800, color: '#111111' }}>{grade}</span>
             {streak >= 2 && (
               <span style={{
-                fontSize: 12, fontWeight: 800, color: '#fbbf24',
-                background: 'rgba(251,191,36,0.12)', padding: '2px 8px', borderRadius: 99,
+                fontSize: 12, fontWeight: 800, color: '#B4740F',
+                background: 'rgba(242,153,74,0.14)', padding: '2px 8px', borderRadius: 99,
               }}>
                 🔥 {streak}일 연속
               </span>
             )}
             {diff !== null && (
-              <span style={{ fontSize: 13, fontWeight: 700, color: diff >= 0 ? '#34d399' : '#f87171' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: diff >= 0 ? '#1E7A58' : '#D23B2E' }}>
                 어제보다 {diff >= 0 ? '▲' : '▼'}{Math.abs(diff)}
               </span>
             )}
@@ -73,20 +73,20 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
             <div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
-                color: '#94a3b8', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
+                color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>📱 폰 활용 <span style={{ color: '#64748b' }}>9분류</span></span>
+                <span>📱 폰 활용 <span style={{ color: '#9A9AA0' }}>9분류</span></span>
                 <span>{phone.total} / 50</span>
               </div>
-              <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+              <div style={{ height: 6, borderRadius: 3, background: 'rgba(0,0,0,0.05)' }}>
                 <div style={{
                   width: `${(phone.total / 50) * 100}%`, height: '100%', borderRadius: 3,
                   background: GROUPS.produce.color, transition: 'width .5s ease',
                 }} />
               </div>
-              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+              <div style={{ color: '#9A9AA0', fontSize: 11, marginTop: 4 }}>
                 시간 {phone.time}/{WEIGHTS.time} · 다양성 {phone.filled}칸 {phone.variety}/{WEIGHTS.variety}
-                {phone.penalty > 0 && <span style={{ color: '#fb923c' }}> · 소비 −{phone.penalty}</span>}
+                {phone.penalty > 0 && <span style={{ color: '#C2521C' }}> · 소비 −{phone.penalty}</span>}
               </div>
             </div>
 
@@ -94,21 +94,21 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
             <div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
-                color: '#94a3b8', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
+                color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>✅ 해낸 것 <span style={{ color: '#64748b' }}>5가지</span></span>
+                <span>✅ 해낸 것 <span style={{ color: '#9A9AA0' }}>5가지</span></span>
                 <span>{done.total} / 50</span>
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
                 {DONE_ITEMS.map(it => (
                   <div key={it.key} style={{
                     flex: 1, height: 6, borderRadius: 3,
-                    background: done.parts[it.key] ? GROUPS.connect.color : 'rgba(255,255,255,0.08)',
+                    background: done.parts[it.key] ? GROUPS.connect.color : 'rgba(0,0,0,0.05)',
                     transition: 'background .3s ease',
                   }} />
                 ))}
               </div>
-              <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+              <div style={{ color: '#9A9AA0', fontSize: 11, marginTop: 4 }}>
                 {DONE_ITEMS.filter(it => done.parts[it.key]).map(it => it.label).join(' · ') || '아직 없어요'}
               </div>
             </div>
@@ -119,7 +119,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
       {/* 조언 한 줄 — 세 줄짜리 잔소리는 아무도 읽지 않는다 */}
       <div style={{
         marginTop: 16, padding: '11px 13px', borderRadius: 12,
-        background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', fontSize: 13, lineHeight: 1.5,
+        background: 'rgba(0,0,0,0.03)', color: '#3A3A3E', fontSize: 13, lineHeight: 1.5,
       }}>
         💡 {advice}
       </div>
@@ -129,7 +129,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
         marginTop: 10, display: 'flex', justifyContent: 'space-between',
         alignItems: 'center', gap: 10, flexWrap: 'wrap',
       }}>
-        <div style={{ color: '#64748b', fontSize: 12 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 12 }}>
           오늘 측정 {formatMinutes(measuredMinutes)} · {labelOf('produce')} {formatMinutes(byGroup.produce)} · {labelOf('consume')} {formatMinutes(byGroup.consume)}
           {!measured && ' · 추정치'}
         </div>
@@ -137,8 +137,8 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
           <button
             onClick={onOpenApps}
             style={{
-              border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)',
-              color: '#cbd5e1', fontSize: 12, fontWeight: 700,
+              border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.03)',
+              color: '#3A3A3E', fontSize: 12, fontWeight: 700,
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
             }}
           >
@@ -148,7 +148,7 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
       </div>
 
       {!measured && (
-        <div style={{ marginTop: 8, color: '#fb923c', fontSize: 12 }}>
+        <div style={{ marginTop: 8, color: '#C2521C', fontSize: 12 }}>
           자동 활동 기록이 꺼져 있어 체크인만으로 계산했어요. 켜면 실제 사용시간으로 잽니다.
         </div>
       )}

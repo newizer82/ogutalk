@@ -44,15 +44,15 @@ export default function AuthCallbackPage() {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+      background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
     }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>⏱️</div>
       <div style={{
         fontSize: 22, fontWeight: 800, marginBottom: 8,
-        background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)',
+        background: 'linear-gradient(135deg, #D9531B, #FFA05C, #FFB37A)',
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
       }}>오구톡</div>
-      <div style={{ color: '#94a3b8', fontSize: 14, marginTop: 8 }}>{status}</div>
+      <div style={{ color: '#8E8E93', fontSize: 14, marginTop: 8 }}>{status}</div>
     </div>
   )
 }

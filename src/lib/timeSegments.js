@@ -18,10 +18,10 @@ export function getTimeSegment(hour) {
 
 // 화면 렌더 순서 + 라벨 + 색상 (다크 테마 톤)
 export const TIME_SEGMENTS = [
-  { key: 'morning', label: '🌅 아침',    range: '05–08시', color: '#fb923c' },
-  { key: 'am',      label: '🌞 오전',    range: '09–11시', color: '#fbbf24' },
-  { key: 'pm',      label: '☀️ 오후',   range: '12–17시', color: '#6366f1' },
-  { key: 'evening', label: '🌙 저녁·밤', range: '18–04시', color: '#8b5cf6' },
+  { key: 'morning', label: '🌅 아침',    range: '05–08시', color: '#C2521C' },
+  { key: 'am',      label: '🌞 오전',    range: '09–11시', color: '#B4740F' },
+  { key: 'pm',      label: '☀️ 오후',   range: '12–17시', color: '#FF6B2C' },
+  { key: 'evening', label: '🌙 저녁·밤', range: '18–04시', color: '#E8762C' },
 ]
 
 // 알람 배열을 4구간으로 그룹핑 + 각 그룹 내부는 시간 오름차순 정렬

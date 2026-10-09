@@ -68,19 +68,19 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 420, maxHeight: '82vh', overflowY: 'auto',
-          background: '#0f172a', border: '1px solid rgba(99,102,241,0.3)',
+          background: '#FFFFFF', border: '1px solid rgba(255,107,44,0.22)',
           borderRadius: '20px 20px 14px 14px', padding: 20,
         }}
       >
-        <div style={{ fontSize: 17, fontWeight: 900, color: '#f1f5f9', marginBottom: 4 }}>
+        <div style={{ fontSize: 17, fontWeight: 900, color: '#111111', marginBottom: 4 }}>
           오늘 무엇이 잡혔나
         </div>
-        <div style={{ color: '#64748b', fontSize: 12, marginBottom: 16 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 12, marginBottom: 16 }}>
           오구 지수는 아래 기록으로 계산했어요. 자동 기록 1칸은 30분입니다.
         </div>
 
         {rows.length === 0 ? (
-          <div style={{ color: '#64748b', fontSize: 13, padding: '18px 0' }}>
+          <div style={{ color: '#9A9AA0', fontSize: 13, padding: '18px 0' }}>
             오늘 기록이 아직 없어요.
           </div>
         ) : (
@@ -89,18 +89,18 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
               <div key={r.type} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 12px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(0,0,0,0.025)',
               }}>
                 <span style={{
                   width: 8, height: 8, borderRadius: 4, flexShrink: 0,
-                  background: GROUPS[r.group]?.color ?? '#64748b',
+                  background: GROUPS[r.group]?.color ?? '#9A9AA0',
                 }} />
-                <span style={{ flex: 1, color: '#e2e8f0', fontSize: 14, fontWeight: 600 }}>
+                <span style={{ flex: 1, color: '#111111', fontSize: 14, fontWeight: 600 }}>
                   {labelOf(r.type)}
                 </span>
-                <span style={{ color: '#94a3b8', fontSize: 12 }}>{labelOf(r.group)}</span>
+                <span style={{ color: '#8E8E93', fontSize: 12 }}>{labelOf(r.group)}</span>
                 <span style={{
-                  color: '#cbd5e1', fontSize: 13, fontWeight: 700, minWidth: 60,
+                  color: '#3A3A3E', fontSize: 13, fontWeight: 700, minWidth: 60,
                   textAlign: 'right', fontVariantNumeric: 'tabular-nums',
                 }}>
                   {formatMinutes(r.min)}
@@ -113,10 +113,10 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
         {/* 오늘 많이 쓴 앱 — 여기서 분류를 고치면 다음부터 그 앱에 자동 적용된다 */}
         {apps.length > 0 && (
           <>
-            <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 2 }}>
+            <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#111111', marginBottom: 2 }}>
               오늘 많이 쓴 앱
             </div>
-            <div style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>
+            <div style={{ color: '#9A9AA0', fontSize: 12, marginBottom: 8 }}>
               분류가 틀렸다면 바꿔주세요. 다음부터 그 앱에 자동으로 적용돼요.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -125,35 +125,35 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
                 return (
                   <div key={a.pkg} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.04)',
+                    padding: '8px 10px', borderRadius: 10, background: 'rgba(0,0,0,0.025)',
                   }}>
                     <span style={{
-                      flex: 1, minWidth: 0, color: '#e2e8f0', fontSize: 13, fontWeight: 600,
+                      flex: 1, minWidth: 0, color: '#111111', fontSize: 13, fontWeight: 600,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {a.label}
                     </span>
-                    <span style={{ color: '#64748b', fontSize: 11, flexShrink: 0 }}>
+                    <span style={{ color: '#9A9AA0', fontSize: 11, flexShrink: 0 }}>
                       {Math.round(a.seconds / 60)}분
                     </span>
                     <select
                       value={cat ?? ''}
                       onChange={e => changeOverride(a.pkg, e.target.value)}
                       style={{
-                        background: 'rgba(255,255,255,0.06)', color: cat ? '#e2e8f0' : '#fb923c',
-                        border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                        background: 'rgba(0,0,0,0.035)', color: cat ? '#111111' : '#C2521C',
+                        border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8,
                         padding: '5px 6px', fontSize: 12, maxWidth: 130,
                       }}
                     >
-                      {!cat && <option value="" style={{ background: '#0f172a' }}>미분류</option>}
-                      <optgroup label="그룹" style={{ background: '#0f172a' }}>
+                      {!cat && <option value="" style={{ background: '#FFFFFF' }}>미분류</option>}
+                      <optgroup label="그룹" style={{ background: '#FFFFFF' }}>
                         {Object.entries(GROUPS).map(([id, g]) => (
-                          <option key={id} value={id} style={{ background: '#0f172a' }}>{g.label}</option>
+                          <option key={id} value={id} style={{ background: '#FFFFFF' }}>{g.label}</option>
                         ))}
                       </optgroup>
-                      <optgroup label="세부" style={{ background: '#0f172a' }}>
+                      <optgroup label="세부" style={{ background: '#FFFFFF' }}>
                         {Object.entries(CATEGORIES).map(([id, c]) => (
-                          <option key={id} value={id} style={{ background: '#0f172a' }}>{c.label}</option>
+                          <option key={id} value={id} style={{ background: '#FFFFFF' }}>{c.label}</option>
                         ))}
                       </optgroup>
                     </select>
@@ -165,11 +165,11 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
         )}
 
         {/* 내가 고친 앱 분류 — 지금까지는 알람 팝업에서만 고칠 수 있었다 */}
-        <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 6 }}>
+        <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#111111', marginBottom: 6 }}>
           내가 고친 앱 분류
         </div>
         {overrideList.length === 0 ? (
-          <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 12, lineHeight: 1.6 }}>
             아직 없어요. 위에서 앱 분류를 바꾸면 여기에 쌓입니다.
           </div>
         ) : (
@@ -177,10 +177,10 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
             {overrideList.map(([pkg, cat]) => (
               <div key={pkg} style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.04)',
+                padding: '8px 10px', borderRadius: 10, background: 'rgba(0,0,0,0.025)',
               }}>
                 <span style={{
-                  flex: 1, minWidth: 0, color: '#94a3b8', fontSize: 12,
+                  flex: 1, minWidth: 0, color: '#8E8E93', fontSize: 12,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {pkg}
@@ -189,29 +189,29 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
                   value={cat}
                   onChange={e => changeOverride(pkg, e.target.value)}
                   style={{
-                    background: 'rgba(255,255,255,0.06)', color: '#e2e8f0',
-                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                    background: 'rgba(0,0,0,0.035)', color: '#111111',
+                    border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8,
                     padding: '5px 6px', fontSize: 12,
                   }}
                 >
                   {/* 알람 팝업은 그룹 ID(consume 등)를 저장한다 → 그룹도 선택지에 있어야
                       저장된 값이 그대로 보인다. 세부만 넣으면 건드리지 않은 앱이
                       목록의 첫 항목으로 바뀐 것처럼 보인다. */}
-                  <optgroup label="그룹" style={{ background: '#0f172a' }}>
+                  <optgroup label="그룹" style={{ background: '#FFFFFF' }}>
                     {Object.entries(GROUPS).map(([id, g]) => (
-                      <option key={id} value={id} style={{ background: '#0f172a' }}>{g.label}</option>
+                      <option key={id} value={id} style={{ background: '#FFFFFF' }}>{g.label}</option>
                     ))}
                   </optgroup>
-                  <optgroup label="세부" style={{ background: '#0f172a' }}>
+                  <optgroup label="세부" style={{ background: '#FFFFFF' }}>
                     {Object.entries(CATEGORIES).map(([id, c]) => (
-                      <option key={id} value={id} style={{ background: '#0f172a' }}>{c.label}</option>
+                      <option key={id} value={id} style={{ background: '#FFFFFF' }}>{c.label}</option>
                     ))}
                   </optgroup>
                 </select>
                 <button
                   onClick={() => removeOverride(pkg)}
                   style={{
-                    border: 'none', background: 'transparent', color: '#64748b',
+                    border: 'none', background: 'transparent', color: '#9A9AA0',
                     fontSize: 12, cursor: 'pointer', padding: '4px 2px',
                   }}
                 >
@@ -226,8 +226,8 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
           onClick={onClose}
           style={{
             width: '100%', marginTop: 20, padding: '12px', borderRadius: 12, cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
-            color: '#cbd5e1', fontSize: 14, fontWeight: 700,
+            border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.035)',
+            color: '#3A3A3E', fontSize: 14, fontWeight: 700,
           }}
         >
           닫기

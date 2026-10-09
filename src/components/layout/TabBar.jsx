@@ -13,9 +13,9 @@ export default function TabBar({ active, onChange, isPremium, bottomOffset = 0 }
       width: '100%', maxWidth: 420,
       display: 'flex', justifyContent: 'space-around',
       padding: '8px 4px 16px',
-      background: 'rgba(8,15,30,0.92)',
+      background: 'rgba(255,255,255,0.94)',
       backdropFilter: 'blur(16px)',
-      borderTop: '1px solid rgba(255,255,255,0.06)',
+      borderTop: '1px solid rgba(0,0,0,0.035)',
       zIndex: 100,
     }}>
       {TABS.map(tab => {
@@ -28,8 +28,8 @@ export default function TabBar({ active, onChange, isPremium, bottomOffset = 0 }
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
               padding: '6px 8px', border: 'none', borderRadius: 12,
-              background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
-              color: isActive ? '#818cf8' : '#475569',
+              background: isActive ? 'rgba(255,107,44,0.12)' : 'transparent',
+              color: isActive ? '#D9531B' : '#B0B0B6',
               cursor: 'pointer', position: 'relative', minWidth: 44,
             }}
           >

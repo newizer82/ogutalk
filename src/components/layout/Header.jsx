@@ -8,10 +8,10 @@ export default function Header({
     <header style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '14px 20px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: '1px solid rgba(0,0,0,0.035)',
       backdropFilter: 'blur(8px)',
       position: 'sticky', top: 0, zIndex: 50,
-      background: 'rgba(8,15,30,0.85)',
+      background: 'rgba(255,255,255,0.92)',
     }}>
       {/* 로고 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

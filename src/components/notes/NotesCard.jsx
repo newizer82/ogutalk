@@ -12,8 +12,8 @@ async function copyToClipboard(text) {
 }
 
 const cardStyle = {
-  background: 'rgba(255,255,255,0.05)',
-  border:     '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(0,0,0,0.03)',
+  border:     '1px solid rgba(0,0,0,0.05)',
   borderRadius: 20,
   padding:    '16px 18px',
   marginBottom: 14,
@@ -36,14 +36,14 @@ export default function NotesCard({
       <section style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 15 }}>📝</span>
-          <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>빠른 메모</span>
+          <span style={{ color: '#3A3A3E', fontSize: 13, fontWeight: 700 }}>빠른 메모</span>
         </div>
         <div style={{ color: theme.text.muted, fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>
           링크·간단 메모를 저장하려면 로그인이 필요해요 (다기기 동기화).
         </div>
         <button onClick={onLoginOpen} style={{
           padding: '6px 14px', borderRadius: 10, border: 'none',
-          background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+          background: 'rgba(255,107,44,0.14)', color: theme.accent.secondary,
           fontSize: 12, fontWeight: 700, cursor: 'pointer',
         }}>
           로그인하기 →
@@ -72,7 +72,7 @@ export default function NotesCard({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 15 }}>📝</span>
-          <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>빠른 메모</span>
+          <span style={{ color: '#3A3A3E', fontSize: 13, fontWeight: 700 }}>빠른 메모</span>
           <span style={{
             fontSize: 10, padding: '2px 7px', borderRadius: 10,
             background: 'rgba(148,163,184,0.15)', color: theme.text.secondary, fontWeight: 700,
@@ -83,7 +83,7 @@ export default function NotesCard({
         {!showForm && (
           <button onClick={() => setShowForm(true)} style={{
             padding: '4px 10px', borderRadius: 10, border: 'none',
-            background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+            background: 'rgba(255,107,44,0.14)', color: theme.accent.secondary,
             fontSize: 11, cursor: 'pointer',
           }}>
             + 추가
@@ -102,7 +102,7 @@ export default function NotesCard({
             autoFocus
             style={{
               width: '100%', padding: 10, borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid rgba(0,0,0,0.07)',
               background: 'rgba(0,0,0,0.25)',
               color: theme.text.primary, fontSize: 12,
               resize: 'none', outline: 'none', boxSizing: 'border-box',
@@ -112,14 +112,14 @@ export default function NotesCard({
           <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
             <button onClick={() => { setShowForm(false); setInput('') }} style={{
               flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none',
-              background: 'rgba(255,255,255,0.05)', color: theme.text.secondary,
+              background: 'rgba(0,0,0,0.03)', color: theme.text.secondary,
               fontSize: 12, cursor: 'pointer',
             }}>
               취소
             </button>
             <button onClick={handleAdd} disabled={!input.trim()} style={{
               flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none',
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              background: 'linear-gradient(135deg,#FF6B2C,#E8762C)',
               color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
               opacity: input.trim() ? 1 : 0.4,
             }}>
@@ -140,7 +140,7 @@ export default function NotesCard({
           {notes.map((n, i) => (
             <div key={n.id} style={{
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 0',
-              borderBottom: i < notes.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              borderBottom: i < notes.length - 1 ? '1px solid rgba(0,0,0,0.025)' : 'none',
             }}>
               <span style={{
                 flex: 1, color: theme.text.primary, fontSize: 13, lineHeight: 1.5,
@@ -150,7 +150,7 @@ export default function NotesCard({
               </span>
               <button onClick={() => handleCopy(n)} title="복사" style={{
                 padding: '2px 6px', borderRadius: 6, border: 'none',
-                background: copiedId === n.id ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.05)',
+                background: copiedId === n.id ? 'rgba(52,211,153,0.2)' : 'rgba(0,0,0,0.03)',
                 color: copiedId === n.id ? theme.status.success : theme.text.secondary,
                 fontSize: 11, cursor: 'pointer', flexShrink: 0,
               }}>

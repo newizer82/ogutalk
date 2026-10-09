@@ -34,11 +34,11 @@ function Section({ title, children }) {
   return (
     <div style={{
       marginBottom: 14,
-      background: 'rgba(255,255,255,0.03)',
+      background: 'rgba(0,0,0,0.02)',
       borderRadius: 20, padding: 16,
-      border: '1px solid rgba(255,255,255,0.06)',
+      border: '1px solid rgba(0,0,0,0.035)',
     }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>{title}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E', marginBottom: 12 }}>{title}</div>
       {children}
     </div>
   )
@@ -48,17 +48,17 @@ function Section({ title, children }) {
 function TonePicker({ value, onChange, volume = 0.8 }) {
   return (
     <div>
-      <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 10 }}>알람음 (탭하면 미리 들어요)</div>
+      <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 10 }}>알람음 (탭하면 미리 들어요)</div>
 
       {/* 모바일용 */}
-      <div style={{ color: '#fb923c', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>📱 모바일 알람음 (mp3)</div>
+      <div style={{ color: '#C2521C', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>📱 모바일 알람음 (mp3)</div>
       <button
         onClick={() => { onChange('mobile-mp3'); new Audio('/sounds/ogu_custom.mp3').play().catch(() => {}) }}
         style={{
           width: '100%', padding: '9px 12px', borderRadius: 12, marginBottom: 12,
-          border: `1px solid ${value === 'mobile-mp3' ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
-          background: value === 'mobile-mp3' ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
-          color: value === 'mobile-mp3' ? '#fb923c' : '#94a3b8',
+          border: `1px solid ${value === 'mobile-mp3' ? '#C2521C' : 'rgba(0,0,0,0.05)'}`,
+          background: value === 'mobile-mp3' ? 'rgba(251,146,60,0.15)' : 'rgba(0,0,0,0.02)',
+          color: value === 'mobile-mp3' ? '#C2521C' : '#8E8E93',
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
         }}
       >
@@ -70,7 +70,7 @@ function TonePicker({ value, onChange, volume = 0.8 }) {
       </button>
 
       {/* 웹용 */}
-      <div style={{ color: '#818cf8', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>🌐 웹 알람음</div>
+      <div style={{ color: '#D9531B', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>🌐 웹 알람음</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
         {Object.entries(ALARM_TONES).map(([key, t]) => {
           const active = value === key
@@ -79,9 +79,9 @@ function TonePicker({ value, onChange, volume = 0.8 }) {
               onClick={() => { onChange(key); playTone(key, volume) }}
               style={{
                 padding: '9px 10px', borderRadius: 12,
-                border: `1px solid ${active ? t.color : 'rgba(255,255,255,0.08)'}`,
-                background: active ? `${t.color}22` : 'rgba(255,255,255,0.03)',
-                color: active ? t.color : '#94a3b8',
+                border: `1px solid ${active ? t.color : 'rgba(0,0,0,0.05)'}`,
+                background: active ? `${t.color}22` : 'rgba(0,0,0,0.02)',
+                color: active ? t.color : '#8E8E93',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
               }}
             >
@@ -247,17 +247,17 @@ export default function AlarmsPage({
     <div>
       <div style={{
         marginBottom: 14, padding: '10px 14px', borderRadius: 12,
-        background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)',
-        color: '#94a3b8', fontSize: 11, lineHeight: 1.6,
+        background: 'rgba(255,107,44,0.08)', border: '1px solid rgba(255,107,44,0.12)',
+        color: '#8E8E93', fontSize: 11, lineHeight: 1.6,
       }}>
-        💡 매시 59분 오구톡 알람 설정은 <b style={{ color: '#818cf8' }}>설정 탭</b>에서 변경할 수 있어요.
+        💡 매시 59분 오구톡 알람 설정은 <b style={{ color: '#D9531B' }}>설정 탭</b>에서 변경할 수 있어요.
       </div>
 
       {/* ── 커스텀 알람 방식 (진짜 글로벌 — 등록된 모든 커스텀 알람에 즉시 적용) ── */}
       <Section title="🔔 커스텀 알람 방식">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
-          <b style={{ color: '#94a3b8' }}>모든 커스텀 알람</b>에 즉시 적용됩니다.<br />
-          <span style={{ color: '#475569' }}>진동만 선택 시 소리 없이 진동만 울려요 (회의·수면 시 유용).</span>
+        <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
+          <b style={{ color: '#8E8E93' }}>모든 커스텀 알람</b>에 즉시 적용됩니다.<br />
+          <span style={{ color: '#B0B0B6' }}>진동만 선택 시 소리 없이 진동만 울려요 (회의·수면 시 유용).</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {[
@@ -268,9 +268,9 @@ export default function AlarmsPage({
             return (
               <button key={opt.key} onClick={() => setCustomAlarmMode(opt.key)} style={{
                 padding: '12px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                border: `1px solid ${active ? '#fb923c' : 'rgba(255,255,255,0.08)'}`,
-                background: active ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.03)',
-                color: active ? '#fb923c' : '#94a3b8',
+                border: `1px solid ${active ? '#C2521C' : 'rgba(0,0,0,0.05)'}`,
+                background: active ? 'rgba(251,146,60,0.15)' : 'rgba(0,0,0,0.02)',
+                color: active ? '#C2521C' : '#8E8E93',
               }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>{opt.icon}</div>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{opt.label}</div>
@@ -281,7 +281,7 @@ export default function AlarmsPage({
       </Section>
 
       <Section title="➕ 커스텀 알람">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 14, lineHeight: 1.6 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 14, lineHeight: 1.6 }}>
           원하는 시간에 매일 반복 알람을 추가하세요.
         </div>
 
@@ -290,7 +290,7 @@ export default function AlarmsPage({
           const groups = groupAlarmsByTimeSegment(customAlarms)
           return (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
+              <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
                 📋 등록된 알람 ({customAlarms.length})
               </div>
               {TIME_SEGMENTS.map(seg => {
@@ -308,8 +308,8 @@ export default function AlarmsPage({
                         background: seg.color,
                       }} />
                       <span style={{ color: seg.color, fontSize: 11, fontWeight: 700 }}>{seg.label}</span>
-                      <span style={{ color: '#475569', fontSize: 10 }}>{seg.range}</span>
-                      <span style={{ color: '#475569', fontSize: 10, marginLeft: 'auto' }}>
+                      <span style={{ color: '#B0B0B6', fontSize: 10 }}>{seg.range}</span>
+                      <span style={{ color: '#B0B0B6', fontSize: 10, marginLeft: 'auto' }}>
                         {list.length}개
                       </span>
                     </div>
@@ -317,7 +317,7 @@ export default function AlarmsPage({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {list.map(alarm => {
                         const freq = alarm.repeatType || '매일'
-                        const freqColor = freq === '평일' ? '#6366f1' : freq === '주말' ? '#f59e0b' : '#10b981'
+                        const freqColor = freq === '평일' ? '#FF6B2C' : freq === '주말' ? '#B4740F' : '#2F7D62'
                         // v1.2.1: 글로벌 모드가 진동이면 무조건, 그 외엔 개별 tone 존중
                         const isVib = customAlarmMode === 'vibrate' || alarm.tone === 'vibrate-only'
                         return (
@@ -325,11 +325,11 @@ export default function AlarmsPage({
                             display: 'flex', alignItems: 'center', gap: 10,
                             padding: '7px 10px 7px 12px', borderRadius: 10,
                             background: alarm.isEnabled ? 'rgba(255,255,255,0.025)' : 'transparent',
-                            borderLeft: `3px solid ${alarm.isEnabled ? seg.color : 'rgba(255,255,255,0.08)'}`,
+                            borderLeft: `3px solid ${alarm.isEnabled ? seg.color : 'rgba(0,0,0,0.05)'}`,
                           }}>
                             {/* 좌측: 시각 (큰 글씨 강조) */}
                             <span style={{
-                              color: alarm.isEnabled ? '#e2e8f0' : '#64748b',
+                              color: alarm.isEnabled ? '#111111' : '#9A9AA0',
                               fontSize: 15, fontWeight: 800,
                               fontVariantNumeric: 'tabular-nums',
                               minWidth: 46,
@@ -344,7 +344,7 @@ export default function AlarmsPage({
                             }}>
                               <span style={{ fontSize: 14 }}>{alarm.icon}</span>
                               <span style={{
-                                color: alarm.isEnabled ? '#cbd5e1' : '#64748b',
+                                color: alarm.isEnabled ? '#3A3A3E' : '#9A9AA0',
                                 fontSize: 12.5, fontWeight: 600,
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                 flex: 1, minWidth: 0,
@@ -359,7 +359,7 @@ export default function AlarmsPage({
                               }}>{freq}</span>
                               {isVib && (
                                 <span style={{
-                                  fontSize: 11, color: '#94a3b8', flexShrink: 0,
+                                  fontSize: 11, color: '#8E8E93', flexShrink: 0,
                                 }} title="진동만">📳</span>
                               )}
                             </div>
@@ -367,7 +367,7 @@ export default function AlarmsPage({
                             <Toggle on={alarm.isEnabled} onToggle={() => toggleAlarm(alarm.id)} />
                             <button onClick={() => deleteAlarm(alarm.id)} aria-label="삭제" style={{
                               width: 22, height: 22, borderRadius: 6, border: 'none',
-                              background: 'transparent', color: '#475569',
+                              background: 'transparent', color: '#B0B0B6',
                               fontSize: 14, cursor: 'pointer', padding: 0,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>✕</button>
@@ -386,18 +386,18 @@ export default function AlarmsPage({
         {!showAddForm ? (
           <button onClick={() => setShowAddForm(true)} style={{
             width: '100%', padding: '11px', borderRadius: 12, marginBottom: 14,
-            border: '1px dashed rgba(99,102,241,0.35)', background: 'transparent',
-            color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            border: '1px dashed rgba(255,107,44,0.26)', background: 'transparent',
+            color: '#D9531B', fontSize: 13, fontWeight: 700, cursor: 'pointer',
           }}>+ 직접 추가하기</button>
         ) : (
-          <div style={{ padding: 14, borderRadius: 14, marginBottom: 14, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
+          <div style={{ padding: 14, borderRadius: 14, marginBottom: 14, background: 'rgba(255,107,44,0.06)', border: '1px solid rgba(255,107,44,0.14)' }}>
+            <div style={{ color: '#8E8E93', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
               {editingPresetId ? '✎ 내 빠른 추가 항목 편집' : '🔔 새 알람 추가'}
             </div>
 
             {/* 알람 제목 */}
             <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알람 제목 *</div>
+              <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>알람 제목 *</div>
               <input type="text" placeholder="예: 물 마시기" maxLength={20}
                 value={formTitle} onChange={e => setFormTitle(e.target.value)}
                 style={{ ...S.input, marginTop: 0 }}
@@ -406,7 +406,7 @@ export default function AlarmsPage({
 
             {/* 메시지 */}
             <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>메시지 (선택)</div>
+              <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>메시지 (선택)</div>
               <input type="text" placeholder="알람 메시지를 입력하세요" maxLength={40}
                 value={formMessage} onChange={e => setFormMessage(e.target.value)}
                 style={{ ...S.input, marginTop: 0 }}
@@ -415,12 +415,12 @@ export default function AlarmsPage({
 
             {/* 시간 */}
             <div style={{ marginBottom: 10 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>시간</div>
+              <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>시간</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select value={formHour} onChange={e => setFormHour(e.target.value)} style={{
                   flex: 1, padding: '10px 8px', borderRadius: 10,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  background: '#FFFFFF', color: '#111111', fontSize: 14, fontWeight: 700,
                 }}>
                   {Array.from({ length: 24 }, (_, i) => (
                     <option key={i} value={pad(i)}>{pad(i)}시</option>
@@ -428,8 +428,8 @@ export default function AlarmsPage({
                 </select>
                 <select value={formMinute} onChange={e => setFormMinute(e.target.value)} style={{
                   flex: 1, padding: '10px 8px', borderRadius: 10,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: '#1e293b', color: '#e2e8f0', fontSize: 14, fontWeight: 700,
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  background: '#FFFFFF', color: '#111111', fontSize: 14, fontWeight: 700,
                 }}>
                   {Array.from({ length: 12 }, (_, i) => (
                     <option key={i} value={pad(i * 5)}>{pad(i * 5)}분</option>
@@ -443,9 +443,9 @@ export default function AlarmsPage({
               <div style={{
                 marginBottom: 14, padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.25)',
-                color: '#cbd5e1', fontSize: 11,
+                color: '#3A3A3E', fontSize: 11,
               }}>
-                📳 알림 방식: <b>진동만</b> <span style={{ color: '#64748b' }}>(상단 설정 기준)</span>
+                📳 알림 방식: <b>진동만</b> <span style={{ color: '#9A9AA0' }}>(상단 설정 기준)</span>
               </div>
             ) : !IS_NATIVE ? (
               <div style={{ marginBottom: 14 }}>
@@ -455,7 +455,7 @@ export default function AlarmsPage({
               <div style={{
                 marginBottom: 14, padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)',
-                color: '#fb923c', fontSize: 11,
+                color: '#C2521C', fontSize: 11,
               }}>
                 🔔 알림 방식: <b>알림음 + 진동</b> · 알람음: <b>오구 커스텀음</b>
               </div>
@@ -467,12 +467,12 @@ export default function AlarmsPage({
                 display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
                 padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+                color: '#8E8E93', fontSize: 12, cursor: 'pointer',
               }}>
                 <input type="checkbox" checked={saveAsPreset}
                   onChange={e => setSaveAsPreset(e.target.checked)}
-                  style={{ accentColor: '#fbbf24', width: 16, height: 16 }} />
-                <span>⭐ 이 알람을 <b style={{ color: '#fbbf24' }}>빠른 추가에도 저장</b></span>
+                  style={{ accentColor: '#B4740F', width: 16, height: 16 }} />
+                <span>⭐ 이 알람을 <b style={{ color: '#B4740F' }}>빠른 추가에도 저장</b></span>
               </label>
             )}
 
@@ -480,7 +480,7 @@ export default function AlarmsPage({
             {(editingPresetId || saveAsPreset) && (
               <>
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>빠른 추가 카테고리</div>
+                  <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>빠른 추가 카테고리</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {PRESET_CATEGORIES.map(cat => {
                       const active = formCategory === cat.key
@@ -488,9 +488,9 @@ export default function AlarmsPage({
                         <button key={cat.key} onClick={() => setFormCategory(cat.key)}
                           style={{
                             padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
-                            border: `1px solid ${active ? cat.color : 'rgba(255,255,255,0.1)'}`,
-                            background: active ? `${cat.color}22` : 'rgba(255,255,255,0.03)',
-                            color: active ? cat.color : '#94a3b8',
+                            border: `1px solid ${active ? cat.color : 'rgba(0,0,0,0.07)'}`,
+                            background: active ? `${cat.color}22` : 'rgba(0,0,0,0.02)',
+                            color: active ? cat.color : '#8E8E93',
                             fontSize: 12, fontWeight: 700,
                           }}>
                           {cat.icon} {cat.label.replace(/^[^\s]+\s/, '')}
@@ -500,7 +500,7 @@ export default function AlarmsPage({
                   </div>
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>
+                  <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>
                     주기 (라벨로 표시됨)
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -510,9 +510,9 @@ export default function AlarmsPage({
                         <button key={f} onClick={() => setFormFreq(f)}
                           style={{
                             padding: '6px 12px', borderRadius: 10, cursor: 'pointer',
-                            border: `1px solid ${active ? '#818cf8' : 'rgba(255,255,255,0.1)'}`,
-                            background: active ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-                            color: active ? '#818cf8' : '#94a3b8',
+                            border: `1px solid ${active ? '#D9531B' : 'rgba(0,0,0,0.07)'}`,
+                            background: active ? 'rgba(255,107,44,0.14)' : 'rgba(0,0,0,0.02)',
+                            color: active ? '#D9531B' : '#8E8E93',
                             fontSize: 12, fontWeight: 700,
                           }}>
                           {f}
@@ -536,8 +536,8 @@ export default function AlarmsPage({
 
         {/* ── 빠른 추가 (카테고리별 아코디언) ── */}
         <div>
-          <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
-            ⚡ 빠른 추가 <span style={{ color: '#475569', fontWeight: 500 }}>· 카테고리를 탭하면 펼쳐져요</span>
+          <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
+            ⚡ 빠른 추가 <span style={{ color: '#B0B0B6', fontWeight: 500 }}>· 카테고리를 탭하면 펼쳐져요</span>
           </div>
 
           {PRESET_CATEGORIES.map(cat => {
@@ -549,8 +549,8 @@ export default function AlarmsPage({
                 {/* 카테고리 헤더 (탭하면 토글) */}
                 <button onClick={() => toggleCategory(cat.key)} style={{
                   width: '100%', padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
-                  border: `1px solid ${isOpen ? cat.color + '66' : 'rgba(255,255,255,0.08)'}`,
-                  background: isOpen ? `${cat.color}14` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isOpen ? cat.color + '66' : 'rgba(0,0,0,0.05)'}`,
+                  background: isOpen ? `${cat.color}14` : 'rgba(0,0,0,0.02)',
                   color: cat.color,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   fontSize: 13, fontWeight: 700, textAlign: 'left',
@@ -559,10 +559,10 @@ export default function AlarmsPage({
                   <span>{cat.label}</span>
                   <span style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    color: '#94a3b8', fontSize: 11, fontWeight: 600,
+                    color: '#8E8E93', fontSize: 11, fontWeight: 600,
                   }}>
                     <span style={{
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(0,0,0,0.035)',
                       padding: '2px 8px', borderRadius: 10,
                     }}>{totalCount}개</span>
                     <span style={{
@@ -607,28 +607,28 @@ export default function AlarmsPage({
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             width: '100%', maxWidth: 420,
-            background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+            background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
             borderRadius: '24px 24px 0 0',
             padding: '24px 22px 28px',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid rgba(0,0,0,0.035)',
           }}>
             <div style={{
               width: 40, height: 4, borderRadius: 2,
               background: 'rgba(255,255,255,0.15)',
               margin: '0 auto 18px',
             }} />
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#e2e8f0', marginBottom: 4, textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#111111', marginBottom: 4, textAlign: 'center' }}>
               {quickEdit.icon} {quickEdit.title}
             </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 20, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: '#8E8E93', marginBottom: 20, textAlign: 'center' }}>
               {quickEdit.message}
             </div>
-            <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>알람 시간</div>
+            <div style={{ color: '#8E8E93', fontSize: 11, marginBottom: 6 }}>알람 시간</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
               <select value={quickEditHour} onChange={e => setQuickEditHour(e.target.value)} style={{
                 flex: 1, padding: '12px 8px', borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: '#1e293b', color: '#e2e8f0', fontSize: 16, fontWeight: 700,
+                border: '1px solid rgba(0,0,0,0.07)',
+                background: '#FFFFFF', color: '#111111', fontSize: 16, fontWeight: 700,
               }}>
                 {Array.from({ length: 24 }, (_, i) => (
                   <option key={i} value={pad(i)}>{pad(i)}시</option>
@@ -636,8 +636,8 @@ export default function AlarmsPage({
               </select>
               <select value={quickEditMinute} onChange={e => setQuickEditMinute(e.target.value)} style={{
                 flex: 1, padding: '12px 8px', borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: '#1e293b', color: '#e2e8f0', fontSize: 16, fontWeight: 700,
+                border: '1px solid rgba(0,0,0,0.07)',
+                background: '#FFFFFF', color: '#111111', fontSize: 16, fontWeight: 700,
               }}>
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i} value={pad(i * 5)}>{pad(i * 5)}분</option>
@@ -662,7 +662,7 @@ function PresetCard({ preset, color, onClick, onDelete, onEdit }) {
       padding: '10px 12px', borderRadius: 12, textAlign: 'left',
       border: `1px solid ${color}55`,
       background: `${color}12`,
-      color: '#e2e8f0', cursor: 'pointer', position: 'relative',
+      color: '#111111', cursor: 'pointer', position: 'relative',
       display: 'flex', flexDirection: 'column', gap: 4,
     }}>
       <span style={{ fontSize: 12, fontWeight: 700 }}>
@@ -676,10 +676,10 @@ function PresetCard({ preset, color, onClick, onDelete, onEdit }) {
         <span style={{
           position: 'absolute', bottom: 6, right: 8,
           fontSize: 9, fontWeight: 700,
-          color: '#cbd5e1',
-          background: 'rgba(255,255,255,0.08)',
+          color: '#3A3A3E',
+          background: 'rgba(0,0,0,0.05)',
           padding: '2px 6px', borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(0,0,0,0.035)',
         }}>{preset.freq}</span>
       )}
       {onEdit && (
@@ -688,7 +688,7 @@ function PresetCard({ preset, color, onClick, onDelete, onEdit }) {
             position: 'absolute', top: 4, right: 28,
             width: 18, height: 18, borderRadius: 9,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, color: '#94a3b8',
+            fontSize: 11, color: '#8E8E93',
             background: 'rgba(0,0,0,0.3)',
           }}>✎</span>
       )}
@@ -698,7 +698,7 @@ function PresetCard({ preset, color, onClick, onDelete, onEdit }) {
             position: 'absolute', top: 4, right: 6,
             width: 18, height: 18, borderRadius: 9,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, color: '#94a3b8',
+            fontSize: 11, color: '#8E8E93',
             background: 'rgba(0,0,0,0.3)',
           }}>✕</span>
       )}

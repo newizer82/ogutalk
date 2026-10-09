@@ -17,7 +17,7 @@ const styles = {
     flex: 1,
     padding: '11px 14px',
     background: theme.bg.elevated,
-    border: '1px solid #334155',
+    border: '1px solid #F1F1F4',
     borderRadius: 12,
     color: theme.text.primary,
     fontSize: 14,
@@ -37,7 +37,7 @@ const styles = {
     width: '100%',
     padding: '9px 14px',
     background: theme.bg.elevated,
-    border: '1px solid #334155',
+    border: '1px solid #F1F1F4',
     borderRadius: 12,
     color: theme.text.secondary,
     fontSize: 13,
@@ -85,12 +85,12 @@ export default function TodoForm({ onAdd, goals = [] }) {
             title="음성으로 입력"
             style={{
               padding: '11px 13px',
-              border: `1px solid ${isListening ? '#ef4444' : 'rgba(99,102,241,0.4)'}`,
+              border: `1px solid ${isListening ? '#D23B2E' : 'rgba(255,107,44,0.3)'}`,
               borderRadius: 12,
               background: isListening
                 ? 'rgba(239,68,68,0.15)'
-                : 'rgba(99,102,241,0.1)',
-              color: isListening ? '#ef4444' : '#818cf8',
+                : 'rgba(255,107,44,0.09)',
+              color: isListening ? '#D23B2E' : '#D9531B',
               fontSize: 16,
               cursor: 'pointer',
               lineHeight: 1,
@@ -108,10 +108,10 @@ export default function TodoForm({ onAdd, goals = [] }) {
       {/* 음성 오류 메시지 */}
       {error && (
         <div style={{
-          color: '#ef4444', fontSize: 11,
+          color: '#D23B2E', fontSize: 11,
           padding: '6px 10px', borderRadius: 8,
           background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.2)',
+          border: '1px solid rgba(210,59,46,0.16)',
         }}>
           ⚠️ {error}
         </div>

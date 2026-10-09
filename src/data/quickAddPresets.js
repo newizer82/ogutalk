@@ -10,7 +10,7 @@ export const PRESET_CATEGORIES = [
     key:   'health',
     label: '🌿 건강',
     icon:  '🌿',
-    color: '#10b981',
+    color: '#2F7D62',
     items: [
       { icon: '💧',  title: '수분 섭취',   message: '물 한 잔 마실 시간이에요',  hour: 11, minute: 30, freq: '매일' },
       { icon: '🧘',  title: '스트레칭',    message: '굳은 몸을 잠깐 풀어줘요',   hour: 14, minute: 30, freq: '매일' },
@@ -23,7 +23,7 @@ export const PRESET_CATEGORIES = [
     key:   'growth',
     label: '🌱 자기계발',
     icon:  '🌱',
-    color: '#6366f1',
+    color: '#FF6B2C',
     items: [
       { icon: '🧘‍♂️', title: '3분 명상',    message: '3분만 마음을 비워봐요',   hour: 7,  minute: 30, freq: '매일' },
       { icon: '☀️',   title: '5분 확언',    message: '오늘의 다짐을 떠올려요',  hour: 8,  minute: 30, freq: '매일' },
@@ -37,7 +37,7 @@ export const PRESET_CATEGORIES = [
     key:   'life',
     label: '🏡 생활',
     icon:  '🏡',
-    color: '#f59e0b',
+    color: '#B4740F',
     items: [
       { icon: '💊', title: '약 먹기',      message: '약 챙겨 드실 시간이에요',   hour: 9,  minute: 30, freq: '매일' },
       { icon: '🪴', title: '화분 물주기',  message: '식물에 물을 줄 시간이에요', hour: 8,  minute: 30, freq: '주말' },
@@ -51,7 +51,7 @@ export const PRESET_CATEGORIES = [
     key:   'plan',
     label: '💼 계획 & 일',
     icon:  '💼',
-    color: '#8b5cf6',
+    color: '#E8762C',
     items: [
       { icon: '📅', title: '오늘 일정 확인', message: '오늘 할 일을 점검해요',     hour: 8,  minute: 30, freq: '매일' },
       { icon: '🎯', title: '프로젝트 점검',  message: '프로젝트 진행 상황을 봐요', hour: 9,  minute: 30, freq: '평일' },

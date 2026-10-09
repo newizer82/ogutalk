@@ -53,18 +53,18 @@ export default function AutoCheckinSection({ enabled, onChange }) {
   }
 
   return (
-    <div style={{ marginBottom: 14, background: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>
+    <div style={{ marginBottom: 14, background: 'rgba(0,0,0,0.02)', borderRadius: 20, padding: 16, border: '1px solid rgba(0,0,0,0.035)' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E', marginBottom: 12 }}>
         ⏱️ 자동 활동 기록
       </div>
 
-      <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+      <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
         앱 사용시간을 읽어 30분마다 활동을 자동으로 기록합니다.<br />
-        <span style={{ color: '#475569' }}>켜두면 알람에서 따로 선택하지 않아도 리포트가 채워집니다.</span>
+        <span style={{ color: '#B0B0B6' }}>켜두면 알람에서 따로 선택하지 않아도 리포트가 채워집니다.</span>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-        <span style={{ color: '#e2e8f0', fontSize: 13 }}>자동 기록 사용</span>
+        <span style={{ color: '#111111', fontSize: 13 }}>자동 기록 사용</span>
         {/* Toggle 의 props 는 on / onToggle 이다 (checked / onChange 아님) */}
         <Toggle on={enabled} onToggle={() => handleToggle(!enabled)} />
       </div>
@@ -74,15 +74,15 @@ export default function AutoCheckinSection({ enabled, onChange }) {
           onClick={openUsageSettings}
           style={{
             width: '100%', marginTop: 10, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-            border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.1)',
-            color: '#f59e0b', fontSize: 12, fontWeight: 700,
+            border: '1px solid rgba(242,153,74,0.4)', background: 'rgba(242,153,74,0.12)',
+            color: '#B4740F', fontSize: 12, fontWeight: 700,
           }}
         >
           ⚠️ 사용정보 접근 권한이 필요합니다 — 설정 열기
         </button>
       )}
       {enabled && granted && (
-        <div style={{ color: '#34d399', fontSize: 12, marginTop: 8 }}>✓ 자동 기록 중</div>
+        <div style={{ color: '#1E7A58', fontSize: 12, marginTop: 8 }}>✓ 자동 기록 중</div>
       )}
 
       {/* ── 사전 고지 (Play 정책: 권한 요청 전 명시적 동의) ── */}
@@ -92,20 +92,20 @@ export default function AutoCheckinSection({ enabled, onChange }) {
           background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div style={{
-            width: '100%', maxWidth: 340, background: '#1e293b', borderRadius: 20, padding: 22,
-            border: '1px solid rgba(99,102,241,0.3)',
+            width: '100%', maxWidth: 340, background: '#FFFFFF', borderRadius: 20, padding: 22,
+            border: '1px solid rgba(255,107,44,0.22)',
           }}>
-            <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 800, marginBottom: 12 }}>
+            <div style={{ color: '#111111', fontSize: 16, fontWeight: 800, marginBottom: 12 }}>
               오구톡이 앱 사용시간을 읽습니다
             </div>
-            <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
+            <div style={{ color: '#3A3A3E', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
               매시간 무엇을 했는지 자동으로 기록해 리포트를 채우기 위해 사용합니다.<br /><br />
-              이 정보는 <b style={{ color: '#818cf8' }}>기기 안에서만 처리되며 서버로 전송되지 않습니다.</b>
+              이 정보는 <b style={{ color: '#D9531B' }}>기기 안에서만 처리되며 서버로 전송되지 않습니다.</b>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => setNotice(false)}
-                style={{ flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', border: '1px solid rgba(0,0,0,0.08)', background: 'transparent', color: '#8E8E93', fontSize: 13, fontWeight: 700 }}
               >취소</button>
               <button
                 onClick={handleAgree}
@@ -113,7 +113,7 @@ export default function AutoCheckinSection({ enabled, onChange }) {
                 style={{
                   flex: 1, padding: '12px', borderRadius: 12, border: 'none', color: 'white', fontSize: 13, fontWeight: 800,
                   cursor: armed ? 'pointer' : 'default',
-                  background: armed ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.12)',
+                  background: armed ? 'linear-gradient(135deg, #FF6B2C, #E8762C)' : 'rgba(0,0,0,0.08)',
                   opacity: armed ? 1 : 0.5,
                 }}
               >허용하고 계속</button>

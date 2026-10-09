@@ -1,10 +1,10 @@
-export default function Toggle({ on, onToggle, color = '#6366f1' }) {
+export default function Toggle({ on, onToggle, color = '#FF6B2C' }) {
   return (
     <div
       onClick={onToggle}
       style={{
         width: 48, height: 26, borderRadius: 13, cursor: 'pointer',
-        background: on ? color : 'rgba(255,255,255,0.1)',
+        background: on ? color : 'rgba(0,0,0,0.07)',
         position: 'relative', transition: 'background 0.3s', flexShrink: 0,
       }}
     >

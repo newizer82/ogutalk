@@ -142,7 +142,7 @@ assert.equal(labelOf('rest'), '😴 휴식/식사')   // 옛 값도 라벨 유�
 assert.equal(labelOf('nonsense'), 'nonsense')   // 모르면 원문
 assert.equal(emojiOf('nonsense'), '?')
 assert.equal(colorOf('video'), GROUPS.consume.color)   // 세부는 그룹 색을 따른다
-assert.equal(colorOf('nonsense'), '#6366f1')
+assert.equal(colorOf('nonsense'), '#B0B0B6')
 
 console.log('✓ appCategories 검증 통과')
 

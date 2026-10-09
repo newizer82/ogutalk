@@ -14,8 +14,8 @@ const pad = n => String(n).padStart(2, '0')
 
 function SettingSection({ title, children }) {
   return (
-    <div style={{ marginBottom: 14, background: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>{title}</div>
+    <div style={{ marginBottom: 14, background: 'rgba(0,0,0,0.02)', borderRadius: 20, padding: 16, border: '1px solid rgba(0,0,0,0.035)' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E', marginBottom: 12 }}>{title}</div>
       {children}
     </div>
   )
@@ -23,10 +23,10 @@ function SettingSection({ title, children }) {
 
 function SettingRow({ icon, label, children }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.025)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {icon && <span style={{ fontSize: 15 }}>{icon}</span>}
-        <span style={{ color: '#e2e8f0', fontSize: 13 }}>{label}</span>
+        <span style={{ color: '#111111', fontSize: 13 }}>{label}</span>
       </div>
       {children}
     </div>
@@ -90,12 +90,12 @@ export default function SettingsPage({
             {isLoggedIn && displayEmail ? displayEmail[0].toUpperCase() : '🐾'}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: 15 }}>{isLoggedIn ? displayEmail : '비로그인 사용자'}</div>
-            <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{isLoggedIn ? '✨ 로그인 회원 — 탭하면 계정 메뉴' : '🔓 비로그인 — 기본 기능만 사용 가능'}</div>
+            <div style={{ color: '#111111', fontWeight: 700, fontSize: 15 }}>{isLoggedIn ? displayEmail : '비로그인 사용자'}</div>
+            <div style={{ color: '#9A9AA0', fontSize: 12, marginTop: 2 }}>{isLoggedIn ? '✨ 로그인 회원 — 탭하면 계정 메뉴' : '🔓 비로그인 — 기본 기능만 사용 가능'}</div>
           </div>
           {!isLoggedIn && <button style={S.loginBtn} onClick={(e) => { e.stopPropagation(); onLoginOpen() }}>로그인</button>}
           {isLoggedIn && (
-            <span style={{ color: '#475569', fontSize: 16, transition: 'transform 0.15s', transform: profileMenuOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+            <span style={{ color: '#B0B0B6', fontSize: 16, transition: 'transform 0.15s', transform: profileMenuOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
               ▼
             </span>
           )}
@@ -103,14 +103,14 @@ export default function SettingsPage({
 
         {/* 로그인 사용자 — 펼침 메뉴 */}
         {isLoggedIn && profileMenuOpen && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.035)' }}>
             <button
               onClick={onSignOut}
               style={{
                 width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
                 border: '1px solid rgba(239,68,68,0.3)',
                 background: 'rgba(239,68,68,0.08)',
-                color: '#ef4444', fontSize: 13, fontWeight: 700,
+                color: '#D23B2E', fontSize: 13, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
@@ -137,9 +137,9 @@ export default function SettingsPage({
 
       {/* ── 오구톡 알람 시간 ── */}
       <SettingSection title="⏱️ 오구톡 알람 시간 (매 정각 1분 전)">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
           선택한 시간 직전(×시 59분)에 알람이 울립니다.<br />
-          <span style={{ color: '#475569' }}>예: 7 선택 → 6:59에 "곧 7시!" 알림</span>
+          <span style={{ color: '#B0B0B6' }}>예: 7 선택 → 6:59에 "곧 7시!" 알림</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 5, marginBottom: 10 }}>
           {Array.from({ length: 24 }, (_, i) => i).map(h => (
@@ -147,9 +147,9 @@ export default function SettingsPage({
               onClick={() => setAlarmHours({ ...alarmHours, [h]: !alarmHours[h] })}
               style={{
                 padding: '7px 2px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                border: `1px solid ${alarmHours[h] ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
-                background: alarmHours[h] ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-                color: alarmHours[h] ? '#818cf8' : '#64748b',
+                border: `1px solid ${alarmHours[h] ? '#FF6B2C' : 'rgba(0,0,0,0.05)'}`,
+                background: alarmHours[h] ? 'rgba(255,107,44,0.14)' : 'rgba(0,0,0,0.02)',
+                color: alarmHours[h] ? '#D9531B' : '#9A9AA0',
               }}
             >{pad(h)}</button>
           ))}
@@ -158,7 +158,7 @@ export default function SettingsPage({
           <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i=7;i<=22;i++) h[i]=true; setAlarmHours(h) }}>주간</button>
           <button style={S.ghostBtn} onClick={() => { const h = {}; for (let i=0;i<24;i++) h[i]=true; setAlarmHours(h) }}>전체</button>
           <button style={S.ghostBtn} onClick={() => setAlarmHours({})}>초기화</button>
-          <span style={{ color: '#64748b', fontSize: 11, alignSelf: 'center', marginLeft: 4 }}>
+          <span style={{ color: '#9A9AA0', fontSize: 11, alignSelf: 'center', marginLeft: 4 }}>
             {Object.values(alarmHours).filter(Boolean).length}개 활성
           </span>
         </div>
@@ -166,9 +166,9 @@ export default function SettingsPage({
 
       {/* ── 오구 알림 방식 (사운드+진동 / 진동만) ── */}
       <SettingSection title="🔔 오구 알림 방식">
-        <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 10, lineHeight: 1.6 }}>
           오구 알람이 울릴 때 사운드 재생 여부를 선택합니다.<br />
-          <span style={{ color: '#475569' }}>진동만 선택 시 백그라운드에서도 무음으로 진동만 울립니다.</span>
+          <span style={{ color: '#B0B0B6' }}>진동만 선택 시 백그라운드에서도 무음으로 진동만 울립니다.</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {[
@@ -179,9 +179,9 @@ export default function SettingsPage({
             return (
               <button key={opt.key} onClick={() => setAlarmMode(opt.key)} style={{
                 padding: '12px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                border: `1px solid ${active ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
-                background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
-                color: active ? '#818cf8' : '#94a3b8',
+                border: `1px solid ${active ? '#FF6B2C' : 'rgba(0,0,0,0.05)'}`,
+                background: active ? 'rgba(99,102,241,0.18)' : 'rgba(0,0,0,0.02)',
+                color: active ? '#D9531B' : '#8E8E93',
               }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>{opt.icon}</div>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{opt.label}</div>
@@ -194,7 +194,7 @@ export default function SettingsPage({
       {/* ── 모바일 알람 사운드 톤 ── */}
       {IS_NATIVE && (
         <SettingSection title="📱 모바일 알람 사운드 톤">
-          <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
             앱(Android) 백그라운드 알람 시 재생되는 mp3 사운드입니다. 카드를 눌러 미리 들어보세요.
           </div>
           <button
@@ -203,7 +203,7 @@ export default function SettingsPage({
               padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: '2px solid rgba(192,132,252,0.5)',
               background: 'rgba(192,132,252,0.12)',
-              color: '#c084fc', width: '100%',
+              color: '#FFB37A', width: '100%',
               display: 'flex', alignItems: 'center', gap: 12,
             }}
           >
@@ -215,12 +215,12 @@ export default function SettingsPage({
           {/* 볼륨 조절 안내 — Android 정책상 앱이 알람 볼륨을 직접 조절할 수 없음 */}
           <div style={{
             marginTop: 12, padding: '10px 12px', borderRadius: 10,
-            background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)',
-            color: '#94a3b8', fontSize: 11, lineHeight: 1.6,
+            background: 'rgba(255,107,44,0.06)', border: '1px solid rgba(255,107,44,0.12)',
+            color: '#8E8E93', fontSize: 11, lineHeight: 1.6,
           }}>
-            🔊 <b style={{ color: '#cbd5e1' }}>알람 음량 조절</b><br />
+            🔊 <b style={{ color: '#3A3A3E' }}>알람 음량 조절</b><br />
             Android 정책상 앱 내에서 음량을 직접 조절할 수 없어요.<br />
-            <span style={{ color: '#64748b' }}>
+            <span style={{ color: '#9A9AA0' }}>
               폰 <b>설정 → 소리 및 진동 → 볼륨 → 알림 볼륨</b> 슬라이더에서 조절하세요.
               또는 알람이 울릴 때 <b>볼륨 다운 키</b>를 눌러 즉시 낮출 수 있어요.
             </span>
@@ -235,9 +235,9 @@ export default function SettingsPage({
             {Object.entries(OGU_TONES).map(([key, t]) => (
               <button key={key} onClick={() => { setOguTone(key); fireSignal(key, 1) }} style={{
                 padding: '10px 12px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                border: `1px solid ${oguTone === key ? t.color : 'rgba(255,255,255,0.08)'}`,
-                background: oguTone === key ? `${t.color}22` : 'rgba(255,255,255,0.03)',
-                color: oguTone === key ? t.color : '#94a3b8',
+                border: `1px solid ${oguTone === key ? t.color : 'rgba(0,0,0,0.05)'}`,
+                background: oguTone === key ? `${t.color}22` : 'rgba(0,0,0,0.02)',
+                color: oguTone === key ? t.color : '#8E8E93',
               }}>
                 <div style={{ fontSize: 18, marginBottom: 2 }}>{t.emoji}</div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{t.label}</div>
@@ -250,7 +250,7 @@ export default function SettingsPage({
 
       {/* ── 백그라운드 알람 안내 ── */}
       <SettingSection title="📱 백그라운드 알람">
-        <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.7 }}>
+        <div style={{ color: '#9A9AA0', fontSize: 11, lineHeight: 1.7 }}>
           앱을 닫아도 설정한 시간의 59분에 알람이 울립니다.<br />
           기기 알림 설정에서 오구톡 알림이 허용되어 있는지 확인하세요.
         </div>
@@ -260,8 +260,8 @@ export default function SettingsPage({
               onClick={() => scheduleTestNotification(alarmMode)}
               style={{
                 marginTop: 10, width: '100%', padding: '10px', borderRadius: 12,
-                border: '1px solid rgba(99,102,241,0.3)', cursor: 'pointer',
-                background: 'rgba(99,102,241,0.1)', color: '#818cf8',
+                border: '1px solid rgba(255,107,44,0.22)', cursor: 'pointer',
+                background: 'rgba(255,107,44,0.09)', color: '#D9531B',
                 fontSize: 12, fontWeight: 700,
               }}
             >
@@ -284,7 +284,7 @@ export default function SettingsPage({
               style={{
                 marginTop: 8, width: '100%', padding: '10px', borderRadius: 12,
                 border: '1px solid rgba(251,146,60,0.3)', cursor: 'pointer',
-                background: 'rgba(251,146,60,0.1)', color: '#fb923c',
+                background: 'rgba(251,146,60,0.1)', color: '#C2521C',
                 fontSize: 12, fontWeight: 700,
               }}
             >
@@ -377,7 +377,7 @@ export default function SettingsPage({
               style={{
                 marginTop: 8, width: '100%', padding: '10px', borderRadius: 12,
                 border: '1px solid rgba(52,211,153,0.3)', cursor: 'pointer',
-                background: 'rgba(52,211,153,0.1)', color: '#34d399',
+                background: 'rgba(52,211,153,0.1)', color: '#1E7A58',
                 fontSize: 12, fontWeight: 700,
               }}
             >
@@ -386,10 +386,10 @@ export default function SettingsPage({
           </>
         )}
         <div style={{ marginTop: 10, marginBottom: 12, padding: '8px 12px', borderRadius: 10,
-          background: IS_NATIVE ? 'rgba(52,211,153,0.08)' : 'rgba(99,102,241,0.08)',
-          border: `1px solid ${IS_NATIVE ? 'rgba(52,211,153,0.2)' : 'rgba(99,102,241,0.2)'}`,
+          background: IS_NATIVE ? 'rgba(52,211,153,0.08)' : 'rgba(255,107,44,0.08)',
+          border: `1px solid ${IS_NATIVE ? 'rgba(52,211,153,0.2)' : 'rgba(255,107,44,0.14)'}`,
         }}>
-          <span style={{ color: IS_NATIVE ? '#34d399' : '#818cf8', fontSize: 12, fontWeight: 700 }}>
+          <span style={{ color: IS_NATIVE ? '#1E7A58' : '#D9531B', fontSize: 12, fontWeight: 700 }}>
             {IS_NATIVE ? '🟢 Capacitor 로컬 알림 활성' : '🌐 브라우저 알림 모드 (앱 설치 시 백그라운드 알림 지원)'}
           </span>
         </div>
@@ -398,9 +398,9 @@ export default function SettingsPage({
 
       {/* ── 안정적 사용 가이드 ── */}
       <SettingSection title="📲 안정적인 알람을 위한 권한 안내">
-        <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.7, marginBottom: 10 }}>
+        <div style={{ color: '#8E8E93', fontSize: 11, lineHeight: 1.7, marginBottom: 10 }}>
           오구톡 알람이 정확한 시각에 울리려면 아래 권한이 필요합니다.<br />
-          <span style={{ color: '#475569' }}>휴대폰 설정 → 앱 → 오구톡 에서 확인하세요.</span>
+          <span style={{ color: '#B0B0B6' }}>휴대폰 설정 → 앱 → 오구톡 에서 확인하세요.</span>
         </div>
 
         {[
@@ -429,17 +429,17 @@ export default function SettingsPage({
             display: 'flex', gap: 10, alignItems: 'flex-start',
             padding: '10px 12px', marginBottom: 6, borderRadius: 10,
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            border: '1px solid rgba(0,0,0,0.03)',
           }}>
             <span style={{ fontSize: 18, lineHeight: 1.2 }}>{p.icon}</span>
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#cbd5e1', fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{p.title}</div>
-              <div style={{ color: '#64748b', fontSize: 11, lineHeight: 1.6 }}>{p.desc}</div>
+              <div style={{ color: '#3A3A3E', fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{p.title}</div>
+              <div style={{ color: '#9A9AA0', fontSize: 11, lineHeight: 1.6 }}>{p.desc}</div>
             </div>
           </div>
         ))}
 
-        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
+        <div style={{ color: '#B0B0B6', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
           💡 일부 항목은 기기/제조사(Samsung, Xiaomi 등)에 따라 메뉴 위치가 다를 수 있습니다.
         </div>
       </SettingSection>
@@ -449,7 +449,7 @@ export default function SettingsPage({
         <div style={{
           marginTop: 16, padding: 14, borderRadius: 14,
           background: 'rgba(239,68,68,0.05)',
-          border: '1px solid rgba(239,68,68,0.2)',
+          border: '1px solid rgba(210,59,46,0.16)',
         }}>
           <div
             onClick={() => setDangerOpen(v => !v)}
@@ -458,17 +458,17 @@ export default function SettingsPage({
               cursor: 'pointer', userSelect: 'none',
             }}
           >
-            <div style={{ color: '#ef4444', fontSize: 13, fontWeight: 700 }}>⚠️ 위험 영역</div>
+            <div style={{ color: '#D23B2E', fontSize: 13, fontWeight: 700 }}>⚠️ 위험 영역</div>
             <span style={{
-              color: '#ef4444', fontSize: 14,
+              color: '#D23B2E', fontSize: 14,
               transition: 'transform 0.15s',
               transform: dangerOpen ? 'rotate(180deg)' : 'rotate(0)',
             }}>▼</span>
           </div>
 
           {dangerOpen && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(239,68,68,0.2)' }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(210,59,46,0.16)' }}>
+              <div style={{ color: '#8E8E93', fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
                 계정을 삭제하면 모든 할일·목표·체크인·알람 데이터가 <b style={{ color: '#fca5a5' }}>영구 삭제</b>되며 복구할 수 없습니다.
               </div>
               <button
@@ -493,8 +493,8 @@ export default function SettingsPage({
                 style={{
                   width: '100%', padding: '11px', borderRadius: 10, cursor: 'pointer',
                   border: '1px solid rgba(239,68,68,0.4)',
-                  background: 'rgba(239,68,68,0.1)',
-                  color: '#ef4444', fontSize: 13, fontWeight: 700,
+                  background: 'rgba(210,59,46,0.07)',
+                  color: '#D23B2E', fontSize: 13, fontWeight: 700,
                 }}
               >
                 🗑 계정 삭제
@@ -525,15 +525,15 @@ export default function SettingsPage({
           onClick={() => openUrl('https://ogutalk.vercel.app/privacy.html')}
           style={{
             width: '100%', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
-            color: '#94a3b8', fontSize: 13, textAlign: 'left',
+            border: '1px solid rgba(0,0,0,0.05)', background: 'rgba(0,0,0,0.02)',
+            color: '#8E8E93', fontSize: 13, textAlign: 'left',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}
         >
           <span>🔒 개인정보 처리방침</span>
-          <span style={{ color: '#475569' }}>›</span>
+          <span style={{ color: '#B0B0B6' }}>›</span>
         </button>
-        <div style={{ color: '#475569', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
+        <div style={{ color: '#B0B0B6', fontSize: 10, marginTop: 8, lineHeight: 1.6 }}>
           오구톡 v{__APP_VERSION__} · 주식회사 지성엔테크
         </div>
       </SettingSection>

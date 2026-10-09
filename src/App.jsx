@@ -8,6 +8,7 @@ import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
 import { loadLocalCheckins } from './lib/checkinStore'
+import { labelOf } from './data/appCategories'
 import { alarmMood, todayTotals as sumToday, pickNextTodo, pickUpcomingEvent } from './lib/alarmContext'
 import { getEvents } from './lib/calendar'
 import { oguScore } from './lib/oguScore'
@@ -82,7 +83,7 @@ function LoginModal({ open, onClose, onLogin }) {
             background: gradients.logo,
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>오구톡</div>
-          <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 12, marginTop: 4 }}>
             {authMode === 'login'  && '로그인하고 모든 기능을 사용하세요'}
             {authMode === 'signup' && '새 계정을 만들어 시작하세요'}
             {authMode === 'reset'  && '가입하신 이메일을 입력하시면 재설정 링크를 보내드려요'}
@@ -106,10 +107,10 @@ function LoginModal({ open, onClose, onLogin }) {
           <input type="password" placeholder="비밀번호 확인" style={{ ...S.input, marginTop: 8 }} />
         )}
         {error && (
-          <div style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{error}</div>
+          <div style={{ color: '#D23B2E', fontSize: 12, marginTop: 8 }}>{error}</div>
         )}
         {info && (
-          <div style={{ color: '#34d399', fontSize: 12, marginTop: 8 }}>{info}</div>
+          <div style={{ color: '#1E7A58', fontSize: 12, marginTop: 8 }}>{info}</div>
         )}
 
         <button style={{ ...S.primaryBtn, marginTop: 16 }} onClick={handleSubmit}>
@@ -122,7 +123,7 @@ function LoginModal({ open, onClose, onLogin }) {
         {authMode === 'login' && (
           <div style={{ textAlign: 'right', marginTop: 8 }}>
             <span
-              style={{ color: '#64748b', fontSize: 11, cursor: 'pointer' }}
+              style={{ color: '#9A9AA0', fontSize: 11, cursor: 'pointer' }}
               onClick={() => { setAuthMode('reset'); setError(''); setInfo('') }}
             >
               비밀번호를 잊으셨나요?
@@ -131,9 +132,9 @@ function LoginModal({ open, onClose, onLogin }) {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0' }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-          <span style={{ color: '#475569', fontSize: 11 }}>또는</span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.05)' }} />
+          <span style={{ color: '#B0B0B6', fontSize: 11 }}>또는</span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.05)' }} />
         </div>
 
         {/* 카카오 로그인 UI */}
@@ -153,20 +154,20 @@ function LoginModal({ open, onClose, onLogin }) {
 
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           {authMode === 'login' && (
-            <span style={{ color: '#64748b', fontSize: 12 }}>
+            <span style={{ color: '#9A9AA0', fontSize: 12 }}>
               계정이 없으신가요?{' '}
-              <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => setAuthMode('signup')}>회원가입</span>
+              <span style={{ color: '#D9531B', cursor: 'pointer' }} onClick={() => setAuthMode('signup')}>회원가입</span>
             </span>
           )}
           {authMode === 'signup' && (
-            <span style={{ color: '#64748b', fontSize: 12 }}>
+            <span style={{ color: '#9A9AA0', fontSize: 12 }}>
               이미 계정이 있으신가요?{' '}
-              <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => setAuthMode('login')}>로그인</span>
+              <span style={{ color: '#D9531B', cursor: 'pointer' }} onClick={() => setAuthMode('login')}>로그인</span>
             </span>
           )}
           {authMode === 'reset' && (
-            <span style={{ color: '#64748b', fontSize: 12 }}>
-              <span style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => { setAuthMode('login'); setError(''); setInfo('') }}>← 로그인으로 돌아가기</span>
+            <span style={{ color: '#9A9AA0', fontSize: 12 }}>
+              <span style={{ color: '#D9531B', cursor: 'pointer' }} onClick={() => { setAuthMode('login'); setError(''); setInfo('') }}>← 로그인으로 돌아가기</span>
             </span>
           )}
         </div>
@@ -320,6 +321,15 @@ export default function App() {
       dayScore: score,
     }
   }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos, produceTarget, consumeLimit, lifeStage])
+
+  // 홈 히어로가 쓸 오늘 기록. 탭을 열 때와 체크인이 생길 때만 다시 읽는다.
+  const [homeCheckins, setHomeCheckins] = useState(() => loadLocalCheckins())
+  useEffect(() => {
+    const reload = () => setHomeCheckins(loadLocalCheckins())
+    reload()
+    window.addEventListener('ogu:checkin', reload)
+    return () => window.removeEventListener('ogu:checkin', reload)
+  }, [activeTab])
 
   // 하루 첫 알람에만 미션 안내 한 줄.
   // claimFirstAlarm 은 "묻는 순간 소모되는" 함수라 렌더 계산(useMemo) 안에서 부르면 안 된다 —
@@ -538,6 +548,10 @@ export default function App() {
         {activeTab === 'home' && (
           <HomePage
             lifeStage={lifeStage}
+            checkins={homeCheckins}
+            nowLabel={lastHourSummary?.label
+              ? `${lastHourSummary.label} ${lastHourSummary.minutes}분째`
+              : null}
             alarmCount={alarmCount}
             todos={activeTodos}
             goals={localGoals}

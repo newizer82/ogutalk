@@ -19,7 +19,7 @@ const styles = {
     width: '100%',
     padding: '12px 16px',
     background: theme.bg.elevated,
-    border: '1px solid #475569',
+    border: '1px solid #B0B0B6',
     borderRadius: 12,
     color: theme.text.primary,
     fontSize: 15,

@@ -45,8 +45,8 @@ export default function ResetPasswordPage() {
     }}>
       <div style={{
         width: '100%', maxWidth: 380,
-        background: 'rgba(30,41,59,0.9)', borderRadius: 24, padding: 28,
-        border: '1px solid rgba(99,102,241,0.3)',
+        background: '#FFFFFF', border: '1px solid #ECECEF', borderRadius: 24, padding: 28,
+        border: '1px solid rgba(255,107,44,0.22)',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
             background: gradients.logo,
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>비밀번호 재설정</div>
-          <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>
+          <div style={{ color: '#8E8E93', fontSize: 12, marginTop: 6 }}>
             새 비밀번호를 입력해주세요
           </div>
         </div>
@@ -63,15 +63,15 @@ export default function ResetPasswordPage() {
         {success ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-            <div style={{ color: '#34d399', fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
+            <div style={{ color: '#1E7A58', fontSize: 14, fontWeight: 700, marginBottom: 16 }}>
               비밀번호가 변경됐습니다
             </div>
-            <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 20, lineHeight: 1.6 }}>
+            <div style={{ color: '#8E8E93', fontSize: 12, marginBottom: 20, lineHeight: 1.6 }}>
               오구톡 앱으로 돌아가서<br />새 비밀번호로 로그인해주세요.
             </div>
             <a href="/" style={{
               display: 'inline-block', padding: '10px 24px', borderRadius: 12,
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, #FF6B2C, #E8762C)',
               color: 'white', fontWeight: 700, textDecoration: 'none', fontSize: 13,
             }}>
               오구톡으로 가기
@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
               style={{ ...S.input, marginTop: 8 }}
             />
             {error && (
-              <div style={{ color: '#ef4444', fontSize: 12, marginTop: 10 }}>{error}</div>
+              <div style={{ color: '#D23B2E', fontSize: 12, marginTop: 10 }}>{error}</div>
             )}
             <button
               type="submit" disabled={loading}

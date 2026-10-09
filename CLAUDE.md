@@ -3,7 +3,7 @@
 > ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
 > 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
 >
-> 마지막 업데이트: 2026-10-09 (v1.11.0 — 오구 지수 5:9 + 오늘의 미션)
+> 마지막 업데이트: 2026-10-09 (v1.12.0 — 화이트 테마 + 홈 히어로 "오늘 내 시간")
 
 ---
 
@@ -158,20 +158,23 @@ ogutalk/
 
 ## 🎨 디자인 시스템
 
-다크 테마 고정. `src/styles/theme.js` 의 `theme` / `gradients` / `S` 객체 사용.
+화이트 테마. `src/styles/theme.js` 의 `theme` / `gradients` / `S` 객체 사용.
+**알람 팝업(AlarmPopup.jsx)만 어두운 배경을 유지한다** — 밤 알람에 화면이 번쩍하면 안 되므로
+일괄 색 변환에서도 이 파일은 제외했다. 색을 바꿀 때 같이 건드리지 말 것.
 
 ```javascript
 const theme = {
-  bg:     { primary: '#0f172a', secondary: '#1e293b', elevated: '#334155' },
-  accent: { primary: '#6366f1', secondary: '#818cf8', purple: '#8b5cf6' },
-  text:   { primary: '#e2e8f0', secondary: '#94a3b8', muted: '#64748b' },
-  status: { success: '#34d399', warning: '#f59e0b', error: '#ef4444' },
+  bg:     { primary: '#FFFFFF', elevated: '#F7F7F8' },
+  accent: { primary: '#FF6B2C', secondary: '#D9531B' },  // secondary = 흰 바탕 위 글자용
+  text:   { primary: '#111111', secondary: '#8E8E93', muted: '#9A9AA0', dim: '#B0B0B6' },
+  status: { success: '#1E7A58', warning: '#B4740F', error: '#D23B2E' },
+  border: { subtle: '#F0F0F3', normal: '#ECECEF' },
+  night:  { scrim: 'rgba(26,18,12,0.92)', card: '#FFFCF8' },  // 알람 팝업 전용
 }
 
 // 그라데이션
-배경:    'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)'
-로고:    'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)'
-주요버튼: 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+로고·버튼: 'linear-gradient(135deg, #FF6B2C, #E8762C)'
+배경:      '#FFFFFF' (그라데이션 없음 — 흰 바탕에 테두리로만 나눈다)
 ```
 
 앱 최대 너비 420px, 모바일 우선.
@@ -388,7 +391,7 @@ localStorage 키 (현재 6개 — 통합 후보):
 2. Supabase service_role key 프런트엔드 사용 금지 (anon key만 사용)
 3. RLS 활성화로 anon key 노출 OK
 4. 앱 최대 너비 420px, 모바일 우선
-5. 다크 테마 고정 (라이트 모드 미지원)
+5. 화이트 테마 고정 (다크 모드 미지원). 알람 팝업만 예외로 어두운 배경
 6. localStorage 키 prefix 는 'ogu_' 통일
 7. 모든 src 파일 끝에 NULL 바이트 패딩이 붙기 쉬움 (윈도우↔리눅스 마운트)
    → 빌드 실패 시 `tr -d '\000'` 로 정리 필요

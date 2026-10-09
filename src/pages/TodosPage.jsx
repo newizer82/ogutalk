@@ -9,8 +9,8 @@ function PremiumLock({ onUnlock }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>🔒</div>
-      <div style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>할일 관리</div>
-      <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>
+      <div style={{ color: '#111111', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>할일 관리</div>
+      <div style={{ color: '#8E8E93', fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>
         이 기능은 프리미엄 플랜에서만 사용할 수 있어요.<br />월 2,900원으로 모든 기능을 잠금 해제하세요.
       </div>
       <button style={{ ...S.primaryBtn, width: 'auto', padding: '12px 28px' }} onClick={onUnlock}>
@@ -28,10 +28,10 @@ function formatDue(dateStr) {
   now.setHours(0, 0, 0, 0)
   due.setHours(0, 0, 0, 0)
   const diff = Math.round((due - now) / 86400000)
-  if (diff === 0)  return { label: '오늘',   color: '#f59e0b' }
-  if (diff === 1)  return { label: '내일',   color: '#34d399' }
-  if (diff < 0)   return { label: `${Math.abs(diff)}일 지남`, color: '#ef4444' }
-  return { label: `D-${diff}`, color: '#94a3b8' }
+  if (diff === 0)  return { label: '오늘',   color: '#B4740F' }
+  if (diff === 1)  return { label: '내일',   color: '#1E7A58' }
+  if (diff < 0)   return { label: `${Math.abs(diff)}일 지남`, color: '#D23B2E' }
+  return { label: `D-${diff}`, color: '#8E8E93' }
 }
 
 function TodoItem({ todo, onToggle, onEdit, onDelete }) {
@@ -45,8 +45,8 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
           onClick={() => onToggle(todo.id, !isDone)}
           style={{
             width: 22, height: 22, borderRadius: 7, flexShrink: 0, cursor: 'pointer',
-            border: isDone ? 'none' : '2px solid #475569',
-            background: isDone ? '#6366f1' : 'transparent',
+            border: isDone ? 'none' : '2px solid #B0B0B6',
+            background: isDone ? '#FF6B2C' : 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
@@ -56,7 +56,7 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
         {/* 제목 */}
         <div style={{ flex: 1 }}>
           <div style={{
-            color: isDone ? '#475569' : '#e2e8f0',
+            color: isDone ? '#B0B0B6' : '#111111',
             fontSize: 14, fontWeight: 500,
             textDecoration: isDone ? 'line-through' : 'none',
           }}>
@@ -65,7 +65,7 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
             {todo.due_date && (() => {
               const dt = new Date(todo.due_date)
               return (
-                <span style={{ color: isDone ? '#475569' : '#94a3b8', fontWeight: 400, marginLeft: 4 }}>
+                <span style={{ color: isDone ? '#B0B0B6' : '#8E8E93', fontWeight: 400, marginLeft: 4 }}>
                   ({dt.getMonth() + 1}/{dt.getDate()})
                 </span>
               )
@@ -82,14 +82,14 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
         {onEdit && (
           <span
             onClick={() => onEdit(todo)}
-            style={{ color: '#475569', fontSize: 15, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+            style={{ color: '#B0B0B6', fontSize: 15, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
           >✎</span>
         )}
 
         {/* 삭제 */}
         <span
           onClick={() => onDelete(todo.id)}
-          style={{ color: '#334155', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+          style={{ color: '#F1F1F4', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
         >×</span>
       </div>
     </GlassCard>
@@ -172,14 +172,14 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
 
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#cbd5e1' }}>✅ 할일 관리</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#3A3A3E' }}>✅ 할일 관리</div>
         <button style={S.accentSmallBtn} onClick={toggleForm}>+ 추가</button>
       </div>
 
       {/* 추가/수정 폼 */}
       {showForm && (
         <GlassCard style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#3A3A3E', marginBottom: 10 }}>
             {editingId ? '✎ 할일 수정' : '+ 새 할일'}
           </div>
           {/* 타입 선택 */}
@@ -190,9 +190,9 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
             ].map(t => (
               <button key={t.id} onClick={() => setTodoType(t.id)} style={{
                 flex: 1, padding: '10px 8px', borderRadius: 12, cursor: 'pointer',
-                border: `1px solid ${todoType === t.id ? '#818cf8' : 'rgba(255,255,255,0.08)'}`,
-                background: todoType === t.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-                color: todoType === t.id ? '#818cf8' : '#64748b',
+                border: `1px solid ${todoType === t.id ? '#D9531B' : 'rgba(0,0,0,0.05)'}`,
+                background: todoType === t.id ? 'rgba(255,107,44,0.14)' : 'rgba(0,0,0,0.02)',
+                color: todoType === t.id ? '#D9531B' : '#9A9AA0',
                 textAlign: 'center',
               }}>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{t.label}</div>
@@ -233,17 +233,17 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       <div style={{
         display: 'flex', gap: 8, marginBottom: 16,
         padding: '10px 14px', borderRadius: 12,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(0,0,0,0.02)',
+        border: '1px solid rgba(0,0,0,0.035)',
       }}>
         {[
-          { label: '주간', count: weekly.length,    color: '#818cf8' },
-          { label: '기한', count: tasks.length,     color: '#f59e0b' },
-          { label: '완료', count: completed.length, color: '#34d399' },
+          { label: '주간', count: weekly.length,    color: '#D9531B' },
+          { label: '기한', count: tasks.length,     color: '#B4740F' },
+          { label: '완료', count: completed.length, color: '#1E7A58' },
         ].map(s => (
           <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ color: s.color, fontSize: 18, fontWeight: 800 }}>{s.count}</div>
-            <div style={{ color: '#475569', fontSize: 10 }}>{s.label}</div>
+            <div style={{ color: '#B0B0B6', fontSize: 10 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -251,9 +251,9 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       {/* 📌 기한 있는 할일 — 우선순위 상단 */}
       {tasks.length > 0 && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#B4740F', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>📌 기한 있는 할일</span>
-            <span style={{ color: '#334155', fontWeight: 400 }}>({tasks.length})</span>
+            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({tasks.length})</span>
           </div>
           {tasks.map(t => (
             <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={startEdit} onDelete={onDelete} />
@@ -264,12 +264,12 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       {/* 📅 주간 할일 */}
       {(weekly.length > 0 || todos.filter(t => !t.todo_type && !t.due_date).length === 0) && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#818cf8', margin: tasks.length > 0 ? '16px 0 8px' : '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#D9531B', margin: tasks.length > 0 ? '16px 0 8px' : '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>📅 이번 주 할일</span>
-            <span style={{ color: '#334155', fontWeight: 400 }}>({weekly.length})</span>
+            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({weekly.length})</span>
           </div>
           {weekly.length === 0 ? (
-            <div style={{ color: '#334155', fontSize: 12, textAlign: 'center', padding: '16px 0', marginBottom: 8 }}>
+            <div style={{ color: '#F1F1F4', fontSize: 12, textAlign: 'center', padding: '16px 0', marginBottom: 8 }}>
               주간 할일을 추가해보세요
             </div>
           ) : (
@@ -283,9 +283,9 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       {/* ✅ 완료됨 */}
       {completed.length > 0 && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#34d399', margin: '16px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#1E7A58', margin: '16px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>✅ 완료됨</span>
-            <span style={{ color: '#334155', fontWeight: 400 }}>({completed.length})</span>
+            <span style={{ color: '#F1F1F4', fontWeight: 400 }}>({completed.length})</span>
           </div>
           {completed.map(t => (
             <TodoItem key={t.id} todo={t} onToggle={onToggle} onDelete={onDelete} />
@@ -297,8 +297,8 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
       {todos.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '50px 20px' }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-          <div style={{ color: '#64748b', fontSize: 14, marginBottom: 6 }}>할일을 추가해보세요!</div>
-          <div style={{ color: '#475569', fontSize: 12, marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ color: '#9A9AA0', fontSize: 14, marginBottom: 6 }}>할일을 추가해보세요!</div>
+          <div style={{ color: '#B0B0B6', fontSize: 12, marginBottom: 16, lineHeight: 1.6 }}>
             이번 주 할일과 마감이 있는 할일을<br />나눠서 관리할 수 있어요
           </div>
           <button style={{ ...S.accentSmallBtn, marginTop: 4 }} onClick={() => setShowForm(true)}>

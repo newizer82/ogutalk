@@ -44,18 +44,18 @@ export default function CalendarSection({ enabled, onChange }) {
   }
 
   return (
-    <div style={{ marginBottom: 14, background: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1', marginBottom: 12 }}>
+    <div style={{ marginBottom: 14, background: 'rgba(0,0,0,0.02)', borderRadius: 20, padding: 16, border: '1px solid rgba(0,0,0,0.035)' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E', marginBottom: 12 }}>
         📅 캘린더 연동
       </div>
 
-      <div style={{ color: '#64748b', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+      <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
         휴대폰 캘린더의 일정을 읽어 알람에 함께 보여줍니다.<br />
-        <span style={{ color: '#475569' }}>"15:00 강남 미팅"처럼 다음 일정을 1시간 전에 알려줘요.</span>
+        <span style={{ color: '#B0B0B6' }}>"15:00 강남 미팅"처럼 다음 일정을 1시간 전에 알려줘요.</span>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-        <span style={{ color: '#e2e8f0', fontSize: 13 }}>캘린더 사용</span>
+        <span style={{ color: '#111111', fontSize: 13 }}>캘린더 사용</span>
         <Toggle on={enabled} onToggle={() => handleToggle(!enabled)} />
       </div>
 
@@ -64,15 +64,15 @@ export default function CalendarSection({ enabled, onChange }) {
           onClick={async () => { const ok = await requestCalendarPermission(); setGranted(ok); if (!ok) onChange(false) }}
           style={{
             width: '100%', marginTop: 10, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-            border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.1)',
-            color: '#f59e0b', fontSize: 12, fontWeight: 700,
+            border: '1px solid rgba(242,153,74,0.4)', background: 'rgba(242,153,74,0.12)',
+            color: '#B4740F', fontSize: 12, fontWeight: 700,
           }}
         >
           ⚠️ 캘린더 권한이 필요합니다 — 다시 요청
         </button>
       )}
       {enabled && granted && (
-        <div style={{ color: '#34d399', fontSize: 12, marginTop: 8 }}>✓ 일정을 함께 보여주는 중</div>
+        <div style={{ color: '#1E7A58', fontSize: 12, marginTop: 8 }}>✓ 일정을 함께 보여주는 중</div>
       )}
 
       {/* ── 사전 고지 (Play 정책: 권한 요청 전 명시적 동의) ── */}
@@ -82,21 +82,21 @@ export default function CalendarSection({ enabled, onChange }) {
           background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div style={{
-            width: '100%', maxWidth: 340, background: '#1e293b', borderRadius: 20, padding: 22,
-            border: '1px solid rgba(99,102,241,0.3)',
+            width: '100%', maxWidth: 340, background: '#FFFFFF', borderRadius: 20, padding: 22,
+            border: '1px solid rgba(255,107,44,0.22)',
           }}>
-            <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 800, marginBottom: 12 }}>
+            <div style={{ color: '#111111', fontSize: 16, fontWeight: 800, marginBottom: 12 }}>
               오구톡이 캘린더 일정을 읽습니다
             </div>
-            <div style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
+            <div style={{ color: '#3A3A3E', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
               알람이 울릴 때 다음 일정을 함께 보여주기 위해 사용합니다.
               일정은 읽기만 하고 추가·수정하지 않습니다.<br /><br />
-              일정 내용은 <b style={{ color: '#818cf8' }}>기기 안에서만 쓰이며 서버로 전송되지 않습니다.</b>
+              일정 내용은 <b style={{ color: '#D9531B' }}>기기 안에서만 쓰이며 서버로 전송되지 않습니다.</b>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => setNotice(false)}
-                style={{ flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, cursor: 'pointer', border: '1px solid rgba(0,0,0,0.08)', background: 'transparent', color: '#8E8E93', fontSize: 13, fontWeight: 700 }}
               >취소</button>
               <button
                 onClick={handleAgree}
@@ -104,7 +104,7 @@ export default function CalendarSection({ enabled, onChange }) {
                 style={{
                   flex: 1, padding: '12px', borderRadius: 12, border: 'none', color: 'white', fontSize: 13, fontWeight: 800,
                   cursor: armed ? 'pointer' : 'default',
-                  background: armed ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.12)',
+                  background: armed ? 'linear-gradient(135deg, #FF6B2C, #E8762C)' : 'rgba(0,0,0,0.08)',
                   opacity: armed ? 1 : 0.5,
                 }}
               >허용하고 계속</button>

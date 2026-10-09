@@ -109,10 +109,10 @@ export function doneScore({
 }
 
 const GRADES = [
-  { min: 80, label: '오늘 잘 썼어요',        color: '#34d399' },
-  { min: 60, label: '괜찮은 하루였어요',     color: '#818cf8' },
-  { min: 40, label: '반반이었어요',          color: '#f59e0b' },
-  { min: 0,  label: '오늘은 쉬어간 날이에요', color: '#f87171' },
+  { min: 80, label: '오늘 잘 썼어요',        color: '#1E7A58' },
+  { min: 60, label: '괜찮은 하루였어요',     color: '#D9531B' },
+  { min: 40, label: '반반이었어요',          color: '#B4740F' },
+  { min: 0,  label: '오늘은 쉬어간 날이에요', color: '#D23B2E' },
 ]
 
 export function oguScore({

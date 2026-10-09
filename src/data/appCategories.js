@@ -10,10 +10,10 @@
 // 생산 = 무언가를 만들거나 끝낸 행위(문서·메일·촬영·구매·예약·운동), 소비 = 보고 읽기만 한 시간(검색 포함).
 
 export const GROUPS = {
-  produce: { label: '⚡ 생산', emoji: '⚡', color: '#6366f1' },
-  connect: { label: '💬 소통', emoji: '💬', color: '#10b981' },
-  consume: { label: '🍿 소비', emoji: '🍿', color: '#f59e0b' },
-  living:  { label: '🧭 생활', emoji: '🧭', color: '#94a3b8' },
+  produce: { label: '⚡ 생산', emoji: '⚡', color: '#4B6BD4' },
+  connect: { label: '💬 소통', emoji: '💬', color: '#2F7D62' },
+  consume: { label: '🍿 소비', emoji: '🍿', color: '#FF6B2C' },
+  living:  { label: '🧭 생활', emoji: '🧭', color: '#B0B0B6' },
 }
 
 export const CATEGORIES = {
@@ -54,7 +54,7 @@ export function groupOf(activityType) {
 
 export const labelOf = t => info(t)?.label ?? t
 export const emojiOf = t => info(t)?.emoji ?? '?'
-export const colorOf = t => GROUPS[groupOf(t)]?.color ?? '#6366f1'
+export const colorOf = t => GROUPS[groupOf(t)]?.color ?? '#B0B0B6'
 
 // ── 앱 패키지 → 세부 분류 (내장) ────────────────────────────────
 // 한국 앱은 OS 분류(아래)를 선언하지 않는 경우가 많아 직접 둔다.

@@ -16,7 +16,7 @@ export default function Layout({
       maxWidth: 420, margin: '0 auto', minHeight: '100vh',
       background: gradients.bg,
       fontFamily: "'Segoe UI', -apple-system, 'Apple SD Gothic Neo', sans-serif",
-      color: '#e2e8f0', position: 'relative', overflowX: 'hidden',
+      color: '#111111', position: 'relative', overflowX: 'hidden',
     }}>
       <Header
         isLoggedIn={isLoggedIn}

@@ -1,83 +1,97 @@
+// ── 오구톡 디자인 토큰 (v1.12.0 화이트) ────────────────────────
+// 흰 바탕 + 오렌지 하나. 카드는 면을 채우지 않고 1px 테두리로만 나눈다.
+// 알람 팝업만 예외로 어두운 배경을 유지한다 — 밤 10시 알람에 화면이 번쩍하면 안 된다.
 export const theme = {
   bg: {
-    primary:   '#080f1e',
-    secondary: '#0d1526',
-    elevated:  '#141d2e',
-    card:      'rgba(255,255,255,0.05)',
+    primary:   '#FFFFFF',
+    secondary: '#FFFFFF',
+    elevated:  '#F7F7F8',
+    card:      '#FFFFFF',
   },
   accent: {
-    primary:   '#6366f1',
-    secondary: '#818cf8',
-    purple:    '#8b5cf6',
+    primary:   '#FF6B2C',   // 면·테두리용
+    secondary: '#D9531B',   // 흰 바탕 위 글자용 (연한 오렌지는 글자로 못 쓴다)
+    purple:    '#E8762C',
   },
   text: {
-    primary:   '#e2e8f0',
-    secondary: '#94a3b8',
-    muted:     '#64748b',
-    dim:       '#475569',
+    primary:   '#111111',
+    secondary: '#8E8E93',
+    muted:     '#9A9AA0',
+    dim:       '#B0B0B6',
   },
   status: {
-    success: '#34d399',
-    warning: '#f59e0b',
-    error:   '#ef4444',
+    success: '#1E7A58',
+    warning: '#B4740F',
+    error:   '#D23B2E',
   },
   border: {
-    subtle:  'rgba(255,255,255,0.06)',
-    normal:  'rgba(255,255,255,0.08)',
-    accent:  'rgba(99,102,241,0.3)',
+    subtle:  '#F0F0F3',
+    normal:  '#ECECEF',
+    accent:  'rgba(255,107,44,0.22)',
+  },
+  // 알람 팝업 전용 (다크 유지)
+  night: {
+    scrim:  'rgba(26,18,12,0.92)',
+    card:   '#FFFCF8',
+    ink:    '#16130F',
+    sub:    '#8B8378',
   },
 }
 
 export const gradients = {
-  bg:     'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15) 0%, transparent 60%), linear-gradient(180deg, #080f1e 0%, #0d1526 50%, #111827 100%)',
-  logo:   'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)',
-  button: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-  purple: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-  gold:   'linear-gradient(135deg, #f59e0b, #f97316)',
+  bg:     '#FFFFFF',
+  logo:   'linear-gradient(135deg, #FF6B2C, #E8762C)',
+  button: 'linear-gradient(135deg, #FF6B2C, #E8762C)',
+  purple: 'linear-gradient(135deg, #FF6B2C, #E8762C)',
+  gold:   'linear-gradient(135deg, #F2994A, #E8762C)',
 }
 
 // 공통 스타일 토큰
 export const S = {
   primaryBtn: {
     width: '100%', padding: '14px 20px', border: 'none', borderRadius: 16,
-    background: gradients.button, color: 'white', fontSize: 15, fontWeight: 700,
-    cursor: 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
+    background: gradients.button, color: 'white', fontSize: 15, fontWeight: 800,
+    cursor: 'pointer', boxShadow: '0 6px 18px rgba(255,107,44,0.25)',
   },
   loginBtn: {
     padding: '6px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700,
-    border: '1px solid rgba(99,102,241,0.4)', background: 'rgba(99,102,241,0.12)',
-    color: '#818cf8', cursor: 'pointer',
+    border: '1px solid rgba(255,107,44,0.35)', background: 'rgba(255,107,44,0.08)',
+    color: '#D9531B', cursor: 'pointer',
   },
   accentSmallBtn: {
     padding: '8px 18px', borderRadius: 10, border: 'none',
-    background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontSize: 12,
-    fontWeight: 600, cursor: 'pointer',
+    background: 'rgba(255,107,44,0.1)', color: '#D9531B', fontSize: 12,
+    fontWeight: 800, cursor: 'pointer',
   },
   ghostBtn: {
     padding: '8px 14px', borderRadius: 10,
-    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-    color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+    border: '1px solid #ECECEF', background: 'transparent',
+    color: '#8E8E93', fontSize: 12, cursor: 'pointer',
+  },
+  card: {
+    background: '#FFFFFF', border: '1px solid #ECECEF',
+    borderRadius: 22, padding: 18,
   },
   tinyBtn: {
     padding: '5px 12px', borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-    color: '#94a3b8', fontSize: 11, cursor: 'pointer',
+    border: '1px solid #ECECEF', background: 'transparent',
+    color: '#8E8E93', fontSize: 11, cursor: 'pointer',
   },
   input: {
     width: '100%', padding: '12px 14px', borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-    color: '#e2e8f0', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+    border: '1px solid #E2E2E6', background: '#FFFFFF',
+    color: '#111111', fontSize: 14, outline: 'none', boxSizing: 'border-box',
   },
   modalBg: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+    position: 'fixed', inset: 0, background: 'rgba(17,17,17,0.4)',
     display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     zIndex: 200, backdropFilter: 'blur(4px)',
   },
   modalBox: {
     width: '100%', maxWidth: 420,
-    background: 'linear-gradient(180deg,#141d2e,#0d1526)',
+    background: '#FFFFFF',
     borderRadius: '24px 24px 0 0', padding: '28px 24px 40px',
-    border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none',
-    boxShadow: '0 -20px 60px rgba(0,0,0,0.5)',
+    border: '1px solid #ECECEF', borderBottom: 'none',
+    boxShadow: '0 -20px 60px rgba(17,17,17,0.18)',
   },
 }

@@ -1,6 +1,6 @@
 export default function ProgressBar({
   value = 0,
-  color = 'linear-gradient(90deg,#6366f1,#8b5cf6)',
+  color = 'linear-gradient(90deg,#FF6B2C,#E8762C)',
   height = 5,
 }) {
   return (

@@ -54,15 +54,15 @@ export default function WeeklyGoalCard({ onChange }) {
   return (
     <div style={{
       marginBottom: 14, padding: 16, borderRadius: 20,
-      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 14, fontWeight: 800, color: '#f1f5f9' }}>🎯 이번 주 목표</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#111111' }}>🎯 이번 주 목표</span>
         <span style={{ flex: 1 }} />
         {goal.text && !editing && (
           <button
             onClick={() => { setDraft(goal.text); setEditing(true) }}
-            style={{ border: 'none', background: 'transparent', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            style={{ border: 'none', background: 'transparent', color: '#D9531B', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
           >
             바꾸기
           </button>
@@ -79,15 +79,15 @@ export default function WeeklyGoalCard({ onChange }) {
             placeholder="예: 주 3회 운동하기"
             style={{
               flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)',
-              color: '#e2e8f0', fontSize: 14,
+              border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.03)',
+              color: '#111111', fontSize: 14,
             }}
           />
           <button
             onClick={commit}
             style={{
               padding: '11px 16px', borderRadius: 12, border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff',
+              background: 'linear-gradient(135deg, #FF6B2C, #E8762C)', color: '#fff',
               fontSize: 13, fontWeight: 800, flexShrink: 0,
             }}
           >
@@ -96,10 +96,10 @@ export default function WeeklyGoalCard({ onChange }) {
         </div>
       ) : (
         <>
-          <div style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 700, lineHeight: 1.4 }}>
+          <div style={{ color: '#111111', fontSize: 15, fontWeight: 700, lineHeight: 1.4 }}>
             {goal.text}
           </div>
-          <div style={{ color: stale ? '#fb923c' : '#64748b', fontSize: 12, marginTop: 6 }}>
+          <div style={{ color: stale ? '#C2521C' : '#9A9AA0', fontSize: 12, marginTop: 6 }}>
             {stale ? '지난주에 세운 목표예요. 이번 주 목표로 바꿔보세요.' : '✓ 이번 주 목표를 확인했어요 (오구 지수 10점)'}
           </div>
         </>

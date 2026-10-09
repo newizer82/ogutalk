@@ -5,7 +5,7 @@ import { openUrl } from '../../lib/capacitor'
 
 const URL_RE = /((?:https?:\/\/|www\.)[^\s]+)/gi
 
-export default function TextWithLinks({ text, linkColor = '#818cf8' }) {
+export default function TextWithLinks({ text, linkColor = '#D9531B' }) {
   const str = String(text || '')
   const parts = str.split(URL_RE)
   return (

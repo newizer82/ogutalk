@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
+import TodayTimeHero from '../components/home/TodayTimeHero'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
@@ -20,8 +21,8 @@ function TimelineRow({ hours, currentHour, activeColor, showCurrent }) {
             flex: 1, borderRadius: 2,
             height: isCur ? 18 : isActive ? 14 : 6,
             background: isCur
-              ? 'linear-gradient(180deg,#818cf8,#6366f1)'
-              : isActive ? activeColor : 'rgba(255,255,255,0.05)',
+              ? 'linear-gradient(180deg,#D9531B,#FF6B2C)'
+              : isActive ? activeColor : 'rgba(0,0,0,0.03)',
             transition: 'height 0.3s ease',
           }} />
         )
@@ -32,15 +33,30 @@ function TimelineRow({ hours, currentHour, activeColor, showCurrent }) {
 
 // ── 카드 공통 스타일 ───────────────────────────────────────
 const cardStyle = {
-  background: 'rgba(255,255,255,0.05)',
-  border:     '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(0,0,0,0.03)',
+  border:     '1px solid rgba(0,0,0,0.05)',
   borderRadius: 20,
   padding:    '16px 18px',
   marginBottom: 14,
 }
 
+// 다음 활성 알람(×시 59분)까지 남은 분. 켜진 시간대가 없으면 null
+function minutesToNextAlarm(now, alarmHours = {}) {
+  for (let i = 0; i < 24; i++) {
+    const t = new Date(now)
+    t.setMinutes(59, 0, 0)
+    t.setHours(now.getHours() + i)
+    if (t <= now) continue
+    const targetHour = (t.getHours() + 1) % 24
+    if (alarmHours[targetHour]) return Math.round((t - now) / 60000)
+  }
+  return null
+}
+
 export default function HomePage({
   lifeStage = null,
+  checkins = [],
+  nowLabel = null,
   alarmCount = 0,
   todos = [],
   onTabChange,
@@ -72,81 +88,29 @@ export default function HomePage({
 
   return (
     <div>
-      {/* ── 카드 1: 히어로 (오구 설정 · 시각 · 알람 설정 + 타임라인) ── */}
-      <section style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button
-            onClick={() => onTabChange('settings')}
-            style={{
-              flex: 1, padding: '6px 4px', borderRadius: 14, border: 'none', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            }}
-          >
-            <span style={{ fontSize: 20, lineHeight: 1 }}>⏱️</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>오구 설정</span>
-          </button>
+      {/* ── 히어로: 오늘 내 시간 (알람 카운트다운이 아니라 "시간이 어디로 갔나") ── */}
+      <TodayTimeHero
+        checkins={checkins}
+        nextAlarmMin={minutesToNextAlarm(now, alarmHours)}
+        nowLabel={nowLabel}
+        onOpenReport={() => onTabChange('report')}
+      />
 
-          <div style={{ flex: 1, textAlign: 'center', padding: '0 4px' }}>
-            <span style={{
-              fontSize: 34, fontWeight: 900, color: '#f1f5f9',
-              letterSpacing: -1, fontVariantNumeric: 'tabular-nums',
-            }}>
-              {pad(H)}:{pad(M)}
-            </span>
-          </div>
-
-          <button
-            onClick={() => onTabChange('alarms')}
-            style={{
-              flex: 1, padding: '6px 4px', borderRadius: 14, border: 'none', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-              background: 'linear-gradient(135deg,#f59e0b,#fb923c)',
-            }}
-          >
-            <span style={{ fontSize: 20, lineHeight: 1 }}>🔔</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>알람 설정</span>
-          </button>
-        </div>
-
-        {/* 타임라인 */}
-        <div style={{ marginTop: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-            <span style={{ color: theme.accent.secondary, fontSize: 9, fontWeight: 700 }}>현재 {H}시</span>
-          </div>
-
-          <TimelineRow
-            hours={alarmHours} currentHour={H}
-            activeColor="rgba(99,102,241,0.55)" showCurrent
-          />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-            {['0시', '6시', '12시', '18시', '24시'].map(l => (
-              <span key={l} style={{ color: theme.text.muted, fontSize: 8 }}>{l}</span>
-            ))}
-          </div>
-
-          <TimelineRow
-            hours={customAlarmHours} currentHour={H}
-            activeColor="rgba(251,146,60,0.75)" showCurrent={false}
-          />
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 7 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(99,102,241,0.55)' }} />
-              <span style={{ color: '#6366f1', fontSize: 9, fontWeight: 700 }}>오구 알람</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(251,146,60,0.75)' }} />
-              <span style={{ color: '#fb923c', fontSize: 9, fontWeight: 700 }}>커스텀 알람</span>
-            </div>
-          </div>
-
-          <div style={{ color: '#334155', fontSize: 9, marginTop: 6, textAlign: 'center' }}>
-            오늘 활성 알람 {totalActiveHours}시간대 · {alarmCount}회 울림
-          </div>
-        </div>
-      </section>
+      {/* 알람 시간대 한 줄 — 설정으로 가는 입구만 남긴다 */}
+      <button
+        onClick={() => onTabChange('alarms')}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          border: '1px solid #ECECEF', borderRadius: 20, padding: '13px 16px',
+          background: '#fff', cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: 16 }}>🔔</span>
+        <span style={{ flex: 1, fontSize: 13.5, color: '#3A3A3E', fontWeight: 600 }}>
+          오늘 알람 {totalActiveHours}시간대 · {alarmCount}회 울림
+        </span>
+        <span style={{ fontSize: 16, color: '#C7C7CC' }}>›</span>
+      </button>
 
       {/* ── 오늘의 미션 (접을 수 있음) ── */}
       <MissionCard stage={lifeStage} collapsible />
@@ -156,11 +120,11 @@ export default function HomePage({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15 }}>✅</span>
-            <span style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>할일 현황</span>
+            <span style={{ color: '#3A3A3E', fontSize: 13, fontWeight: 700 }}>할일 현황</span>
             {pendingTodos.length > 0 && (
               <span style={{
                 fontSize: 10, padding: '2px 7px', borderRadius: 10,
-                background: 'rgba(248,113,113,0.15)', color: '#f87171', fontWeight: 700,
+                background: 'rgba(248,113,113,0.15)', color: '#D23B2E', fontWeight: 700,
               }}>
                 {pendingTodos.length}개 남음
               </span>
@@ -168,7 +132,7 @@ export default function HomePage({
           </div>
           <button onClick={() => onTabChange('todos')} style={{
             padding: '4px 10px', borderRadius: 10, border: 'none',
-            background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+            background: 'rgba(255,107,44,0.14)', color: theme.accent.secondary,
             fontSize: 11, cursor: 'pointer',
           }}>
             전체 →
@@ -178,12 +142,12 @@ export default function HomePage({
         {/* 진행률 바 */}
         <div style={{
           position: 'relative', height: 8, borderRadius: 4,
-          background: 'rgba(255,255,255,0.06)', marginBottom: 10,
+          background: 'rgba(0,0,0,0.035)', marginBottom: 10,
         }}>
           <div style={{
             position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4,
             width: `${todoPct}%`,
-            background: 'linear-gradient(90deg,#6366f1,#818cf8)',
+            background: 'linear-gradient(90deg,#FF6B2C,#D9531B)',
             transition: 'width 0.8s ease',
           }} />
         </div>
@@ -195,7 +159,7 @@ export default function HomePage({
             할일을 추가해보세요<br />
             <button onClick={() => onTabChange('todos')} style={{
               marginTop: 10, padding: '6px 16px', borderRadius: 10, border: 'none',
-              background: 'rgba(99,102,241,0.2)', color: theme.accent.secondary,
+              background: 'rgba(255,107,44,0.14)', color: theme.accent.secondary,
               fontSize: 12, cursor: 'pointer',
             }}>+ 추가</button>
           </div>
@@ -207,7 +171,7 @@ export default function HomePage({
           pendingTodos.map((t, i) => (
             <div key={t.id || i} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0',
-              borderBottom: i < pendingTodos.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              borderBottom: i < pendingTodos.length - 1 ? '1px solid rgba(0,0,0,0.025)' : 'none',
             }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
