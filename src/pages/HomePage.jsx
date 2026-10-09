@@ -49,7 +49,7 @@ function minutesToNextAlarm(now, alarmHours = {}) {
     t.setHours(now.getHours() + i)
     if (t <= now) continue
     const targetHour = (t.getHours() + 1) % 24
-    if (alarmHours[targetHour]) return Math.round((t - now) / 60000)
+    if (alarmHours[targetHour]) return { min: Math.round((t - now) / 60000), at: t }
   }
   return null
 }
@@ -92,7 +92,7 @@ export default function HomePage({
       {/* ── 히어로: 오늘 내 시간 (알람 카운트다운이 아니라 "시간이 어디로 갔나") ── */}
       <TodayTimeHero
         checkins={checkins}
-        nextAlarmMin={minutesToNextAlarm(now, alarmHours)}
+        nextAlarm={minutesToNextAlarm(now, alarmHours)}
         nowLabel={nowLabel}
         onOpenReport={() => onTabChange('report')}
       />

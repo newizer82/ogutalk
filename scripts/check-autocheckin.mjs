@@ -427,7 +427,7 @@ console.log('✓ shortPlace 검증 통과')
   // 조언: 소비 초과 > 미션 > 할일 > 목표 순으로 "지금 바꿀 수 있는 것"
   {
     const over = oguScore({ checkins: slots('video', 12, 10), now })
-    assert.ok(over.advice.includes('샜어요'), over.advice)
+    assert.ok(over.advice.includes('힐링'), over.advice)
     const noMission = oguScore({ checkins: slots('work', 4, 9), missionDone: 1, now })
     assert.ok(noMission.advice.includes('미션'), noMission.advice)
     const noTodo = oguScore({ checkins: slots('work', 4, 9), missionDone: 3, now })

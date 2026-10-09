@@ -13,7 +13,7 @@ import { todayTotals, minutesOf } from './alarmContext.js'
 
 export const DEFAULT_GOALS = {
   produceTarget: 120,  // 9분류 합계 목표(분) — 채우면 시간 점수 만점
-  consumeLimit:  120,  // 소비 한도(분) — 넘으면 감점
+  consumeLimit:  120,  // 힐링 한도(분) — 넘으면 감점 (힐링이 나쁜 게 아니라, 하루의 대부분이 되는 것을 막는 선)
 }
 
 /**
@@ -136,7 +136,7 @@ export function oguScore({
 export function adviceFor({ phone, done, missionDone, missionTotal, goals }) {
   if (phone.penalty > 0) {
     const over = Math.max(0, phone.consumeMin - goals.consumeLimit)
-    return `오늘 ${over}분이 더 샜어요. 내일은 한 번만 덜 열어도 올라가요.`
+    return `힐링이 오늘 정한 만큼보다 ${over}분 길었어요. 내일은 한 번만 덜 열어도 올라가요.`
   }
   if (missionDone < missionTotal) {
     const left = missionTotal - missionDone
@@ -149,7 +149,7 @@ export function adviceFor({ phone, done, missionDone, missionTotal, goals }) {
   }
   if (phone.time < WEIGHTS.time) {
     const left = Math.max(0, goals.produceTarget - phone.produceMin)
-    return `쌓은 시간이 ${left}분 모자라요. 읽기·쓰기 10분이면 한 칸 올라가요.`
+    return `성장의 시간이 ${left}분 남았어요. 읽기·쓰기 10분이면 한 칸 올라가요.`
   }
   return '다 채웠어요. 내일도 이대로 가요.'
 }

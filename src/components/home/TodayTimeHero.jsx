@@ -6,6 +6,14 @@ import { todayTotals, minutesOf, formatMinutes } from '../../lib/alarmContext'
 // 체중계가 "다음 측정까지 38분" 을 보여주지 않는 것과 같다.
 const DAY_START = 6   // 띠는 6시부터 그린다 (그 전 시간은 대부분 비어 있다)
 
+/** 다음 알람 표기 — 밤에는 "464분 뒤" 가 되어 읽히지 않는다 */
+function alarmLabel({ min, at }) {
+  if (min < 60) return `${min}분 뒤 알람`
+  const d = new Date(at)
+  const tomorrow = d.getDate() !== new Date().getDate()
+  return `${tomorrow ? '내일 ' : ''}${d.getHours()}시 알람`
+}
+
 /** 오늘 기록을 시간 순 블록으로 — 같은 그룹이 이어지면 한 덩어리로 합친다 */
 function buildBlocks(checkins = [], now = Date.now()) {
   const start = new Date(now); start.setHours(0, 0, 0, 0)
@@ -24,15 +32,15 @@ function buildBlocks(checkins = [], now = Date.now()) {
 }
 
 export default function TodayTimeHero({
-  checkins = [], nextAlarmMin = null, nowLabel = null, onOpenReport,
+  checkins = [], nextAlarm = null, nowLabel = null, onOpenReport,
 }) {
   const now = Date.now()
   const { byGroup, total } = todayTotals(checkins, now)
   const blocks = buildBlocks(checkins, now)
   const hour = new Date(now).getHours()
 
-  const leaked = byGroup.consume
-  const built  = byGroup.produce
+  const healing = byGroup.consume
+  const growth  = byGroup.produce
 
   return (
     <section style={{
@@ -48,21 +56,21 @@ export default function TodayTimeHero({
       {/* 두 숫자가 주인공 */}
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
         <div style={{ flex: 1, background: '#FFF4EE', borderRadius: 18, padding: '14px 15px' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#C2521C' }}>샌 시간</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#C2521C' }}>🌿 힐링의 시간</div>
           <div style={{
             fontSize: 25, fontWeight: 900, color: '#FF6B2C', lineHeight: 1.15,
             letterSpacing: '-1.2px', fontVariantNumeric: 'tabular-nums', marginTop: 4, whiteSpace: 'nowrap',
           }}>
-            {formatMinutes(leaked)}
+            {formatMinutes(healing)}
           </div>
         </div>
         <div style={{ flex: 1, background: '#F4F6FB', borderRadius: 18, padding: '14px 15px' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#3A51A8' }}>쌓은 시간</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#3A51A8' }}>🌱 성장의 시간</div>
           <div style={{
             fontSize: 25, fontWeight: 900, color: '#4B6BD4', lineHeight: 1.15,
             letterSpacing: '-1.2px', fontVariantNumeric: 'tabular-nums', marginTop: 4, whiteSpace: 'nowrap',
           }}>
-            {formatMinutes(built)}
+            {formatMinutes(growth)}
           </div>
         </div>
       </div>
@@ -100,7 +108,7 @@ export default function TodayTimeHero({
             ? <>지금 <b style={{ color: '#111', fontWeight: 800 }}>{nowLabel}</b></>
             : <span style={{ color: '#9A9AA0' }}>지금은 기록이 없어요</span>}
         </div>
-        {nextAlarmMin !== null && (
+        {nextAlarm && (
           <button
             onClick={onOpenReport}
             style={{
@@ -108,7 +116,7 @@ export default function TodayTimeHero({
               fontSize: 12, color: '#9A9AA0', fontWeight: 600,
             }}
           >
-            {nextAlarmMin}분 뒤 알람
+            {alarmLabel(nextAlarm)}
           </button>
         )}
       </div>

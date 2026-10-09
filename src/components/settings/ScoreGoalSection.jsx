@@ -56,12 +56,12 @@ export default function ScoreGoalSection({
         폰을 안 쓴 시간은 점수를 깎지 않아요.
       </div>
       <GoalRow
-        icon="⚡" label="생산 목표" desc="9분류 합계 — 채우면 시간 점수 만점 (35점)"
+        icon="🌱" label="성장의 시간 목표" desc="업무·학습·운동·제작 — 채우면 만점 (35점)"
         value={produceTarget} onChange={setProduceTarget} color="#D9531B"
       />
       <div style={{ height: 1, background: 'rgba(0,0,0,0.035)' }} />
       <GoalRow
-        icon="🍿" label="소비 한도" desc="넘으면 30분마다 5점씩 (최대 10점)"
+        icon="🌿" label="힐링의 시간 한도" desc="영상·게임·검색 — 넘으면 30분마다 5점씩"
         value={consumeLimit} onChange={setConsumeLimit} color="#B4740F"
       />
 
