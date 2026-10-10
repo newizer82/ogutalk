@@ -273,6 +273,18 @@ export default function App() {
     : localTodos
   const activeTodosForAlarm = activeTodos.filter(t => !t.completed).length
 
+  // 할일 추가 — 할일 탭과 홈 달력이 같이 쓴다 (로그인 여부로 저장소만 갈린다)
+  const handleAddTodo = userId
+    ? addTodo
+    : (title, todoType, dueDate) => setLocalTodos(p => [{
+        id: Date.now().toString(),
+        title,
+        completed: false,
+        priority: 'medium',
+        todo_type: todoType || 'weekly',
+        due_date: dueDate || null,
+      }, ...p])
+
 
   // 카카오 공유 메시지용 진행률 (완료/전체)
   const todoPct = activeTodos.length
@@ -562,6 +574,7 @@ export default function App() {
             premiumFeatures={premiumFeatures}
             onTabChange={setActiveTab}
             calendarSync={calendarSync}
+            onAddTodo={handleAddTodo}
             alarmHours={alarmHours}
             oguTone={oguTone}
             onTestAlarm={fireAlarm}
@@ -580,17 +593,7 @@ export default function App() {
             userId={userId}  // ← 추가
             isPremium={isPremium}
             setIsPremium={setIsPremium}
-            onAdd={userId
-              ? addTodo
-              : (title, todoType, dueDate) => setLocalTodos(p => [{
-                  id: Date.now().toString(),
-                  title,
-                  completed: false,
-                  priority: 'medium',
-                  todo_type: todoType || 'weekly',
-                  due_date: dueDate || null,
-                }, ...p])
-            }
+            onAdd={handleAddTodo}
             onToggle={userId ? toggleTodo : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
             onUpdate={userId
               ? updateTodo

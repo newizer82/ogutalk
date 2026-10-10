@@ -217,7 +217,7 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
               min={new Date().toISOString().split('T')[0]}
               style={{
                 ...S.input, marginTop: 8,
-                colorScheme: 'dark',
+                colorScheme: 'light',   // 화이트 테마 — 기기 날짜 선택기가 어둡게 뜨던 잔재
               }}
             />
           )}

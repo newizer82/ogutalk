@@ -15,11 +15,12 @@ const hhmm = ms => {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export default function MonthCalendar({ todos = [], calendarSync = false, onTabChange }) {
+export default function MonthCalendar({ todos = [], calendarSync = false, onTabChange, onAddTodo }) {
   const today = new Date()
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [picked, setPicked] = useState(dateKey(today))
   const [events, setEvents] = useState([])
+  const [draft, setDraft]   = useState(null)   // 입력 중인 할일 제목 (null = 입력창 닫힘)
 
   const weeks  = useMemo(() => monthCells(view.y, view.m), [view])
   const scores = useMemo(() => dayScores(), [view])
@@ -44,6 +45,13 @@ export default function MonthCalendar({ todos = [], calendarSync = false, onTabC
   const goToday = () => {
     setView({ y: today.getFullYear(), m: today.getMonth() })
     setPicked(todayKey)
+  }
+
+  const save = () => {
+    const title = (draft ?? '').trim()
+    if (!title) return
+    onAddTodo?.(title, 'task', picked)   // 마감일이 있으면 '기한 있는' 할일이다
+    setDraft(null)
   }
 
   const dayEvents = evMap[picked] ?? []
@@ -96,7 +104,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, onTabC
           return (
             <button
               key={cell.key}
-              onClick={() => setPicked(cell.key)}
+              onClick={() => { setPicked(cell.key); setDraft(null) }}
               style={{
                 height: 44, padding: 0, cursor: 'pointer', borderRadius: 11,
                 background: scoreTint(scores[cell.key]),
@@ -167,6 +175,44 @@ export default function MonthCalendar({ todos = [], calendarSync = false, onTabC
           <div style={{ fontSize: 12.5, color: '#9A9AA0', padding: '4px 0' }}>
             {calendarSync ? '이 날은 일정도 마감도 없어요' : '이 날 마감인 할일이 없어요'}
           </div>
+        )}
+
+        {/* 이 날 할일 추가 — 날짜를 고르는 행위가 곧 마감일 입력이 된다.
+            지난 날짜에는 숨긴다 (만들자마자 "마감 지남"이 되어 알람 제안까지 오염된다) */}
+        {onAddTodo && picked >= todayKey && (
+          draft === null ? (
+            <button
+              onClick={() => setDraft('')}
+              style={{
+                marginTop: 8, width: '100%', border: '1px solid #FFD2B8', borderRadius: 12,
+                background: 'rgba(255,107,44,0.08)', color: '#D9531B', fontSize: 12.5, fontWeight: 800,
+                padding: '10px', cursor: 'pointer',
+              }}
+            >
+              + 이 날 할일 추가
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <input
+                autoFocus
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setDraft(null) }}
+                placeholder="할일을 입력하세요"
+                style={{
+                  flex: 1, minWidth: 0, border: '1px solid #ECECEF', borderRadius: 12,
+                  padding: '10px 12px', fontSize: 13, color: '#111111', background: '#FFFFFF',
+                }}
+              />
+              <button onClick={save} disabled={!draft.trim()} style={{
+                border: 'none', borderRadius: 12, padding: '0 14px', cursor: draft.trim() ? 'pointer' : 'default',
+                background: draft.trim() ? '#FF6B2C' : '#F1F1F4',
+                color: draft.trim() ? '#FFFFFF' : '#B0B0B6', fontSize: 12.5, fontWeight: 800,
+              }}>
+                저장
+              </button>
+            </div>
+          )
         )}
 
         {!calendarSync && (
