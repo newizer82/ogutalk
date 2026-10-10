@@ -15,8 +15,8 @@ android {
         applicationId "com.ogutalk.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 34
-        versionName "1.16.0"
+        versionCode 35
+        versionName "1.16.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -46,9 +46,16 @@ android {
             // R8 켬 (v1.16.0) — Play Console "DEX 코드 최적화" 경고(난독화 1%) 대응.
             // 리소스 축소도 같이 켜는데, 알람 음원은 코드에서 Uri 문자열로만 참조해
             // R8 눈에는 미사용으로 보인다 → res/raw/keep.xml 로 보존한다. 지우면 알람이 무음이 된다.
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            //
+            // proguard-android-optimize 는 쓰지 말 것 (v1.16.0 에서 앱이 시작과 동시에 죽었다).
+            // 최적화가 PluginHandle.pluginAnnotation 필드를 지워 Capacitor 가 런타임에
+            // @CapacitorPlugin 을 읽지 못했다 → 모든 플러그인의 checkPermissions 가 NPE.
+            // 난독화율은 최적화와 무관하므로 optimize 를 빼도 Play 기준(25%)은 넘는다.
+            // 문제 추적용 스위치: ./gradlew bundleRelease -PnoMinify 면 R8 없이 빌드한다
+            // (R8 탓인지 앱 코드 탓인지 한 번에 가른다)
+            minifyEnabled !project.hasProperty('noMinify')
+            shrinkResources !project.hasProperty('noMinify')
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }

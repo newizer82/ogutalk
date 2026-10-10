@@ -27,3 +27,9 @@
 
 # Capacitor 플러그인(@CapacitorPlugin / Plugin 상속)은 capacitor-android 의 consumer 룰이
 # 이미 보존한다 — AudioFocus·UsageStats·Calendar 플러그인도 그 규칙에 걸린다. 중복 선언하지 않는다.
+#
+# 다만 "애노테이션을 읽는 쪽"은 아무도 지켜주지 않는다. PluginHandle 이 애노테이션을 들고 있다가
+# 권한 확인 때 꺼내 쓰는데, R8 이 이 필드를 지우면 앱이 시작과 동시에 NPE 로 죽는다 (v1.16.0 사고).
+-keep class com.getcapacitor.PluginHandle { *; }
+-keep @interface com.getcapacitor.annotation.*
+-keepattributes RuntimeVisibleAnnotations
