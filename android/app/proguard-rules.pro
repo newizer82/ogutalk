@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── 오구톡 ─────────────────────────────────────────────────────
+# Crashlytics 스택트레이스를 읽을 수 있게 줄번호를 남긴다 (매핑 파일은 Play 에 자동 업로드됨)
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# Capacitor 플러그인(@CapacitorPlugin / Plugin 상속)은 capacitor-android 의 consumer 룰이
+# 이미 보존한다 — AudioFocus·UsageStats·Calendar 플러그인도 그 규칙에 걸린다. 중복 선언하지 않는다.

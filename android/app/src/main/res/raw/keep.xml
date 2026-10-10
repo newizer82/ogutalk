@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알람 음원은 Uri 문자열("android.resource://.../raw/ogu")로만 참조해 정적 참조가 없다.
+     shrinkResources 가 지워버리면 알람이 무음이 된다. 음원을 추가하면 여기에도 적는다. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/ogu,@raw/ogu_custom,@raw/ogu_h*" />

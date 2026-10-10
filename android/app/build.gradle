@@ -43,8 +43,12 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 켬 (v1.16.0) — Play Console "DEX 코드 최적화" 경고(난독화 1%) 대응.
+            // 리소스 축소도 같이 켜는데, 알람 음원은 코드에서 Uri 문자열로만 참조해
+            // R8 눈에는 미사용으로 보인다 → res/raw/keep.xml 로 보존한다. 지우면 알람이 무음이 된다.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
