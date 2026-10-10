@@ -550,3 +550,55 @@ console.log('✓ 오늘의 미션 검증 통과')
   for (const d of DEFAULT_BANNERS) assert.ok(BANNER_KINDS[d.kind], `${d.id} → ${d.kind}`)
 }
 console.log('✓ 배너 검증 통과')
+
+// ── 월간 캘린더 격자 ─────────────────────────────────────────────
+{
+  const { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange }
+    = await import('../src/lib/monthGrid.js')
+
+  // 2026-10: 1일이 목요일 → 5주, 첫 칸은 9/27(일), 마지막 칸은 10/31(토)
+  const oct = monthCells(2026, 9)
+  assert.equal(oct.length, 5, `주 수 ${oct.length}`)
+  assert.equal(oct[0][0].key, '2026-09-27')
+  assert.equal(oct[0][0].inMonth, false)
+  assert.equal(oct[4][6].key, '2026-10-31')
+  assert.equal(oct[4][6].inMonth, true)
+  // 모든 주는 7칸, 달의 모든 날이 정확히 한 번씩 들어간다
+  for (const w of oct) assert.equal(w.length, 7)
+  const inMonth = oct.flat().filter(c => c.inMonth).map(c => c.day)
+  assert.deepEqual(inMonth, Array.from({ length: 31 }, (_, i) => i + 1))
+
+  // 2026-02 (28일, 1일이 일요일) → 딱 4주, 빈 줄 없음
+  const feb = monthCells(2026, 1)
+  assert.equal(feb.length, 4)
+  assert.equal(feb[0][0].key, '2026-02-01')
+  assert.equal(feb[3][6].key, '2026-02-28')
+
+  // 6주가 필요한 달도 만든다 (2026-08: 1일 토요일, 31일)
+  assert.equal(monthCells(2026, 7).length, 6)
+
+  // 격자 조회 범위는 앞뒤 달 칸까지 덮는다
+  const [from, to] = gridRange(oct)
+  assert.equal(dateKey(from), '2026-09-27')
+  assert.equal(dateKey(to), '2026-10-31')
+  assert.ok(to > from)
+
+  // 일정은 시작일에 묶이고 시각 순으로 정렬된다
+  const t9 = new Date(2026, 9, 10, 9, 0).getTime()
+  const t14 = new Date(2026, 9, 10, 14, 0).getTime()
+  const ev = eventsByDay([{ id: 'b', startMs: t14 }, { id: 'a', startMs: t9 }, { id: 'x' }])
+  assert.deepEqual(ev['2026-10-10'].map(e => e.id), ['a', 'b'])
+  assert.equal(Object.keys(ev).length, 1)   // startMs 없는 건 버린다
+
+  // 'YYYY-MM-DD' 마감일은 시간대 때문에 하루 밀리면 안 된다
+  const td = todosByDay([{ id: 1, due_date: '2026-10-10' }, { id: 2, due_date: null }])
+  assert.deepEqual(Object.keys(td), ['2026-10-10'])
+
+  // 점수 없는 날과 0점은 다르다
+  assert.equal(scoreTint(undefined), 'transparent')
+  assert.equal(scoreTint(0), 'transparent')
+  assert.ok(scoreTint(85).includes('0.30'))
+  assert.ok(scoreTint(65).includes('0.18'))
+  assert.ok(scoreTint(20).includes('0.08'))
+}
+console.log('✓ 월간 캘린더 검증 통과')

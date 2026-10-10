@@ -3,7 +3,7 @@
 // 완료 개수만으로는 "오늘 끝낸 것"을 셀 수 없다 → 앱이 관찰한 행동만 날짜별로 센다.
 // ponytail: 스키마를 건드리지 않는 대신 설치 이후부터 집계된다. 과거는 0으로 둔다.
 const KEY = 'ogu_day_log'
-const KEEP_DAYS = 14
+const KEEP_DAYS = 70   // 월간 캘린더가 지난달 점수까지 보여준다
 
 const dayKey = (ms = Date.now()) => {
   const d = new Date(ms)
@@ -72,6 +72,15 @@ export function streakDays(threshold = 60, now = Date.now()) {
     n++
   }
   return n
+}
+
+/** 날짜별 점수 — 월간 캘린더용 {'2026-10-10': 72, ...} */
+export function dayScores() {
+  const map = read()
+  return Object.fromEntries(
+    Object.entries(map)
+      .filter(([, v]) => typeof v?.score === 'number')
+      .map(([k, v]) => [k, v.score]))
 }
 
 /** 하루 점수 확정분을 남겨 둔다 (내일 "어제보다" 비교용) */

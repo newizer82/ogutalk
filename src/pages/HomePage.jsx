@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
 import TodayTimeHero from '../components/home/TodayTimeHero'
 import BannerCarousel from '../components/home/BannerCarousel'
+import MonthCalendar from '../components/home/MonthCalendar'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
@@ -64,6 +65,7 @@ export default function HomePage({
   alarmHours = {},
   customAlarms = [],
   isLoggedIn = false,
+  calendarSync = false,
   notes = [],
   onAddNote,
   onDeleteNote,
@@ -212,6 +214,9 @@ export default function HomePage({
         onDelete={onDeleteNote}
         onLoginOpen={onLoginOpen}
       />
+
+      {/* ── 월간 캘린더 — 일정·마감·오구 지수를 한 장에 ── */}
+      <MonthCalendar todos={todos} calendarSync={calendarSync} onTabChange={onTabChange} />
 
       {/* ── 카카오 공유 + SNS 공유 ── */}
       <ShareButton progress={todoPct} />

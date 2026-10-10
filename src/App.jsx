@@ -561,6 +561,7 @@ export default function App() {
             setIsPremium={setIsPremium}
             premiumFeatures={premiumFeatures}
             onTabChange={setActiveTab}
+            calendarSync={calendarSync}
             alarmHours={alarmHours}
             oguTone={oguTone}
             onTestAlarm={fireAlarm}
