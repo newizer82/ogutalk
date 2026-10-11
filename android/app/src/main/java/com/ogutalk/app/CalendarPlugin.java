@@ -20,6 +20,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 기기 캘린더(구글·삼성 등) 일정 읽기 — 읽기 전용.
  *
@@ -45,6 +48,16 @@ public class CalendarPlugin extends Plugin {
         CalendarContract.Instances.ALL_DAY,
         CalendarContract.Instances.CALENDAR_DISPLAY_NAME,
         CalendarContract.Instances.STATUS,
+        CalendarContract.Instances.CALENDAR_ID,
+    };
+
+    private static final String[] CAL_COLS = {
+        CalendarContract.Calendars._ID,
+        CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+        CalendarContract.Calendars.ACCOUNT_NAME,
+        CalendarContract.Calendars.ACCOUNT_TYPE,
+        CalendarContract.Calendars.CALENDAR_COLOR,
+        CalendarContract.Calendars.VISIBLE,
     };
 
     private boolean granted() {
@@ -90,6 +103,23 @@ public class CalendarPlugin extends Plugin {
         }
         int limit = call.getInt("limit", 5);
 
+        // 캘린더 골라 보기 — 계정이 여럿이면 같은 일정이 여러 번 들어온다.
+        // limit 가 스캔 중에 걸리므로 걸러내기는 JS 가 아니라 여기(SQL)에서 해야 한다.
+        // 비거나 없으면 전체 (고르지 않은 사용자는 지금까지와 똑같이 동작한다)
+        String selection = null;
+        String[] selectionArgs = null;
+        JSArray idsArg = call.getArray("calendarIds", null);
+        if (idsArg != null && idsArg.length() > 0) {
+            try {
+                List<String> ids = new ArrayList<>();
+                for (int i = 0; i < idsArg.length(); i++) ids.add(String.valueOf(idsArg.get(i)));
+                StringBuilder ph = new StringBuilder();
+                for (int i = 0; i < ids.size(); i++) ph.append(i == 0 ? "?" : ",?");
+                selection = CalendarContract.Instances.CALENDAR_ID + " IN (" + ph + ")";
+                selectionArgs = ids.toArray(new String[0]);
+            } catch (Exception ignored) { /* 형식이 이상하면 전체 조회로 둔다 */ }
+        }
+
         Uri.Builder b = CalendarContract.Instances.CONTENT_URI.buildUpon();
         ContentUris.appendId(b, startArg);
         ContentUris.appendId(b, endArg);
@@ -97,7 +127,7 @@ public class CalendarPlugin extends Plugin {
         JSArray events = new JSArray();
         Context ctx = getContext();
         try (Cursor c = ctx.getContentResolver().query(
-                b.build(), COLS, null, null, CalendarContract.Instances.BEGIN + " ASC")) {
+                b.build(), COLS, selection, selectionArgs, CalendarContract.Instances.BEGIN + " ASC")) {
             if (c != null) {
                 int shown = 0;
                 while (c.moveToNext() && shown < limit) {
@@ -113,7 +143,8 @@ public class CalendarPlugin extends Plugin {
                     o.put("endMs",    c.getLong(3));
                     o.put("location", c.isNull(4) ? "" : c.getString(4));
                     o.put("allDay",   c.getInt(5) == 1);
-                    o.put("calendar", c.isNull(6) ? "" : c.getString(6));
+                    o.put("calendar",   c.isNull(6) ? "" : c.getString(6));
+                    o.put("calendarId", c.getLong(8));
                     events.put(o);
                     shown++;
                 }
@@ -125,6 +156,37 @@ public class CalendarPlugin extends Plugin {
 
         JSObject ret = new JSObject();
         ret.put("events", events);
+        call.resolve(ret);
+    }
+
+    /** 기기에 등록된 캘린더 목록 — 사용자가 쓸 것만 고를 수 있게 한다 */
+    @PluginMethod
+    public void getCalendars(PluginCall call) {
+        if (!granted()) { call.reject("NO_PERMISSION"); return; }
+
+        JSArray calendars = new JSArray();
+        try (Cursor c = getContext().getContentResolver().query(
+                CalendarContract.Calendars.CONTENT_URI, CAL_COLS, null, null,
+                CalendarContract.Calendars.ACCOUNT_NAME + " ASC")) {
+            if (c != null) {
+                while (c.moveToNext()) {
+                    JSObject o = new JSObject();
+                    o.put("id",          c.getLong(0));
+                    o.put("name",        c.isNull(1) ? "" : c.getString(1));
+                    o.put("account",     c.isNull(2) ? "" : c.getString(2));
+                    o.put("accountType", c.isNull(3) ? "" : c.getString(3));
+                    o.put("color",       c.isNull(4) ? 0 : c.getInt(4));
+                    o.put("visible",     !c.isNull(5) && c.getInt(5) == 1);
+                    calendars.put(o);
+                }
+            }
+        } catch (Exception e) {
+            call.reject("QUERY_FAILED", e);
+            return;
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("calendars", calendars);
         call.resolve(ret);
     }
 }

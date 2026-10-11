@@ -198,7 +198,7 @@ export default function App() {
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
   const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
-          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync, lifeStage } = settings
+          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync, calendarIds, lifeStage } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -216,6 +216,7 @@ export default function App() {
   const setAlarmMode   = v => updateSetting('alarmMode', v)
   const setAutoCheckin    = v => updateSetting('autoCheckin', v)
   const setCalendarSync   = v => updateSetting('calendarSync', v)
+  const setCalendarIds    = v => updateSetting('calendarIds', v)
   const setLifeStage      = v => updateSetting('lifeStage', v)
   const setProduceTarget  = v => updateSetting('produceTarget', v)
   const setConsumeLimit   = v => updateSetting('consumeLimit', v)
@@ -362,11 +363,11 @@ export default function App() {
     if (!showAlarmPopup || !calendarSync) { setNextEvent(null); return }
     let alive = true
     const now = Date.now()
-    getEvents(now - 60 * 60 * 1000, now + 90 * 60 * 1000, 10)
+    getEvents(now - 60 * 60 * 1000, now + 90 * 60 * 1000, 10, calendarIds)
       .then(list => { if (alive) setNextEvent(pickUpcomingEvent(list, Date.now())) })
       .catch(() => {})
     return () => { alive = false }
-  }, [showAlarmPopup, calendarSync])
+  }, [showAlarmPopup, calendarSync, calendarIds])
 
   const handleMissionDoneFromPopup = useCallback((mission) => {
     if (!mission) return
@@ -574,6 +575,7 @@ export default function App() {
             premiumFeatures={premiumFeatures}
             onTabChange={setActiveTab}
             calendarSync={calendarSync}
+            calendarIds={calendarIds}
             onAddTodo={handleAddTodo}
             alarmHours={alarmHours}
             oguTone={oguTone}
@@ -662,6 +664,8 @@ export default function App() {
             setAutoCheckin={setAutoCheckin}
             calendarSync={calendarSync}
             setCalendarSync={setCalendarSync}
+            calendarIds={calendarIds}
+            setCalendarIds={setCalendarIds}
             lifeStage={lifeStage}
             setLifeStage={setLifeStage}
             produceTarget={produceTarget}

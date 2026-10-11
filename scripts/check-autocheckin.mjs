@@ -553,7 +553,7 @@ console.log('✓ 배너 검증 통과')
 
 // ── 월간 캘린더 격자 ─────────────────────────────────────────────
 {
-  const { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange }
+  const { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, dedupeEvents }
     = await import('../src/lib/monthGrid.js')
 
   // 2026-10: 1일이 목요일 → 5주, 첫 칸은 9/27(일), 마지막 칸은 10/31(토)
@@ -593,6 +593,21 @@ console.log('✓ 배너 검증 통과')
   // 'YYYY-MM-DD' 마감일은 시간대 때문에 하루 밀리면 안 된다
   const td = todosByDay([{ id: 1, due_date: '2026-10-10' }, { id: 2, due_date: null }])
   assert.deepEqual(Object.keys(td), ['2026-10-10'])
+
+  // 계정이 여러 개면 같은 일정이 캘린더마다 들어온다 — 제목+시작시각이 같으면 한 건
+  {
+    const t = new Date(2026, 9, 10, 14, 0).getTime()
+    const dup = dedupeEvents([
+      { id: 1, title: '팀 회의', startMs: t, calendar: 'Google' },
+      { id: 2, title: '팀 회의', startMs: t, calendar: 'Samsung' },
+      { id: 3, title: '팀 회의', startMs: t + 3600000, calendar: 'Google' },  // 시각 다르면 남긴다
+      { id: 4, title: '헬스장',  startMs: t, calendar: 'Google' },            // 제목 다르면 남긴다
+    ])
+    assert.deepEqual(dup.map(e => e.id), [1, 3, 4])
+    assert.equal(dup[0].calendar, 'Google', '먼저 온 것을 남긴다')
+    assert.deepEqual(dedupeEvents([]), [])
+    assert.deepEqual(dedupeEvents(), [])
+  }
 
   // 점수 없는 날과 0점은 다르다
   assert.equal(scoreTint(undefined), 'transparent')

@@ -28,6 +28,23 @@ export function monthCells(year, month) {
   return weeks
 }
 
+/**
+ * 같은 일정 중복 제거 — 계정을 여러 개 붙이면(구글·삼성·카카오) 같은 일정이
+ * 캘린더마다 하나씩 들어온다. 제목+시작시각이 같으면 한 건으로 본다.
+ * 먼저 온 것(= 사용자가 고른 캘린더 순서상 앞선 것)을 남긴다.
+ */
+export function dedupeEvents(events = []) {
+  const seen = new Set()
+  const out = []
+  for (const e of events) {
+    const k = `${(e?.title ?? '').trim()}|${e?.startMs ?? ''}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(e)
+  }
+  return out
+}
+
 /** 기기 일정을 날짜별로 묶는다. 여러 날에 걸친 일정은 시작일에만 센다 (ponytail: 칸이 작다) */
 export function eventsByDay(events = []) {
   const map = {}

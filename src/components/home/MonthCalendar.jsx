@@ -15,7 +15,7 @@ const hhmm = ms => {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export default function MonthCalendar({ todos = [], calendarSync = false, onTabChange, onAddTodo }) {
+export default function MonthCalendar({ todos = [], calendarSync = false, calendarIds = [], onTabChange, onAddTodo }) {
   const today = new Date()
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [picked, setPicked] = useState(dateKey(today))
@@ -30,9 +30,9 @@ export default function MonthCalendar({ todos = [], calendarSync = false, onTabC
     if (!calendarSync) { setEvents([]); return }
     let alive = true
     const [from, to] = gridRange(weeks)
-    getEvents(from, to, 300).then(rows => { if (alive) setEvents(rows) })
+    getEvents(from, to, 300, calendarIds).then(rows => { if (alive) setEvents(rows) })
     return () => { alive = false }
-  }, [calendarSync, weeks])
+  }, [calendarSync, calendarIds, weeks])
 
   const evMap   = useMemo(() => eventsByDay(events), [events])
   const todoMap = useMemo(() => todosByDay(todos), [todos])
@@ -146,7 +146,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, onTabC
         </div>
 
         {dayEvents.map(e => (
-          <div key={e.id} style={row}>
+          <div key={`${e.id}-${e.startMs}`} style={row}>
             <span style={{ width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, flexShrink: 0 }} />
             <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>
               {e.allDay ? '종일' : hhmm(e.startMs)}

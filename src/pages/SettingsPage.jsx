@@ -47,6 +47,7 @@ export default function SettingsPage({
   todoPct = 0,
   autoCheckin = false, setAutoCheckin,
   calendarSync = false, setCalendarSync,
+  calendarIds = [], setCalendarIds,
   lifeStage = null, setLifeStage,
   produceTarget = 120, setProduceTarget,
   consumeLimit = 120, setConsumeLimit,
@@ -161,7 +162,10 @@ export default function SettingsPage({
       </div>
       <AutoCheckinSection enabled={autoCheckin} onChange={setAutoCheckin} />
 
-      <CalendarSection enabled={calendarSync} onChange={setCalendarSync} />
+      <CalendarSection
+        enabled={calendarSync} onChange={setCalendarSync}
+        calendarIds={calendarIds} onCalendarIdsChange={setCalendarIds}
+      />
 
       <div style={{ fontSize: 12, fontWeight: 800, color: '#9A9AA0', margin: '18px 4px 8px' }}>
         오구 지수

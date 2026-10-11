@@ -66,6 +66,7 @@ export default function HomePage({
   customAlarms = [],
   isLoggedIn = false,
   calendarSync = false,
+  calendarIds = [],
   onAddTodo,
   notes = [],
   onAddNote,
@@ -217,7 +218,10 @@ export default function HomePage({
       />
 
       {/* ── 월간 캘린더 — 일정·마감·오구 지수를 한 장에 ── */}
-      <MonthCalendar todos={todos} calendarSync={calendarSync} onTabChange={onTabChange} onAddTodo={onAddTodo} />
+      <MonthCalendar
+        todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
+        onTabChange={onTabChange} onAddTodo={onAddTodo}
+      />
 
       {/* ── 카카오 공유 + SNS 공유 ── */}
       <ShareButton progress={todoPct} />

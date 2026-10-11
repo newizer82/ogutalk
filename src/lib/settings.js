@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS = {
   lastBackfillAt: null,     // 마지막 소급 기록 시각 (epoch ms)
   // 캘린더 연동 — 기본 꺼짐, 사용자가 고지 동의 후 켠다 (일정은 기기 안에서만 쓴다)
   calendarSync:   false,
+  calendarIds:    [],     // 볼 캘린더 id. 빈 배열 = 전체 (계정이 여럿이면 중복돼 보인다)
   // 오늘의 미션 생애주기 — 고르지 않으면(null) 공통 풀만 쓴다. 성별로는 나누지 않는다.
   lifeStage:      null,
   // 오구 지수 목표 (분) — 남이 정한 기준이 아니라 사용자의 기준과 비교한다
