@@ -36,10 +36,21 @@ export function useAlarm({
 
   const lastHourRef = useRef(-1)
 
+  // 아래 초기화 효과가 최신 설정을 보게 하는 통로 (마운트 때 한 번만 도는 효과라 값을 가둬둘 수 없다)
+  const scheduleArgs = useRef({ hours: alarmHours, mode: alarmMode })
+  scheduleArgs.current = { hours: alarmHours, mode: alarmMode }
+
   // ── 앱 시작 시 초기화 ────────────────────────────────────────
   useEffect(() => {
     if (IS_NATIVE) {
-      createOguChannel().then(() => requestLocalNotifPermission()).catch(() => {})
+      // 권한을 받은 "다음에" 예약해야 한다.
+      // 예전엔 이 효과와 아래 예약 효과가 동시에 떠서 권한 요청이 둘로 겹쳤고,
+      // 다이얼로그가 떠 있는 동안 두 번째 요청이 거부로 떨어져 59분 알람이
+      // 통째로 등록되지 않았다 (첫 설치 사용자에게 알람이 안 울리던 원인).
+      createOguChannel()
+        .then(() => requestLocalNotifPermission())
+        .then(() => scheduleOguAlarms(scheduleArgs.current.hours, scheduleArgs.current.mode))
+        .catch(() => {})
     } else {
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission()
@@ -47,12 +58,25 @@ export function useAlarm({
     }
   }, [])
 
-  // ── 네이티브 알람 스케줄 등록 (마운트 시 + alarmHours/alarmMode 변경 시) ──
+  // ── 네이티브 알람 스케줄 등록 (마운트 + alarmHours/alarmMode 변경 + 앱 복귀) ──
   // alarmMode='vibrate' 면 진동 전용 채널로 등록 (capacitor.js 참고)
+  //
+  // 앱 복귀 때마다 다시 거는 이유: 알람이 안 걸린 상태를 사용자가 알아챌 방법이 없다.
+  // 권한을 나중에 허용했거나, OS 가 예약을 날렸거나, 7일치를 다 쓴 경우를 스스로 복구한다.
+  // 단 복귀마다 100여 건을 지웠다 다시 걸면 낭비라 5분 안에는 건너뛴다.
+  const lastScheduleRef = useRef(0)
   useEffect(() => {
-    if (IS_NATIVE) {
+    if (!IS_NATIVE) return
+    const run = (force = false) => {
+      const now = Date.now()
+      if (!force && now - lastScheduleRef.current < 5 * 60_000) return
+      lastScheduleRef.current = now
       scheduleOguAlarms(alarmHours, alarmMode).catch(() => {})
     }
+    run(true)
+    const onVis = () => { if (document.visibilityState === 'visible') run() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [alarmHours, alarmMode])
 
   // ── 네이티브: 12시간마다 자동 재등록 (30일치 소진 방지) ────────
