@@ -4,6 +4,49 @@
 
 ---
 
+## [1.16.3] — 2026-10-11
+
+### Added
+- **볼 캘린더 고르기** — 설정 > 캘린더 연동에 기기 캘린더 목록(이름·계정·색) 체크박스
+  - 계정을 여럿 붙이면(구글 4개 + 삼성) 같은 공휴일이 네 번씩 들어오던 문제
+  - `CalendarPlugin.getCalendars()` 추가, `getEvents` 에 `calendarIds` 필터
+  - 필터는 SQL(`CALENDAR_ID IN`)에서 — limit 이 스캔 중에 걸려 뒤에서 거르면 결과가 굶는다
+  - 고르지 않으면 전체(기존 동작). 첫 체크 시 '전체'를 실제 목록으로 펼치고, 마지막 하나는 못 끈다
+
+### Fixed
+- **중복 일정 제거** — 제목+시작시각이 같으면 한 건. `getEvents` 길목에서 걸러 팝업·달력 모두 적용
+- 반복 일정은 회차마다 EVENT_ID 가 같아 리스트 key 가 충돌하던 것 → `id-startMs`
+
+---
+
+## [1.16.2] — 2026-10-10
+
+### Added
+- **달력에서 바로 할일 추가** — 날짜 선택 → "+ 이 날 할일 추가" → 그 날짜가 마감일
+  - 할일 폼 기본값이 '주간 할일'이고 이 타입은 due_date 를 null 로 저장해,
+    평소대로 등록한 할일은 달력에 찍힐 날짜가 없었다
+  - 지난 날짜에는 버튼을 숨긴다 (만들자마자 '마감 지남'이 되어 알람 제안까지 오염된다)
+  - App.jsx 의 인라인 onAdd 를 handleAddTodo 로 추출해 할일 탭과 공유
+
+### Fixed
+- 마감일 입력칸에 남아 있던 `colorScheme:'dark'` → `light` (기기 날짜 선택기가 검게 뜨던 잔재)
+
+---
+
+## [1.16.1] — 2026-10-10
+
+### Fixed
+- **v1.16.0(34) 이 실행 즉시 강제 종료되던 문제** — 내부 테스트에서 발견
+  - `proguard-android-optimize` 의 공격적 최적화가 `PluginHandle.pluginAnnotation` 필드와
+    `getPluginAnnotation()` 을 제거 → Capacitor 가 런타임에 `@CapacitorPlugin` 을 읽지 못해
+    모든 플러그인의 `checkPermissions` 에서 NPE
+  - `proguard-android.txt` 로 교체(난독화는 최적화와 무관), `PluginHandle` ·
+    `com.getcapacitor.annotation.*` 명시적 보존
+  - 확인: PluginHandle 제거 멤버 0개, 난독화 98.0%
+- `-PnoMinify` 스위치 추가 — R8 탓인지 앱 코드 탓인지 한 번에 가르기 위함
+
+---
+
 ## [1.16.0] — 2026-10-10
 
 ### Added
