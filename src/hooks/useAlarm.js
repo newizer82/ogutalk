@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TONE_CONFIGS, TONE_DURATION, ALARM_TONE_CONFIGS } from '../data/oguData'
 import { saveCheckin as saveCheckinToStore } from '../lib/checkinStore'
 import { logEvent } from '../lib/firebase'
+import { hourSoundSrc } from '../lib/hourVoice'
 import {
   IS_NATIVE,
   createOguChannel,
@@ -29,6 +30,7 @@ export function useAlarm({
   userId = null,
   volume = 1.0,
   vibStrength = 'medium',
+  hourVoice = true,
 } = {}) {
   const [alarmCount, setAlarmCount]         = useState(0)
   const [showAlarmPopup, setShowAlarmPopup] = useState(false)
@@ -37,8 +39,8 @@ export function useAlarm({
   const lastHourRef = useRef(-1)
 
   // 아래 초기화 효과가 최신 설정을 보게 하는 통로 (마운트 때 한 번만 도는 효과라 값을 가둬둘 수 없다)
-  const scheduleArgs = useRef({ hours: alarmHours, mode: alarmMode })
-  scheduleArgs.current = { hours: alarmHours, mode: alarmMode }
+  const scheduleArgs = useRef({ hours: alarmHours, mode: alarmMode, voice: hourVoice })
+  scheduleArgs.current = { hours: alarmHours, mode: alarmMode, voice: hourVoice }
 
   // ── 앱 시작 시 초기화 ────────────────────────────────────────
   useEffect(() => {
@@ -49,7 +51,7 @@ export function useAlarm({
       // 통째로 등록되지 않았다 (첫 설치 사용자에게 알람이 안 울리던 원인).
       createOguChannel()
         .then(() => requestLocalNotifPermission())
-        .then(() => scheduleOguAlarms(scheduleArgs.current.hours, scheduleArgs.current.mode))
+        .then(() => scheduleOguAlarms(scheduleArgs.current.hours, scheduleArgs.current.mode, scheduleArgs.current.voice))
         .catch(() => {})
     } else {
       if ('Notification' in window && Notification.permission === 'default') {
@@ -71,20 +73,20 @@ export function useAlarm({
       const now = Date.now()
       if (!force && now - lastScheduleRef.current < 5 * 60_000) return
       lastScheduleRef.current = now
-      scheduleOguAlarms(alarmHours, alarmMode).catch(() => {})
+      scheduleOguAlarms(alarmHours, alarmMode, hourVoice).catch(() => {})
     }
     run(true)
     const onVis = () => { if (document.visibilityState === 'visible') run() }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
-  }, [alarmHours, alarmMode])
+  }, [alarmHours, alarmMode, hourVoice])
 
   // ── 네이티브: 12시간마다 자동 재등록 (30일치 소진 방지) ────────
   useEffect(() => {
     if (!IS_NATIVE) return
-    const id = setInterval(() => scheduleOguAlarms(alarmHours, alarmMode).catch(() => {}), 12 * 3_600_000)
+    const id = setInterval(() => scheduleOguAlarms(alarmHours, alarmMode, hourVoice).catch(() => {}), 12 * 3_600_000)
     return () => clearInterval(id)
-  }, [alarmHours, alarmMode])
+  }, [alarmHours, alarmMode, hourVoice])
 
   // ── 웹: Service Worker에 alarmHours 동기화 ─────────────────────
   useEffect(() => {
@@ -176,7 +178,8 @@ export function useAlarm({
       if (IS_NATIVE) {
         // 테스트 버튼 등 JS 자체 사운드 재생 시에도 다른 앱 일시정지
         requestAudioFocus(4000)
-        playMp3Repeat('/sounds/ogu.mp3', volume, 1)
+        // 시간 안내를 켰으면 "오구오구, ○시!" 음원을 쓴다 (시스템 알림과 같은 소리)
+        playMp3Repeat(hourVoice ? hourSoundSrc(hour) : '/sounds/ogu.mp3', volume, 1)
       } else {
         unlockAudio()
         playOguSound(oguTone, 1, volume)
@@ -192,7 +195,7 @@ export function useAlarm({
     // 모든 알람 경로(웹·네이티브·커스텀)의 합류점 — 알람이 실제로 사용자에게 보였는가.
     // ponytail: 설정 탭의 "테스트 알람"도 여기를 지나 소량 섞인다. 100명 단계에선 무시할 수준이라 구분하지 않음.
     logEvent('alarm_popup_shown')
-  }, [oguTone, oguRepeat, alarmMode, volume, vibStrength])
+  }, [oguTone, oguRepeat, alarmMode, volume, vibStrength, hourVoice])
 
   const fireAlarm = useCallback((hour) => _fire(hour ?? new Date().getHours()), [_fire])
 

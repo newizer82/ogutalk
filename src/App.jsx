@@ -198,7 +198,7 @@ export default function App() {
   // ── 사용자 설정 (단일 객체로 통합 — 마이그레이션 자동 처리) ─
   const [settings, setSettings] = useState(loadSettings)
   const { oguTone, oguAlarmTone, oguRepeat, alarmMode, customAlarmMode, volume, vibStrength, alarmHours,
-          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync, calendarIds, lifeStage } = settings
+          autoCheckin, lastBackfillAt, produceTarget, consumeLimit, calendarSync, calendarIds, lifeStage, hourVoice } = settings
 
   // 한 필드만 갱신하면서 localStorage에도 즉시 반영
   const updateSetting = (key, value) => {
@@ -217,6 +217,7 @@ export default function App() {
   const setAutoCheckin    = v => updateSetting('autoCheckin', v)
   const setCalendarSync   = v => updateSetting('calendarSync', v)
   const setCalendarIds    = v => updateSetting('calendarIds', v)
+  const setHourVoice      = v => updateSetting('hourVoice', v)
   const setLifeStage      = v => updateSetting('lifeStage', v)
   const setProduceTarget  = v => updateSetting('produceTarget', v)
   const setConsumeLimit   = v => updateSetting('consumeLimit', v)
@@ -301,7 +302,7 @@ export default function App() {
   const {
     alarmCount, showAlarmPopup, alarmContent, closeAlarmPopup, fireAlarm,
     saveCheckin,
-  } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength })
+  } = useAlarm({ oguTone, oguRepeat, alarmMode, alarmHours, userId, volume, vibStrength, hourVoice })
 
   // 자동 체크인 소급 기록 (앱 사용시간 기반)
   // correctLastHour 는 팝업에서 뺐다 — 분류 수정은 리포트의 근거 화면에서 한다
@@ -624,6 +625,8 @@ export default function App() {
             setVibStrength={setVibStrength}
             alarmHours={alarmHours}
             setAlarmHours={setAlarmHours}
+            hourVoice={hourVoice}
+            setHourVoice={setHourVoice}
             playSound={playOguSound}
             userId={userId}
             alarmMode={alarmMode}

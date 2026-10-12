@@ -1,6 +1,7 @@
 package com.ogutalk.app;
 
 import android.app.NotificationChannel;
+import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
@@ -24,6 +25,10 @@ public class MainActivity extends BridgeActivity {
     private static final String CHANNEL_OGU_VIB    = "ogu-hourly-vib-v1"; // 진동만
     private static final String CHANNEL_CUSTOM     = "ogu-custom-v4";    // 사운드+진동 (v11: 무음 오버라이드 우회)
     private static final String CHANNEL_CUSTOM_VIB = "ogu-custom-vib-v1"; // 진동만
+    // 시간 안내 음성("오구오구, ○시!") — 채널마다 소리가 다르므로 시각별로 채널이 따로 필요하다.
+    // 안드로이드는 채널 생성 후 소리를 못 바꾸기 때문. 12시간제(1~12시) 기준.
+    private static final String CHANNEL_HOUR_GROUP  = "ogu-hour-group";
+    private static final String CHANNEL_HOUR_PREFIX = "ogu-hour-v1-";
     private static final String[] LEGACY_CHANNELS = {
         "ogu-alarm",        // v1~v3
         "ogu-hourly",       // v4~v6
@@ -37,7 +42,7 @@ public class MainActivity extends BridgeActivity {
     private static final String PREFS_NAME     = "ogu_prefs";
     private static final String KEY_CHAN_VER   = "channel_version";
     // 채널 설정 변경 시 이 숫자를 올리면 자동 재생성됨
-    private static final int    CHAN_VERSION   = 11;   // v11: 채널 ID v4→v5 / v3→v4 (무음 오버라이드 우회)
+    private static final int    CHAN_VERSION   = 12;   // v12: 시간 안내 음성 채널 12개 추가
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +77,11 @@ public class MainActivity extends BridgeActivity {
             && nm.getNotificationChannel(CHANNEL_OGU_VIB) != null
             && nm.getNotificationChannel(CHANNEL_CUSTOM) != null
             && nm.getNotificationChannel(CHANNEL_CUSTOM_VIB) != null;
+        // 시간 안내 채널 12개도 전부 있어야 한다. 하나라도 없으면 그 시각 알림이
+        // "No Channel found" 로 OS 에서 버려진다 (= 무음·무진동)
+        for (int h = 1; h <= 12 && allExist; h++) {
+            if (nm.getNotificationChannel(hourChannelId(h)) == null) allExist = false;
+        }
         if (savedVer >= CHAN_VERSION && allExist) return;
 
         // 기존 채널 삭제 후 재생성 (Android 8+: 채널 사운드는 생성 후 변경 불가)
@@ -152,7 +162,34 @@ public class MainActivity extends BridgeActivity {
         customVibCh.setSound(null, null);   // 사운드 없음
         nm.createNotificationChannel(customVibCh);
 
+        // 5) 시간 안내 음성 채널 12개 (ogu_h01~ogu_h12.mp3)
+        // 설정 화면이 지저분해지지 않게 그룹 하나로 묶는다.
+        nm.createNotificationChannelGroup(
+            new NotificationChannelGroup(CHANNEL_HOUR_GROUP, "오구 알람 — 시간 안내"));
+        for (int h = 1; h <= 12; h++) {
+            NotificationChannel hourCh = new NotificationChannel(
+                hourChannelId(h),
+                h + "시 안내",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            hourCh.setGroup(CHANNEL_HOUR_GROUP);
+            hourCh.setDescription("\"오구오구, " + h + "시!\" 음성 안내");
+            hourCh.enableVibration(true);
+            hourCh.setVibrationPattern(strongPattern);
+            hourCh.setBypassDnd(true);
+            hourCh.setShowBadge(true);
+            hourCh.setSound(
+                Uri.parse("android.resource://" + pkg + "/raw/ogu_h" + (h < 10 ? "0" : "") + h),
+                audioAttr);
+            nm.createNotificationChannel(hourCh);
+        }
+
         prefs.edit().putInt(KEY_CHAN_VER, CHAN_VERSION).apply();
+    }
+
+    /** 시각(1~12) → 채널 ID. JS 의 oguChannelFor() 와 형식을 맞출 것 */
+    private static String hourChannelId(int hour12) {
+        return CHANNEL_HOUR_PREFIX + (hour12 < 10 ? "0" : "") + hour12;
     }
 
     /**

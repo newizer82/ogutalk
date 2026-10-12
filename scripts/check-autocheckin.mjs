@@ -617,3 +617,36 @@ console.log('✓ 배너 검증 통과')
   assert.ok(scoreTint(20).includes('0.08'))
 }
 console.log('✓ 월간 캘린더 검증 통과')
+
+// ── 시간 안내 음성 ───────────────────────────────────────────────
+{
+  const { hour12, hourChannelId, hourSoundSrc } = await import('../src/lib/hourVoice.js')
+
+  // 0시·12시는 "열두 시", 13시는 "한 시"
+  assert.equal(hour12(0), 12)
+  assert.equal(hour12(12), 12)
+  assert.equal(hour12(13), 1)
+  assert.equal(hour12(23), 11)
+  assert.equal(hour12(7), 7)
+  // 알람은 X:59 에 울리고 다음 정각을 알린다 → 23시+1 = 24 를 넘겨도 12시가 나와야 한다
+  assert.equal(hour12(24), 12)
+  assert.equal(hour12(25), 1)
+
+  // 채널 ID 는 MainActivity.hourChannelId() 와 형식이 같아야 한다 (ogu-hour-v1-01)
+  assert.equal(hourChannelId(13), 'ogu-hour-v1-01')
+  assert.equal(hourChannelId(0),  'ogu-hour-v1-12')
+  assert.equal(hourChannelId(9),  'ogu-hour-v1-09')
+
+  // 음원 경로 — public/sounds/hours/ogu_h01.mp3 … ogu_h12.mp3
+  assert.equal(hourSoundSrc(1),  '/sounds/hours/ogu_h01.mp3')
+  assert.equal(hourSoundSrc(22), '/sounds/hours/ogu_h10.mp3')
+
+  // 12개 음원과 res/raw 사본이 실제로 있어야 한다 (하나라도 없으면 그 시각이 무음)
+  const fs = await import('node:fs')
+  for (let h = 1; h <= 12; h++) {
+    const name = `ogu_h${String(h).padStart(2, '0')}.mp3`
+    assert.ok(fs.existsSync(`public/sounds/hours/${name}`), `public 누락: ${name}`)
+    assert.ok(fs.existsSync(`android/app/src/main/res/raw/${name}`), `res/raw 누락: ${name}`)
+  }
+}
+console.log('✓ 시간 안내 음성 검증 통과')

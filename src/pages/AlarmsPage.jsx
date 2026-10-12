@@ -115,6 +115,7 @@ export default function AlarmsPage({
   oguTone, setOguTone, oguRepeat, setOguRepeat,
   setAlarmMode, setVolume, setVibStrength,
   alarmHours = {}, setAlarmHours,
+  hourVoice = true, setHourVoice,
   playSound, userId = null,
 }) {
   // 상단 고정 선택: 오구 알람 / 커스텀 알람
@@ -291,6 +292,7 @@ export default function AlarmsPage({
           volume={volume} setVolume={setVolume}
           vibStrength={vibStrength} setVibStrength={setVibStrength}
           alarmHours={alarmHours} setAlarmHours={setAlarmHours}
+          hourVoice={hourVoice} setHourVoice={setHourVoice}
           playSound={playSound} userId={userId}
         />
       )}

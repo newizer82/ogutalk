@@ -6,6 +6,7 @@
 // ────────────────────────────────────────────────────────────
 
 // 다중 신호로 네이티브 검출 — 단일 함수 호출이 실패하는 케이스 방어
+import { hourChannelId } from './hourVoice'
 export const IS_NATIVE = (() => {
   try {
     if (typeof window === 'undefined') return false
@@ -147,9 +148,12 @@ export async function clearDeliveredOguNotifs() {
 
 // ── 채널 ID 선택 헬퍼 (스케줄링·테스트가 같은 함수를 거치도록 — 분기 분산 방지) ─
 // alarmMode='vibrate' → 진동 전용 채널 / 그 외 → 사운드+진동 채널
-function oguChannelFor(alarmMode) {
+function oguChannelFor(alarmMode, targetHour = null, hourVoice = false) {
   // v11: v4→v5 (무음 오버라이드 우회 — MainActivity.java 동기화)
-  return alarmMode === 'vibrate' ? 'ogu-hourly-vib-v1' : 'ogu-hourly-v5'
+  if (alarmMode === 'vibrate') return 'ogu-hourly-vib-v1'
+  // 시간 안내 음성은 시각마다 채널이 다르다 (채널 소리는 생성 후 변경 불가)
+  if (hourVoice && targetHour != null) return hourChannelId(targetHour)
+  return 'ogu-hourly-v5'
 }
 function customChannelFor(customAlarmMode) {
   // v11: v3→v4 (무음 오버라이드 우회)
@@ -157,7 +161,7 @@ function customChannelFor(customAlarmMode) {
 }
 
 // ── 알람 스케줄 등록 (alarmHours 변경 시 호출) ───────────────
-export async function scheduleOguAlarms(alarmHours = {}, alarmMode = 'both') {
+export async function scheduleOguAlarms(alarmHours = {}, alarmMode = 'both', hourVoice = false) {
   if (!IS_NATIVE) return { ok: false, reason: 'not-native' }
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
@@ -207,7 +211,7 @@ export async function scheduleOguAlarms(alarmHours = {}, alarmMode = 'both') {
           title:     '⏱️ 오구!',
           body:      `곧 ${targetHour}시입니다! 잠깐 쉬어가세요.`,
           // alarmMode='vibrate' 면 진동 전용 채널 사용 (사운드 없음) — 헬퍼로 통일
-          channelId: oguChannelFor(alarmMode),
+          channelId: oguChannelFor(alarmMode, targetHour, hourVoice),
           schedule:  { at, allowWhileIdle: true },
           extra:     { targetHour, scheduledAt: at.toISOString() },
         })
@@ -348,7 +352,7 @@ export async function diagnoseOguAlarm() {
 
 // ── 30초 뒤 테스트 알람 ──────────────────────────────────────
 // 스케줄링이 정상 작동하는지 즉시 확인용
-export async function scheduleTestNotification(alarmMode = 'both') {
+export async function scheduleTestNotification(alarmMode = 'both', hourVoice = false) {
   if (!IS_NATIVE) {
     alert('네이티브 환경에서만 동작 (브라우저에서는 즉시 알림 사용)')
     return
@@ -367,7 +371,9 @@ export async function scheduleTestNotification(alarmMode = 'both') {
     }
 
     const at = new Date(Date.now() + 30_000)
-    const channelId = oguChannelFor(alarmMode)   // 실제 알람과 같은 헬퍼 사용
+    // 테스트도 실제와 같은 채널로 — 다음 정각을 알리는 음성이 그대로 들려야 확인이 된다
+    const testTargetHour = (new Date().getHours() + 1) % 24
+    const channelId = oguChannelFor(alarmMode, testTargetHour, hourVoice)
     await LocalNotifications.schedule({
       notifications: [{
         id:        999,                // 오구 영역(< 1000) 마지막 ID

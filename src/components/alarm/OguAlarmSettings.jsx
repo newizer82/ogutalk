@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { OGU_TONES } from '../../data/oguData'
 import { S } from '../../styles/theme'
 import { IS_NATIVE, scheduleTestNotification, diagnoseOguAlarm } from '../../lib/capacitor'
+import { hourSoundSrc } from '../../lib/hourVoice'
 import { supabase } from '../../lib/supabase'
 
 const pad = n => String(n).padStart(2, '0')
@@ -23,6 +24,7 @@ export default function OguAlarmSettings({
   volume = 0.8, setVolume,
   vibStrength = 'medium', setVibStrength,
   alarmHours = {}, setAlarmHours,
+  hourVoice = true, setHourVoice,
   playSound,
   userId = null,
 }) {
@@ -90,8 +92,36 @@ export default function OguAlarmSettings({
           <div style={{ color: '#9A9AA0', fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
             앱(Android) 백그라운드 알람 시 재생되는 mp3 사운드입니다. 카드를 눌러 미리 들어보세요.
           </div>
+
+          {/* 시간 안내 음성 — 시각마다 다른 음원을 쓰므로 알림 채널도 시각별로 따로 있다 */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            {[
+              { on: true,  label: '🗣 오구오구, ○시!', desc: '시간을 말해줘요' },
+              { on: false, label: '📳 오구 오구~~',     desc: '기본 알림음' },
+            ].map(opt => (
+              <button
+                key={String(opt.on)}
+                onClick={() => setHourVoice?.(opt.on)}
+                style={{
+                  flex: 1, padding: '12px 10px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+                  border: `2px solid ${hourVoice === opt.on ? '#FF6B2C' : '#ECECEF'}`,
+                  background: hourVoice === opt.on ? 'rgba(255,107,44,0.1)' : '#FFFFFF',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800, color: hourVoice === opt.on ? '#D9531B' : '#8E8E93' }}>
+                  {opt.label}
+                </div>
+                <div style={{ fontSize: 10.5, color: '#9A9AA0', marginTop: 2 }}>{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+
           <button
-            onClick={() => { const a = new Audio('/sounds/ogu.mp3'); a.play().catch(() => {}) }}
+            onClick={() => {
+              // 다음 정각 음성을 그대로 들려준다 (실제 알람과 같은 소리)
+              const src = hourVoice ? hourSoundSrc(new Date().getHours() + 1) : '/sounds/ogu.mp3'
+              const a = new Audio(src); a.play().catch(() => {})
+            }}
             style={{
               padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
               border: '2px solid rgba(192,132,252,0.5)',
@@ -100,8 +130,10 @@ export default function OguAlarmSettings({
               display: 'flex', alignItems: 'center', gap: 12,
             }}
           >
-            <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>📳</span>
-            <span style={{ fontSize: 14, fontWeight: 800, flex: 1, textAlign: 'left' }}>오구 오구~~</span>
+            <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{hourVoice ? '🗣' : '📳'}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, flex: 1, textAlign: 'left' }}>
+              {hourVoice ? `오구오구, ${((new Date().getHours() + 1) % 12) || 12}시!` : '오구 오구~~'}
+            </span>
             <span style={{ fontSize: 11, opacity: 0.7, flexShrink: 0 }}>▶ 미리듣기</span>
           </button>
 
@@ -150,7 +182,7 @@ export default function OguAlarmSettings({
         {IS_NATIVE && import.meta.env.DEV && (
           <>
             <button
-              onClick={() => scheduleTestNotification(alarmMode)}
+              onClick={() => scheduleTestNotification(alarmMode, hourVoice)}
               style={{
                 marginTop: 10, width: '100%', padding: '10px', borderRadius: 12,
                 border: '1px solid rgba(255,107,44,0.22)', cursor: 'pointer',
