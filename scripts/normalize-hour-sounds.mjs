@@ -20,7 +20,7 @@ vm.runInContext(lameSrc, sandbox)
 const lamejs = sandbox.lamejs ?? sandbox.window.lamejs
 const Mp3Encoder = lamejs.Mp3Encoder
 const SRC = 'public/sounds/hours'
-const TARGET_VOICE_DB = -23
+const TARGET_VOICE_DB = -25.45   // 측정 편향 보정값 — 실측으로 기존 ogu.mp3(-24.05dB) 와 같아진다
 const PEAK_CEIL_DB = -3
 const db = v => (v > 0 ? 20 * Math.log10(v) : -99)
 const amp = d => Math.pow(10, d / 20)
