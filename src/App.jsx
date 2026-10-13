@@ -327,13 +327,14 @@ export default function App() {
   // 할일 추가 — 할일 탭과 홈 달력이 같이 쓴다 (로그인 여부로 저장소만 갈린다)
   const handleAddTodo = userId
     ? addTodo
-    : (title, todoType, dueDate) => setLocalTodos(p => [{
+    : (title, todoType, dueDate, extra = {}) => setLocalTodos(p => [{
         id: Date.now().toString(),
         title,
         completed: false,
         priority: 'medium',
         todo_type: todoType || 'weekly',
         due_date: dueDate || null,
+        ...extra,
       }, ...p])
 
 

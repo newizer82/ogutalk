@@ -58,18 +58,53 @@ export function eventsByDay(events = []) {
   return map
 }
 
-/** 할일을 마감일별로 묶는다 */
+/** 'YYYY-MM-DD' 는 그대로 쓴다 — new Date() 로 돌리면 UTC 로 읽혀 하루가 밀린다 */
+const dayOf = v => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : dateKey(v))
+
+/** 기간 일정이 덮는 날짜들. 하루짜리면 한 칸, end_date 가 있으면 그 사이 전부 */
+export function spanDays(todo) {
+  const start = todo?.due_date ? dayOf(todo.due_date) : null
+  if (!start) return []
+  const end = todo?.end_date ? dayOf(todo.end_date) : start
+  if (end <= start) return [start]
+  const out = []
+  // 로컬 자정으로 만든다 (new Date('2026-10-15') 는 UTC 라 하루가 밀린다)
+  for (let d = new Date(`${start}T00:00:00`); dateKey(d) <= end; d.setDate(d.getDate() + 1)) {
+    out.push(dateKey(d))
+    if (out.length > 366) break        // 잘못된 end_date 로 무한 루프에 빠지지 않게
+  }
+  return out
+}
+
+/** 할일·약속·일정을 날짜별로 묶는다. 기간 일정은 덮는 날짜마다 들어간다 */
 export function todosByDay(todos = []) {
   const map = {}
   for (const t of todos) {
-    const due = t?.due_date
-    if (!due) continue
-    // 'YYYY-MM-DD' 는 그대로 쓴다 — new Date() 로 돌리면 UTC 로 읽혀 하루가 밀린다
-    const k = /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : dateKey(due)
-    if (!map[k]) map[k] = []
-    map[k].push(t)
+    for (const k of spanDays(t)) {
+      if (!map[k]) map[k] = []
+      map[k].push(t)
+    }
   }
   return map
+}
+
+/** 기간 선택 → 끝나는 날. 2~6일은 숫자, 주간은 7일, 월간은 한 달 뒤 하루 전 */
+export function endDateFor(startKey, span) {
+  const d = new Date(`${startKey}T00:00:00`)
+  if (span === 'month') {
+    // 1/31 + 한 달은 '2/31' 이 없어 3월로 튄다 → 그 달 마지막 날로 묶는다
+    const day = d.getDate()
+    d.setDate(1)
+    d.setMonth(d.getMonth() + 1)
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    if (day > last) d.setDate(last)                      // 2/28 에서 끝
+    else { d.setDate(day); d.setDate(d.getDate() - 1) }  // 같은 날짜 하루 전
+  } else {
+    const days = span === 'week' ? 7 : Number(span)
+    if (!Number.isFinite(days) || days < 2) return startKey
+    d.setDate(d.getDate() + days - 1)
+  }
+  return dateKey(d)
 }
 
 /** 오구 지수 → 칸 배경. 점수가 없는 날은 투명 (0점과 '안 쟀음'은 다르다) */

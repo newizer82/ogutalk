@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getEvents } from '../../lib/calendar'
 import { dayScores } from '../../lib/dayLog'
-import { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange } from '../../lib/monthGrid'
+import { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, endDateFor } from '../../lib/monthGrid'
 
 // 홈 하단 월간 캘린더 — 기기 일정 + 내 할일 마감 + 오구 지수를 한 장에 겹쳐 본다.
 // "이번 달 내 시간이 어땠나"를 보여주는 자리지, 일정을 관리하는 자리가 아니다
@@ -20,7 +20,9 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [picked, setPicked] = useState(dateKey(today))
   const [events, setEvents] = useState([])
-  const [draft, setDraft]   = useState(null)   // 입력 중인 할일 제목 (null = 입력창 닫힘)
+  // 입력 중인 것 — null 이면 버튼 두 개만 보인다
+  // kind: 'appointment' 하루 + 시각(시 단위) / 'plan' 2~6일·주간·월간
+  const [draft, setDraft] = useState(null)
 
   const weeks  = useMemo(() => monthCells(view.y, view.m), [view])
   const scores = useMemo(() => dayScores(), [view])
@@ -48,9 +50,16 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
   }
 
   const save = () => {
-    const title = (draft ?? '').trim()
+    const title = (draft?.title ?? '').trim()
     if (!title) return
-    onAddTodo?.(title, 'task', picked)   // 마감일이 있으면 '기한 있는' 할일이다
+    if (draft.kind === 'appointment') {
+      onAddTodo?.(title, 'appointment', picked, {
+        due_hour: draft.hour,                       // null 이면 종일
+        place: draft.place?.trim() || null,
+      })
+    } else {
+      onAddTodo?.(title, 'plan', picked, { end_date: endDateFor(picked, draft.span) })
+    }
     setDraft(null)
   }
 
@@ -160,13 +169,18 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
         {dayTodos.map(t => (
           <div key={t.id} style={row}>
             <span style={{ width: 5, height: 5, borderRadius: 3, background: TODO_DOT, flexShrink: 0 }} />
-            <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>마감</span>
+            <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>
+              {t.todo_type === 'appointment'
+                ? (t.due_hour != null ? `${t.due_hour}시` : '종일')
+                : t.end_date ? '기간' : '마감'}
+            </span>
             <span style={{
               fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               color: (t.completed || t.done) ? '#B0B0B6' : '#3A3A3E',
               textDecoration: (t.completed || t.done) ? 'line-through' : 'none',
             }}>
               {t.title || t.text}
+              {t.place && <span style={{ color: '#9A9AA0', fontWeight: 400 }}> · {t.place}</span>}
             </span>
           </div>
         ))}
@@ -177,40 +191,109 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
           </div>
         )}
 
-        {/* 이 날 할일 추가 — 날짜를 고르는 행위가 곧 마감일 입력이 된다.
-            지난 날짜에는 숨긴다 (만들자마자 "마감 지남"이 되어 알람 제안까지 오염된다) */}
+        {/* 약속 / 일정 추가 — 날짜를 고르는 행위가 곧 입력의 시작이다.
+            지난 날짜에는 숨긴다 (만들자마자 "지난 것"이 되어 알람 제안까지 오염된다) */}
         {onAddTodo && picked >= todayKey && (
           draft === null ? (
-            <button
-              onClick={() => setDraft('')}
-              style={{
-                marginTop: 8, width: '100%', border: '1px solid #FFD2B8', borderRadius: 12,
-                background: 'rgba(255,107,44,0.08)', color: '#D9531B', fontSize: 12.5, fontWeight: 800,
-                padding: '10px', cursor: 'pointer',
-              }}
-            >
-              + 이 날 할일 추가
-            </button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+              <button onClick={() => setDraft({ kind: 'appointment', title: '', hour: null, place: '' })} style={addBtn}>
+                📍 약속 추가
+              </button>
+              <button onClick={() => setDraft({ kind: 'plan', title: '', span: '2' })} style={addBtn}>
+                🗂 일정 추가
+              </button>
+            </div>
           ) : (
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <div style={{
+              marginTop: 10, padding: 12, borderRadius: 14,
+              background: '#FFF9F5', border: '1px solid #FFE1CE',
+            }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: '#111111', marginBottom: 10 }}>
+                {draft.kind === 'appointment' ? '📍 약속' : '🗂 일정'} · {pickedLabel}
+                {draft.kind === 'plan' && (
+                  <span style={{ color: '#8E8E93', fontWeight: 600 }}>
+                    {' '}~ {endDateFor(picked, draft.span).slice(5).replace('-', '/')}
+                  </span>
+                )}
+              </div>
+
+              {draft.kind === 'appointment' ? (
+                <>
+                  {/* 시각 — 분 단위는 쓰지 않는다. 고르지 않으면 종일 */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 4, marginBottom: 8 }}>
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <button
+                        key={h}
+                        onClick={() => setDraft(d => ({ ...d, hour: d.hour === h ? null : h }))}
+                        style={{
+                          padding: '7px 0', borderRadius: 8, cursor: 'pointer', fontSize: 11.5, fontWeight: 700,
+                          border: `1px solid ${draft.hour === h ? '#FF6B2C' : '#ECECEF'}`,
+                          background: draft.hour === h ? '#FF6B2C' : '#FFFFFF',
+                          color: draft.hour === h ? '#FFFFFF' : '#8E8E93',
+                        }}
+                      >
+                        {h}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9A9AA0', marginBottom: 10 }}>
+                    {draft.hour == null ? '시각을 고르지 않으면 종일로 저장돼요' : `${draft.hour}시 약속`}
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+                  {[['2','2일'],['3','3일'],['4','4일'],['5','5일'],['6','6일'],['week','주간'],['month','월간']].map(([v, label]) => (
+                    <button
+                      key={v}
+                      onClick={() => setDraft(d => ({ ...d, span: v }))}
+                      style={{
+                        padding: '7px 11px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                        border: `1px solid ${draft.span === v ? '#FF6B2C' : '#ECECEF'}`,
+                        background: draft.span === v ? '#FF6B2C' : '#FFFFFF',
+                        color: draft.span === v ? '#FFFFFF' : '#8E8E93',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <input
                 autoFocus
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
+                value={draft.title}
+                onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setDraft(null) }}
-                placeholder="할일을 입력하세요"
-                style={{
-                  flex: 1, minWidth: 0, border: '1px solid #ECECEF', borderRadius: 12,
-                  padding: '10px 12px', fontSize: 13, color: '#111111', background: '#FFFFFF',
-                }}
+                placeholder={draft.kind === 'appointment' ? '약속 내용' : '일정 내용'}
+                style={inputStyle}
               />
-              <button onClick={save} disabled={!draft.trim()} style={{
-                border: 'none', borderRadius: 12, padding: '0 14px', cursor: draft.trim() ? 'pointer' : 'default',
-                background: draft.trim() ? '#FF6B2C' : '#F1F1F4',
-                color: draft.trim() ? '#FFFFFF' : '#B0B0B6', fontSize: 12.5, fontWeight: 800,
-              }}>
-                저장
-              </button>
+
+              {draft.kind === 'appointment' && (
+                <input
+                  value={draft.place}
+                  onChange={e => setDraft(d => ({ ...d, place: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setDraft(null) }}
+                  placeholder="장소 (선택)"
+                  style={{ ...inputStyle, marginTop: 6 }}
+                />
+              )}
+
+              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                <button onClick={save} disabled={!draft.title.trim()} style={{
+                  flex: 1, border: 'none', borderRadius: 12, padding: '10px', fontSize: 12.5, fontWeight: 800,
+                  cursor: draft.title.trim() ? 'pointer' : 'default',
+                  background: draft.title.trim() ? '#FF6B2C' : '#F1F1F4',
+                  color: draft.title.trim() ? '#FFFFFF' : '#B0B0B6',
+                }}>
+                  저장
+                </button>
+                <button onClick={() => setDraft(null)} style={{
+                  border: '1px solid #ECECEF', borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                  background: '#FFFFFF', color: '#9A9AA0', fontSize: 12.5, fontWeight: 700,
+                }}>
+                  취소
+                </button>
+              </div>
             </div>
           )
         )}
@@ -230,6 +313,17 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
       </div>
     </section>
   )
+}
+
+const addBtn = {
+  flex: 1, border: '1px solid #FFD2B8', borderRadius: 12,
+  background: 'rgba(255,107,44,0.08)', color: '#D9531B',
+  fontSize: 12.5, fontWeight: 800, padding: '11px 8px', cursor: 'pointer',
+}
+
+const inputStyle = {
+  width: '100%', boxSizing: 'border-box', border: '1px solid #ECECEF', borderRadius: 12,
+  padding: '10px 12px', fontSize: 13, color: '#111111', background: '#FFFFFF',
 }
 
 const navBtn = {

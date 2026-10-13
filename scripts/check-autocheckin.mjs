@@ -695,3 +695,39 @@ console.log('✓ 기기 간 동기화 검증 통과')
   assert.equal(pickSettings(L(1000), R, 1000).use, 'remote')
 }
 console.log('✓ 설정 동기화 우선순위 검증 통과')
+
+// ── 약속·일정 (달력에서 추가) ────────────────────────────────────
+{
+  const { spanDays, todosByDay, endDateFor } = await import('../src/lib/monthGrid.js')
+
+  // 하루짜리는 한 칸
+  assert.deepEqual(spanDays({ due_date: '2026-10-15' }), ['2026-10-15'])
+  assert.deepEqual(spanDays({}), [])
+
+  // 기간 일정은 덮는 날짜마다 들어간다 (달력에 띠처럼 보여야 한다)
+  assert.deepEqual(spanDays({ due_date: '2026-10-15', end_date: '2026-10-17' }),
+    ['2026-10-15', '2026-10-16', '2026-10-17'])
+  // 달을 넘겨도 끊기지 않는다
+  assert.equal(spanDays({ due_date: '2026-10-30', end_date: '2026-11-02' }).length, 4)
+  // end_date 가 start 보다 앞서면 하루로 (잘못 들어온 값에 무한 루프 금지)
+  assert.deepEqual(spanDays({ due_date: '2026-10-15', end_date: '2026-10-01' }), ['2026-10-15'])
+
+  // 기간 선택 → 끝나는 날
+  assert.equal(endDateFor('2026-10-15', '2'), '2026-10-16')
+  assert.equal(endDateFor('2026-10-15', '6'), '2026-10-20')
+  assert.equal(endDateFor('2026-10-15', 'week'), '2026-10-21')
+  assert.equal(endDateFor('2026-10-15', 'month'), '2026-11-14')
+  // 월말 시작도 깨지지 않는다
+  assert.equal(endDateFor('2026-01-31', 'month'), '2026-02-28')
+
+  // 날짜별 묶기 — 기간 일정이 3일에 모두 걸린다
+  const map = todosByDay([
+    { id: 1, due_date: '2026-10-15', todo_type: 'appointment', due_hour: 14 },
+    { id: 2, due_date: '2026-10-15', end_date: '2026-10-17', todo_type: 'plan' },
+  ])
+  assert.equal(map['2026-10-15'].length, 2)
+  assert.equal(map['2026-10-16'].length, 1)
+  assert.equal(map['2026-10-17'].length, 1)
+  assert.ok(!map['2026-10-18'])
+}
+console.log('✓ 약속·일정 검증 통과')

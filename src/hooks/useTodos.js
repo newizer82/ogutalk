@@ -40,13 +40,17 @@ export function useTodos(userId) {
     if (error) console.warn('[goal 진행률 갱신 실패]', error)
   }
 
-  async function addTodo(title, todoType = 'weekly', dueDate = null) {
+  // extra: { due_hour, end_date, place } — 약속·일정에서만 채워진다 (v1.19.0)
+  async function addTodo(title, todoType = 'weekly', dueDate = null, extra = {}) {
     const payload = {
       user_id:   userId,
       title,
       completed: false,
       todo_type: todoType,
       due_date:  dueDate || null,
+      ...(extra.due_hour != null ? { due_hour: extra.due_hour } : {}),
+      ...(extra.end_date       ? { end_date: extra.end_date } : {}),
+      ...(extra.place          ? { place:    extra.place }    : {}),
     }
     const { error } = await supabase
       .from('todos')
