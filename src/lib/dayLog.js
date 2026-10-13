@@ -23,6 +23,39 @@ function write(map) {
   try { localStorage.setItem(KEY, JSON.stringify(trimmed)) } catch {}
 }
 
+/**
+ * 두 기기의 하루 기록을 합친다.
+ * 각 기기는 "자기가 본 것"만 안다 (폰은 알람 응답, PC 는 할일 완료).
+ * 덮어쓰면 한쪽이 지워지므로 날짜별로 합친다.
+ */
+export function mergeDayLog(local = {}, remote = {}) {
+  const out = {}
+  for (const date of new Set([...Object.keys(local || {}), ...Object.keys(remote || {})])) {
+    const a = local?.[date] ?? {}
+    const b = remote?.[date] ?? {}
+    const rec = {
+      doneCount:    Math.max(a.doneCount ?? 0, b.doneCount ?? 0),
+      actedOnAlarm: !!(a.actedOnAlarm || b.actedOnAlarm),
+    }
+    if (a.alarmShown || b.alarmShown) rec.alarmShown = true
+    // 점수는 하루가 끝나갈수록 커진다 → 더 늦게 찍힌 쪽(큰 값)이 그날을 더 잘 설명한다
+    const score = Math.max(a.score ?? -1, b.score ?? -1)
+    if (score >= 0) rec.score = score
+    out[date] = rec
+  }
+  return out
+}
+
+/** 날짜별 기록 전체 — 기기 간 동기화에서 쓴다 */
+export function allDays() {
+  return read()
+}
+
+/** 서버와 합친 결과로 통째로 교체 (동기화 전용) */
+export function replaceAll(map) {
+  write(map || {})
+}
+
 export function todayLog(now = Date.now()) {
   return { doneCount: 0, actedOnAlarm: false, ...read()[dayKey(now)] }
 }

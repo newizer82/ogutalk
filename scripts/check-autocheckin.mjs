@@ -650,3 +650,29 @@ console.log('✓ 월간 캘린더 검증 통과')
   }
 }
 console.log('✓ 시간 안내 음성 검증 통과')
+
+// ── 기기 간 동기화 ───────────────────────────────────────────────
+{
+  const { mergeDayLog } = await import('../src/lib/dayLog.js')
+
+  // 각 기기가 자기가 본 것만 안다 — 덮어쓰면 한쪽이 지워진다
+  const phone = { '2026-10-12': { doneCount: 2, actedOnAlarm: true, score: 71 } }
+  const pc    = { '2026-10-12': { doneCount: 5, actedOnAlarm: false },
+                  '2026-10-11': { doneCount: 1, actedOnAlarm: true, score: 64 } }
+  const m = mergeDayLog(phone, pc)
+  assert.equal(m['2026-10-12'].doneCount, 5, '많이 센 쪽을 남긴다')
+  assert.equal(m['2026-10-12'].actedOnAlarm, true, '한쪽이라도 응답했으면 응답이다')
+  assert.equal(m['2026-10-12'].score, 71, '점수는 하루가 갈수록 커진다 → 큰 값')
+  assert.equal(m['2026-10-11'].score, 64, '한쪽에만 있는 날도 살아남는다')
+  assert.equal(Object.keys(m).length, 2)
+
+  // 점수가 없는 날에 0 을 만들어내면 안 된다 (안 잰 날 ≠ 0점)
+  const noScore = mergeDayLog({ '2026-10-10': { doneCount: 1 } }, {})
+  assert.ok(!('score' in noScore['2026-10-10']), '없던 점수를 만들지 않는다')
+
+  // 빈 입력에도 깨지지 않는다 (첫 로그인: 서버가 비어 있다)
+  assert.deepEqual(mergeDayLog(), {})
+  assert.deepEqual(mergeDayLog({}, undefined), {})
+  assert.equal(Object.keys(mergeDayLog({ a: { doneCount: 1 } }, null)).length, 1)
+}
+console.log('✓ 기기 간 동기화 검증 통과')

@@ -7,6 +7,8 @@ import { useAutoCheckin } from './hooks/useAutoCheckin'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings } from './lib/settings'
+import { pullSync, pushSync } from './lib/syncPrefs'
+import { allDays, replaceAll, mergeDayLog } from './lib/dayLog'
 import { loadLocalCheckins } from './lib/checkinStore'
 import { labelOf } from './data/appCategories'
 import { alarmMood, todayTotals as sumToday, pickNextTodo, pickUpcomingEvent } from './lib/alarmContext'
@@ -234,6 +236,49 @@ export default function App() {
 
   // Supabase 훅 (로그인 시)
   const userId = user?.id ?? null
+
+  // ── 기기 간 동기화 (로그인 사용자) ─────────────────────────────
+  // 로그인하면 서버 설정이 이긴다 — 폰에서 고른 값이 PC 의 기본값에 덮이면 안 된다.
+  // 지수 기록은 각 기기가 자기가 본 것만 알고 있어 합친다(덮어쓰기 금지).
+  const syncedRef = useRef(false)
+  useEffect(() => {
+    if (!userId) { syncedRef.current = false; return }
+    let alive = true
+    pullSync(userId).then(remote => {
+      if (!alive) return
+      const localLog = allDays()
+      if (remote?.settings) {
+        const merged = { ...loadSettings(), ...remote.settings }
+        saveSettings(merged)
+        setSettings(merged)
+      }
+      const log = mergeDayLog(localLog, remote?.dayLog)
+      replaceAll(log)
+      syncedRef.current = true
+      // 첫 로그인이면 로컬 값을 서버에 올려 둔다 (remote 가 null 인 경우)
+      pushSync(userId, { settings: remote?.settings ?? loadSettings(), dayLog: log })
+    })
+    return () => { alive = false }
+  }, [userId])
+
+  // 설정이 바뀌면 올린다 — 연타로 바뀌므로 잠시 모아서 한 번만 보낸다
+  useEffect(() => {
+    if (!userId || !syncedRef.current) return
+    const t = setTimeout(() => pushSync(userId, { settings, dayLog: allDays() }), 1500)
+    return () => clearTimeout(t)
+  }, [userId, settings])
+
+  // 앱을 떠날 때 그날의 기록을 올린다 (알람 응답·할일 완료는 설정과 무관하게 쌓인다)
+  useEffect(() => {
+    if (!userId) return
+    const onHide = () => {
+      if (document.visibilityState === 'hidden' && syncedRef.current) {
+        pushSync(userId, { settings: loadSettings(), dayLog: allDays() })
+      }
+    }
+    document.addEventListener('visibilitychange', onHide)
+    return () => document.removeEventListener('visibilitychange', onHide)
+  }, [userId])
 
   // Firebase: 앱 시작/로그인 상태 변화 시 push 등록 + Analytics 사용자 세팅
   useEffect(() => {
