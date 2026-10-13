@@ -13,8 +13,11 @@ const HIDDEN_KEY = 'ogu_install_hidden'
 const isStandalone = () =>
   window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true
 
+// 창 너비로 판단하면 안 된다 — PC 에서 창을 좁게 쓰면 폰으로 오인한다.
+// 마우스가 있고(pointer: fine) 모바일 OS 가 아니면 PC 로 본다.
 const isDesktop = () =>
-  window.matchMedia?.('(pointer: fine)')?.matches && window.innerWidth >= 900
+  !!window.matchMedia?.('(pointer: fine)')?.matches &&
+  !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 export default function InstallPrompt() {
   const [promptEvent, setPromptEvent] = useState(null)
