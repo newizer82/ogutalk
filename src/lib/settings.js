@@ -100,6 +100,30 @@ export function loadSettings() {
 }
 
 // ── 저장: 통째로 ──────────────────────────────────────────────
-export function saveSettings(settings) {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) } catch {}
+/**
+ * @param stampAt 저장 시각(ms). 기본은 지금.
+ *   서버에서 내려받은 설정을 적을 때는 "서버가 고쳐진 시각"을 넣어야 한다 —
+ *   지금 시각으로 찍으면 받아 적은 기기가 늘 최신이 되어 다음 비교가 망가진다.
+ */
+export function saveSettings(settings, stampAt = Date.now()) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, updatedAt: stampAt }))
+  } catch {}
+}
+
+/**
+ * 어느 쪽 설정을 쓸 것인가 — 더 최근에 "사람이 고친" 쪽.
+ * 서버가 이기게만 하면, 웹에서 로그인만 해도 올라간 기본값이
+ * 폰에서 공들여 맞춘 알람 시간대를 덮어버린다.
+ * 한 번도 고친 적 없는 기기(updatedAt 없음)는 양보한다.
+ */
+export function pickSettings(local, remote, remoteAt = 0) {
+  if (!remote) return { use: 'local', reason: '서버에 없음' }
+  if (!local) return { use: 'remote', reason: '로컬 없음' }
+  const localAt = Number(local.updatedAt ?? 0)
+  if (!localAt) return { use: 'remote', reason: '로컬은 고친 적 없음' }
+  if (!remoteAt) return { use: 'local', reason: '서버는 시각 없음' }
+  return localAt > remoteAt
+    ? { use: 'local', reason: '로컬이 더 최근' }
+    : { use: 'remote', reason: '서버가 더 최근' }
 }

@@ -676,3 +676,22 @@ console.log('✓ 시간 안내 음성 검증 통과')
   assert.equal(Object.keys(mergeDayLog({ a: { doneCount: 1 } }, null)).length, 1)
 }
 console.log('✓ 기기 간 동기화 검증 통과')
+
+// ── 설정 동기화: 어느 쪽이 이기나 ────────────────────────────────
+{
+  const { pickSettings } = await import('../src/lib/settings.js')
+  const L = at => ({ alarmHours: { 7: true }, updatedAt: at })
+  const R = { alarmHours: {} }
+
+  // 웹에서 로그인만 해도 올라간 기본값이, 폰에서 맞춘 설정을 덮으면 안 된다
+  assert.equal(pickSettings(L(2000), R, 1000).use, 'local', '로컬이 더 최근이면 로컬')
+  assert.equal(pickSettings(L(1000), R, 2000).use, 'remote', '서버가 더 최근이면 서버')
+  // 한 번도 고친 적 없는 기기는 양보한다 (갓 설치한 PC 가 폰 설정을 덮지 않게)
+  assert.equal(pickSettings({ alarmHours: {} }, R, 2000).use, 'remote', '로컬 수정 이력 없음')
+  // 서버가 비었으면 로컬 (첫 로그인)
+  assert.equal(pickSettings(L(1000), null, 0).use, 'local', '서버에 없음')
+  assert.equal(pickSettings(L(1000), R, 0).use, 'local', '서버 시각 없음')
+  // 같은 시각이면 서버 — 되돌아가는 쪽이 덜 놀랍다
+  assert.equal(pickSettings(L(1000), R, 1000).use, 'remote')
+}
+console.log('✓ 설정 동기화 우선순위 검증 통과')

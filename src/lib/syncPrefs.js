@@ -16,14 +16,20 @@ export async function pullSync(userId) {
   try {
     const { data, error } = await supabase
       .from(TABLE)
-      .select('settings, day_log')
+      .select('settings, day_log, updated_at')
       .eq('user_id', userId)
       .maybeSingle()
     if (error) {
       console.warn('[동기화] 불러오기 실패:', error.message)
       return null
     }
-    return data ? { settings: data.settings ?? null, dayLog: data.day_log ?? {} } : null
+    return data
+      ? {
+          settings: data.settings ?? null,
+          dayLog: data.day_log ?? {},
+          updatedAt: data.updated_at ? new Date(data.updated_at).getTime() : 0,
+        }
+      : null
   } catch (e) {
     console.warn('[동기화] 불러오기 예외:', e)
     return null

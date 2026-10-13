@@ -6,7 +6,7 @@ import { useAlarm, playOguSound, unlockAudio } from './hooks/useAlarm'
 import { useAutoCheckin } from './hooks/useAutoCheckin'
 import { useCustomAlarms } from './hooks/useCustomAlarms'
 import { useNotes } from './hooks/useNotes'
-import { loadSettings, saveSettings } from './lib/settings'
+import { loadSettings, saveSettings, pickSettings } from './lib/settings'
 import { pullSync, pushSync } from './lib/syncPrefs'
 import { allDays, replaceAll, mergeDayLog } from './lib/dayLog'
 import { loadLocalCheckins } from './lib/checkinStore'
@@ -247,16 +247,20 @@ export default function App() {
     pullSync(userId).then(remote => {
       if (!alive) return
       const localLog = allDays()
-      if (remote?.settings) {
-        const merged = { ...loadSettings(), ...remote.settings }
-        saveSettings(merged)
+      const local = loadSettings()
+      const { use } = pickSettings(local, remote?.settings, remote?.updatedAt)
+      if (use === 'remote') {
+        const merged = { ...local, ...remote.settings }
+        // 서버가 고쳐진 시각 그대로 찍는다 — 지금 시각으로 찍으면 받아 적은 쪽이 늘 최신이 된다
+        saveSettings(merged, remote.updatedAt || Date.now())
         setSettings(merged)
       }
       const log = mergeDayLog(localLog, remote?.dayLog)
       replaceAll(log)
       syncedRef.current = true
       // 첫 로그인이면 로컬 값을 서버에 올려 둔다 (remote 가 null 인 경우)
-      pushSync(userId, { settings: remote?.settings ?? loadSettings(), dayLog: log })
+      // 로컬이 이겼거나 서버가 비었으면 로컬을 올린다
+      pushSync(userId, { settings: use === 'remote' ? remote.settings : loadSettings(), dayLog: log })
     })
     return () => { alive = false }
   }, [userId])
