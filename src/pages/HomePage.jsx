@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
 import TodayTimeHero from '../components/home/TodayTimeHero'
 import BannerCarousel from '../components/home/BannerCarousel'
+import InstallPrompt from '../components/common/InstallPrompt'
 import MonthCalendar from '../components/home/MonthCalendar'
 import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
@@ -103,6 +104,9 @@ export default function HomePage({
 
       {/* 배너 — 자리는 홈에 하나뿐 */}
       <BannerCarousel onTabChange={onTabChange} />
+
+      {/* 웹에서만: PC 는 PWA 설치, 폰 웹은 Play 앱 (네이티브에서는 아무것도 안 뜬다) */}
+      <InstallPrompt />
 
       {/* 알람 시간대 한 줄 — 설정으로 가는 입구만 남긴다 */}
       <button
