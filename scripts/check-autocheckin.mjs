@@ -11,9 +11,6 @@ import {
   minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
   pickUpcomingEvent, eventLine, shortPlace,
 } from '../src/lib/alarmContext.js'
-import {
-  oguScore, phoneScore, doneScore, nineMinutes, NINE, WEIGHTS,
-} from '../src/lib/oguScore.js'
 import { pickMissions, seedOf, dayOffsetKey } from '../src/lib/missionPick.js'
 import { MISSIONS, AREAS } from '../src/data/missions.js'
 import { pickBanners, hiddenToday } from '../src/lib/bannerPick.js'
@@ -357,92 +354,70 @@ console.log('✓ 캘린더 일정 검증 통과')
 }
 console.log('✓ shortPlace 검증 통과')
 
-// ── 오구 지수 5:9 ────────────────────────────────────────────────
+// ── 오구 지수 — 성장 40 + 균형 20 + 실행 40 ──────────────────────
 {
-  const D = (h, m) => new Date(2026, 9, 9, h, m, 0, 0).getTime()
-  const now = D(22, 0)
-  // 자동 기록 1건 = 30분
-  const slots = (type, n, startH) => Array.from({ length: n }, (_, i) => ({
-    activity_type: type,
-    created_at: new Date(D(startH + Math.floor(i / 2), (i % 2) * 30)).toISOString(),
-  }))
+  const {
+    oguScore, produceScore, balanceScore, doneScore, WEIGHTS,
+    AXIS_MIN_MINUTES, EMPTY_AXIS_PENALTY, OVER_HEAL_PENALTY, DEFAULT_GOALS,
+  } = await import('../src/lib/oguScore.js')
 
-  // 9분류에 소비(동영상·게임·검색)는 들어가지 않는다
-  assert.ok(NINE.includes('work') && NINE.includes('health') && NINE.includes('messenger'))
-  assert.ok(!NINE.includes('video') && !NINE.includes('game') && !NINE.includes('search'))
-  assert.equal(NINE.length, 9, `9분류여야 한다 (현재 ${NINE.length})`)
+  // 성장 — 내가 정한 목표 대비. 넘겨도 만점에서 멈춘다
+  assert.equal(produceScore({ produce: 0 }).points, 0)
+  assert.equal(produceScore({ produce: 60 }).points, 20)      // 목표 120 의 절반
+  assert.equal(produceScore({ produce: 120 }).points, 40)
+  assert.equal(produceScore({ produce: 600 }).points, 40, '넘쳐도 만점까지만')
+  // 기준은 사용자의 것
+  assert.equal(produceScore({ produce: 60 }, { produceTarget: 60 }).points, 40)
 
-  // 9 영역: 시간 35 + 다양성 15
-  {
-    // 업무 2시간(목표 달성) + 학습·운동·금융 각 30분 → 4칸 = 다양성 만점
-    const checkins = [...slots('work', 4, 9), ...slots('learning', 1, 13),
-                      ...slots('health', 1, 14), ...slots('finance', 1, 15)]
-    const p = phoneScore(checkins, { produceTarget: 120, consumeLimit: 120 }, now)
-    assert.equal(p.time, 35, '목표를 넘기면 시간 만점')
-    assert.equal(p.filled, 4)
-    assert.equal(p.variety, 15, '4칸이면 다양성 만점')
-    assert.equal(p.penalty, 0)
-    assert.equal(p.total, 50)
-  }
-  // 한 가지만 길게 하면 시간은 차도 다양성이 빈다
-  {
-    const p = phoneScore(slots('work', 8, 9), { produceTarget: 120, consumeLimit: 120 }, now)
-    assert.equal(p.time, 35)
-    assert.equal(p.variety, Math.round(15 / 4), '1칸이면 다양성 1/4')
-  }
-  // 소비 초과 감점은 10점까지만
-  {
-    const p = phoneScore([...slots('work', 4, 9), ...slots('video', 12, 13)],
-                         { produceTarget: 120, consumeLimit: 120 }, now)
-    assert.equal(p.penalty, 10, '초과가 아무리 커도 감점은 10점 상한')
-    assert.ok(p.total < 50)
-  }
-  // 폰을 안 쓴 날은 감점 없음 (0점일 뿐)
-  assert.equal(phoneScore([], {}, now).penalty, 0)
+  // 균형 — 세 축이 모두 있고 힐링이 한도 안이면 만점
+  const full = { produce: 60, consume: 60, connect: 30 }
+  assert.equal(balanceScore(full).points, WEIGHTS.balance)
+  // 한 축이 비면 깎인다
+  assert.equal(balanceScore({ ...full, connect: 0 }).points, WEIGHTS.balance - EMPTY_AXIS_PENALTY)
+  // 1분 스친 것은 "있다" 로 치지 않는다
+  assert.equal(balanceScore({ ...full, connect: AXIS_MIN_MINUTES - 1 }).points,
+    WEIGHTS.balance - EMPTY_AXIS_PENALTY)
+  assert.equal(balanceScore({ ...full, connect: AXIS_MIN_MINUTES }).points, WEIGHTS.balance)
+  // 힐링 초과는 따로 감점, 바닥은 0
+  const over = balanceScore({ ...full, consume: DEFAULT_GOALS.consumeLimit + 45 })
+  assert.equal(over.overHeal, 45)
+  assert.equal(over.points, WEIGHTS.balance - OVER_HEAL_PENALTY)
+  assert.equal(balanceScore({}).points, 0, '아무것도 없으면 0 (음수 아님)')
 
-  // 5 영역: 각 10점
-  {
-    const d = doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, goalKept: true, actedOnAlarm: true })
-    assert.equal(d.total, 50, '다섯 가지를 다 하면 50점')
-    const one = doneScore({ missionDone: 1, missionTotal: 3 })
-    assert.equal(one.parts.missionOne, 10)
-    assert.equal(one.parts.missionAll, 0, '3개 완주해야 두 번째 10점')
-    assert.equal(doneScore({}).total, 0)
-  }
+  // 실행 — 각 10점, 목표(goalKept)는 빠졌다
+  assert.equal(doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, actedOnAlarm: true }).total, 40)
+  assert.equal(doneScore({ missionDone: 1, missionTotal: 3 }).total, 10)
+  assert.equal(doneScore({}).total, 0)
 
-  // 전체: 5 와 9 가 반반
-  {
-    const r = oguScore({
-      checkins: [...slots('work', 4, 9), ...slots('learning', 1, 13),
-                 ...slots('health', 1, 14), ...slots('ai', 1, 15)],
-      goals: { produceTarget: 120, consumeLimit: 120 },
-      missionDone: 3, missionTotal: 3, todoDone: 2, goalKept: true, actedOnAlarm: true, now,
-    })
-    assert.equal(r.phone.total, 50)
-    assert.equal(r.done.total, 50)
-    assert.equal(r.score, 100)
-    assert.equal(r.grade, '오늘 잘 썼어요')
-  }
+  // 합산 — 폰을 안 쓴 날이라고 음수가 되지 않는다
+  const empty = oguScore({ checkins: [] })
+  assert.ok(empty.score >= 0 && empty.score <= 100, String(empty.score))
+  assert.equal(empty.produce.points, 0)
 
-  // 조언: 소비 초과 > 미션 > 할일 > 목표 순으로 "지금 바꿀 수 있는 것"
-  {
-    const over = oguScore({ checkins: slots('video', 12, 10), now })
-    assert.ok(over.advice.includes('힐링'), over.advice)
-    const noMission = oguScore({ checkins: slots('work', 4, 9), missionDone: 1, now })
-    assert.ok(noMission.advice.includes('미션'), noMission.advice)
-    const noTodo = oguScore({ checkins: slots('work', 4, 9), missionDone: 3, now })
-    assert.ok(noTodo.advice.includes('할일'), noTodo.advice)
-  }
+  // 만점 경로
+  const D = (h) => new Date(2026, 9, 9, h, 0, 0, 0).getTime()
+  const c = (type, h) => ({ activity_type: type, created_at: new Date(D(h)).toISOString() })
+  const perfect = oguScore({
+    // 자동 기록(:00) 한 칸 = 30분 → 성장 4칸 = 120분
+    checkins: [c('work', 9), c('learning', 10), c('ai', 11), c('health', 12),
+               c('video', 13), c('messenger', 14)],
+    missionDone: 3, missionTotal: 3, todoDone: 2, actedOnAlarm: true,
+    now: D(22),
+  })
+  assert.equal(perfect.produce.points, 40, JSON.stringify(perfect.produce))
+  assert.equal(perfect.balance.points, 20, JSON.stringify(perfect.balance))
+  assert.equal(perfect.done.total, 40)
+  assert.equal(perfect.score, 100)
 
-  // nineMinutes: 그룹으로 기록된 수동 체크인은 다양성 칸에 넣지 않는다
-  {
-    const n = nineMinutes([...slots('produce', 2, 9), ...slots('work', 1, 11)], now)
-    assert.deepEqual(Object.keys(n), ['work'], '그룹 기록은 어느 칸인지 알 수 없다')
-  }
-  // 그래도 시간 점수에는 들어간다 (수동 기록이 버려지면 안 된다)
-  assert.ok(phoneScore(slots('produce', 4, 9), { produceTarget: 120 }, now).time > 0)
+  // 조언: 힐링 초과 > 미션 > 할일 > 빈 축 순으로 "지금 바꿀 수 있는 것"
+  const binge = oguScore({
+    checkins: Array.from({ length: 12 }, (_, i) => c('video', 9 + i)),
+    missionDone: 3, missionTotal: 3, todoDone: 1, actedOnAlarm: true, now: D(22),
+  })
+  assert.ok(binge.advice.includes('힐링'), binge.advice)
+  assert.ok(binge.balance.overHeal > 0)
 }
-console.log('✓ 오구 지수 5:9 검증 통과')
+console.log('✓ 오구 지수(성장·균형·실행) 검증 통과')
 
 // ── 오늘의 미션 고르기 ───────────────────────────────────────────
 {

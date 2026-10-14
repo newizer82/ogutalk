@@ -1,14 +1,13 @@
 import { GROUPS, labelOf } from '../../data/appCategories'
 import { formatMinutes } from '../../lib/alarmContext'
-import { WEIGHTS } from '../../lib/oguScore'
+import { WEIGHTS, AXIS_LABEL } from '../../lib/oguScore'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
-// 이름 그대로 5 : 9 구조로 보여준다 (매시 59분)
+// 성장 40 + 균형 20 + 실행 40 (v1.20.0 — 9칸 다양성은 설명해도 알 수 없어서 걷어냈다)
 const DONE_ITEMS = [
   { key: 'missionOne',  label: '미션 1개' },
   { key: 'missionAll',  label: '미션 완주' },
   { key: 'todoDone',    label: '내 할일' },
-  { key: 'goalKept',    label: '이번 주 목표' },
   { key: 'alarmAnswer', label: '알람 응답' },
 ]
 
@@ -18,7 +17,7 @@ const C = 2 * Math.PI * R
 
 export default function OguScoreCard({ result, yesterday = null, streak = 0, onOpenApps }) {
   if (!result) return null
-  const { score, phone, done, grade, color, advice, byGroup, measured, measuredMinutes } = result
+  const { score, produce, balance, done, grade, color, advice, byGroup, measured, measuredMinutes } = result
   const diff = yesterday === null ? null : score - yesterday
 
   return (
@@ -69,24 +68,45 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 12 }}>
-            {/* 9 — 폰으로 한 생산 활동 */}
+            {/* 성장 — 내가 정한 목표 대비 */}
             <div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
                 color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>📱 폰 활용 <span style={{ color: '#9A9AA0' }}>9분류</span></span>
-                <span>{phone.total} / 50</span>
+                <span>🌱 성장 <span style={{ color: '#9A9AA0' }}>{formatMinutes(produce.minutes)} / {formatMinutes(produce.target)}</span></span>
+                <span>{produce.points} / {WEIGHTS.produce}</span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: 'rgba(0,0,0,0.05)' }}>
                 <div style={{
-                  width: `${(phone.total / 50) * 100}%`, height: '100%', borderRadius: 3,
+                  width: `${(produce.points / WEIGHTS.produce) * 100}%`, height: '100%', borderRadius: 3,
                   background: GROUPS.produce.color, transition: 'width .5s ease',
                 }} />
               </div>
+            </div>
+
+            {/* 균형 — 세 축이 모두 있고 힐링이 한도 안인가 */}
+            <div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', fontSize: 12,
+                color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
+              }}>
+                <span>⚖️ 균형 <span style={{ color: '#9A9AA0' }}>성장·힐링·소통</span></span>
+                <span>{balance.points} / {WEIGHTS.balance}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: 'rgba(0,0,0,0.05)' }}>
+                <div style={{
+                  width: `${(balance.points / WEIGHTS.balance) * 100}%`, height: '100%', borderRadius: 3,
+                  background: GROUPS.connect.color, transition: 'width .5s ease',
+                }} />
+              </div>
               <div style={{ color: '#9A9AA0', fontSize: 11, marginTop: 4 }}>
-                시간 {phone.time}/{WEIGHTS.time} · 다양성 {phone.filled}칸 {phone.variety}/{WEIGHTS.variety}
-                {phone.penalty > 0 && <span style={{ color: '#C2521C' }}> · 소비 −{phone.penalty}</span>}
+                {balance.empty.length === 0 && balance.overHeal === 0
+                  ? '세 가지가 고르게 있었어요'
+                  : [
+                      balance.empty.length ? `${balance.empty.map(a => AXIS_LABEL[a].slice(2)).join('·')} 없음` : null,
+                      balance.overHeal > 0 ? `힐링 ${balance.overHeal}분 초과` : null,
+                    ].filter(Boolean).join(' · ')}
               </div>
             </div>
 
@@ -96,8 +116,8 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
                 color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>✅ 해낸 것 <span style={{ color: '#9A9AA0' }}>5가지</span></span>
-                <span>{done.total} / 50</span>
+                <span>✅ 실행 <span style={{ color: '#9A9AA0' }}>4가지</span></span>
+                <span>{done.total} / 40</span>
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
                 {DONE_ITEMS.map(it => (

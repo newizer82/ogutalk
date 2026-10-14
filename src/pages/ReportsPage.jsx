@@ -9,7 +9,6 @@ import { oguScore } from '../lib/oguScore'
 import ScoreBasisModal from '../components/report/ScoreBasisModal'
 import { todayLog, yesterdayScore, streakDays, saveDayScore } from '../lib/dayLog'
 import { todayMissions } from '../lib/missionStore'
-import { goalKeptThisWeek } from '../components/todos/WeeklyGoalCard'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -30,7 +29,6 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
       missionDone:  m.done.length,
       missionTotal: m.missions.length,
       todoDone:     log.doneCount,
-      goalKept:     goalKeptThisWeek(),
       actedOnAlarm: log.actedOnAlarm,
     })
     // 하루가 거의 끝난 뒤의 점수만 저장한다 — 오전 점수를 그날 점수로 남기면
