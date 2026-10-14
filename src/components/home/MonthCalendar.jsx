@@ -23,6 +23,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
   // 입력 중인 것 — null 이면 버튼 두 개만 보인다
   // kind: 'appointment' 하루 + 시각(시 단위) / 'plan' 2~6일·주간·월간
   const [draft, setDraft] = useState(null)
+  const [failed, setFailed] = useState(false)   // 서버 저장 실패 — 조용히 사라지면 쓴 걸 잃는다
 
   const weeks  = useMemo(() => monthCells(view.y, view.m), [view])
   const scores = useMemo(() => dayScores(), [view])
@@ -49,17 +50,19 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
     setPicked(todayKey)
   }
 
-  const save = () => {
+  const save = async () => {
     const title = (draft?.title ?? '').trim()
     if (!title) return
-    if (draft.kind === 'appointment') {
-      onAddTodo?.(title, 'appointment', picked, {
-        due_hour: draft.hour,                       // null 이면 종일
-        place: draft.place?.trim() || null,
-      })
-    } else {
-      onAddTodo?.(title, 'plan', picked, { end_date: endDateFor(picked, draft.span) })
-    }
+    setFailed(false)
+    const ok = draft.kind === 'appointment'
+      ? await onAddTodo?.(title, 'appointment', picked, {
+          due_hour: draft.hour,                     // null 이면 종일
+          place: draft.place?.trim() || null,
+        })
+      : await onAddTodo?.(title, 'plan', picked, { end_date: endDateFor(picked, draft.span) })
+    // 로컬 저장(비로그인)은 아무것도 돌려주지 않는다 → undefined 는 성공으로 본다.
+    // 서버가 거부했을 때만 입력창을 열어 둔다. 닫아버리면 쓴 내용을 잃는다.
+    if (ok === false) { setFailed(true); return }
     setDraft(null)
   }
 
@@ -278,6 +281,15 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
                 />
               )}
 
+              {failed && (
+                <div style={{
+                  marginTop: 8, padding: '8px 10px', borderRadius: 10, fontSize: 11.5, lineHeight: 1.5,
+                  background: 'rgba(210,59,46,0.08)', border: '1px solid rgba(210,59,46,0.25)', color: '#D23B2E',
+                }}>
+                  저장하지 못했어요. 인터넷을 확인하고 다시 눌러주세요.
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                 <button onClick={save} disabled={!draft.title.trim()} style={{
                   flex: 1, border: 'none', borderRadius: 12, padding: '10px', fontSize: 12.5, fontWeight: 800,
@@ -287,7 +299,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
                 }}>
                   저장
                 </button>
-                <button onClick={() => setDraft(null)} style={{
+                <button onClick={() => { setDraft(null); setFailed(false) }} style={{
                   border: '1px solid #ECECEF', borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
                   background: '#FFFFFF', color: '#9A9AA0', fontSize: 12.5, fontWeight: 700,
                 }}>
