@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import GlassCard from '../components/common/GlassCard'
 import TextWithLinks from '../components/common/TextWithLinks'
 import { S } from '../styles/theme'
-import MissionCard from '../components/todos/MissionCard'
 import WeeklyGoalCard from '../components/todos/WeeklyGoalCard'
+import MonthCalendar from '../components/home/MonthCalendar'
 
 function PremiumLock({ onUnlock }) {
   return (
@@ -96,7 +96,11 @@ function TodoItem({ todo, onToggle, onEdit, onDelete }) {
   )
 }
 
-export default function TodosPage({ todos = [], userId, isPremium, setIsPremium, onAdd, onToggle, onUpdate, onDelete, lifeStage = null }) {
+export default function TodosPage({
+  todos = [], userId, isPremium, setIsPremium,
+  onAdd, onToggle, onUpdate, onDelete, lifeStage = null,
+  calendarSync = false, calendarIds = [], onTabChange,
+}) {
   const [showForm, setShowForm]   = useState(false)
   const [todoType, setTodoType]   = useState('weekly')  // 'weekly' | 'task'
   const [input, setInput]         = useState('')
@@ -119,7 +123,11 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
 
   // 타입별 분류
   const weekly    = todos.filter(t => (t.todo_type === 'weekly' || !t.todo_type) && !t.due_date && !(t.completed || t.done))
-  const tasks     = todos.filter(t => (t.todo_type === 'task'   ||  t.due_date)  && !(t.completed || t.done))
+  // 📆 월·주간 계획 — 달력에서 넣은 기간 계획. 할일 탭 맨 위에 둔다
+  const periods   = todos.filter(t => t.todo_type === 'period' && !(t.completed || t.done))
+    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+  const tasks     = todos.filter(t => (t.todo_type === 'task' || t.due_date) &&
+                                      t.todo_type !== 'period' && !(t.completed || t.done))
     .sort((a, b) => {
       if (!a.due_date) return 1
       if (!b.due_date) return -1
@@ -166,9 +174,46 @@ export default function TodosPage({ todos = [], userId, isPremium, setIsPremium,
 
   return (
     <div>
-      {/* 오늘의 추천 미션 — 내가 만든 할일과 섞지 않는다 (매일 3개씩 쌓이면 목록이 오염된다) */}
-      <MissionCard stage={lifeStage} />
+      {/* 오늘의 추천 미션은 홈에만 둔다 (같은 카드를 두 탭에 놓으면 어디서 눌렀는지 헷갈린다) */}
       <WeeklyGoalCard />
+
+      {/* ── 📆 월·주간 계획 — 달력에서 넣은 기간 계획을 맨 위에 ── */}
+      {periods.length > 0 && (
+        <section style={{
+          marginBottom: 14, padding: 16, borderRadius: 20,
+          background: '#FFFFFF', border: '1px solid #ECECEF',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#111111', marginBottom: 10 }}>
+            📆 월·주간 계획
+          </div>
+          {periods.map(t => (
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+              <button
+                onClick={() => onToggle(t.id)}
+                style={{
+                  width: 20, height: 20, borderRadius: 6, flexShrink: 0, cursor: 'pointer',
+                  border: '1.5px solid #ECECEF', background: '#FFFFFF',
+                }}
+                aria-label="완료"
+              />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 13.5, color: '#3A3A3E' }}>{t.title || t.text}</span>
+                <span style={{ display: 'block', fontSize: 11, color: '#9A9AA0', marginTop: 1 }}>
+                  {String(t.due_date).slice(5).replace('-', '/')}
+                  {t.end_date && ` ~ ${String(t.end_date).slice(5).replace('-', '/')}`}
+                </span>
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* ── 달력 — 홈과 같은 것. 약속·일정·계획을 여기서도 넣고 고친다 ── */}
+      <MonthCalendar
+        todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
+        onTabChange={onTabChange} onAddTodo={onAdd}
+        onUpdateTodo={onUpdate} onDeleteTodo={onDelete}
+      />
 
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>

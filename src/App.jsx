@@ -324,6 +324,17 @@ export default function App() {
     : localTodos
   const activeTodosForAlarm = activeTodos.filter(t => !t.completed).length
 
+  // 할일 수정·삭제 — 할일 탭과 달력이 같이 쓴다
+  const handleToggleTodo = userId
+    ? toggleTodo
+    : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))
+  const handleUpdateTodo = userId
+    ? updateTodo
+    : (id, updates) => setLocalTodos(p => p.map(t => t.id === id ? { ...t, ...updates } : t))
+  const handleDeleteTodo = userId
+    ? deleteTodo
+    : id => setLocalTodos(p => p.filter(t => t.id !== id))
+
   // 할일 추가 — 할일 탭과 홈 달력이 같이 쓴다 (로그인 여부로 저장소만 갈린다)
   const handleAddTodo = userId
     ? addTodo
@@ -628,6 +639,8 @@ export default function App() {
             calendarSync={calendarSync}
             calendarIds={calendarIds}
             onAddTodo={handleAddTodo}
+            onUpdateTodo={handleUpdateTodo}
+            onDeleteTodo={handleDeleteTodo}
             alarmHours={alarmHours}
             oguTone={oguTone}
             onTestAlarm={fireAlarm}
@@ -646,13 +659,13 @@ export default function App() {
             userId={userId}  // ← 추가
             isPremium={isPremium}
             setIsPremium={setIsPremium}
+            calendarSync={calendarSync}
+            calendarIds={calendarIds}
+            onTabChange={setActiveTab}
             onAdd={handleAddTodo}
-            onToggle={userId ? toggleTodo : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
-            onUpdate={userId
-              ? updateTodo
-              : (id, updates) => setLocalTodos(p => p.map(t => t.id === id ? { ...t, ...updates } : t))
-            }
-            onDelete={userId ? deleteTodo : id => setLocalTodos(p => p.filter(t => t.id !== id))}
+            onToggle={handleToggleTodo}
+            onUpdate={handleUpdateTodo}
+            onDelete={handleDeleteTodo}
           />
     
         )}

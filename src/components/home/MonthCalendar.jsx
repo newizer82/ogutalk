@@ -15,7 +15,10 @@ const hhmm = ms => {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export default function MonthCalendar({ todos = [], calendarSync = false, calendarIds = [], onTabChange, onAddTodo }) {
+export default function MonthCalendar({
+  todos = [], calendarSync = false, calendarIds = [],
+  onTabChange, onAddTodo, onUpdateTodo, onDeleteTodo,
+}) {
   const today = new Date()
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [picked, setPicked] = useState(dateKey(today))
@@ -24,6 +27,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
   // kind: 'appointment' 하루 + 시각(시 단위) / 'plan' 2~6일·주간·월간
   const [draft, setDraft] = useState(null)
   const [failed, setFailed] = useState(false)   // 서버 저장 실패 — 조용히 사라지면 쓴 걸 잃는다
+  const [editing, setEditing] = useState(null)  // 누른 항목 id (제목 수정 · 삭제)
 
   const weeks  = useMemo(() => monthCells(view.y, view.m), [view])
   const scores = useMemo(() => dayScores(), [view])
@@ -59,11 +63,19 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
           due_hour: draft.hour,                     // null 이면 종일
           place: draft.place?.trim() || null,
         })
-      : await onAddTodo?.(title, 'plan', picked, { end_date: endDateFor(picked, draft.span) })
+      // 일정(2~6일)과 월·주간 계획은 기간만 다르다 — 목록에서 갈라 보이게 종류를 나눈다
+      : await onAddTodo?.(title, draft.kind, picked, { end_date: endDateFor(picked, draft.span) })
     // 로컬 저장(비로그인)은 아무것도 돌려주지 않는다 → undefined 는 성공으로 본다.
     // 서버가 거부했을 때만 입력창을 열어 둔다. 닫아버리면 쓴 내용을 잃는다.
     if (ok === false) { setFailed(true); return }
     setDraft(null)
+  }
+
+  const applyEdit = () => {
+    const title = (editing?.title ?? '').trim()
+    if (!title) return
+    onUpdateTodo?.(editing.id, { title })
+    setEditing(null)
   }
 
   const dayEvents = evMap[picked] ?? []
@@ -116,7 +128,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
           return (
             <button
               key={cell.key}
-              onClick={() => { setPicked(cell.key); setDraft(null) }}
+              onClick={() => { setPicked(cell.key); setDraft(null); setEditing(null) }}
               style={{
                 height: 44, padding: 0, cursor: 'pointer', borderRadius: 11,
                 background: scoreTint(scores[cell.key]),
@@ -170,21 +182,63 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
         ))}
 
         {dayTodos.map(t => (
-          <div key={t.id} style={row}>
-            <span style={{ width: 5, height: 5, borderRadius: 3, background: TODO_DOT, flexShrink: 0 }} />
-            <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>
-              {t.todo_type === 'appointment'
-                ? (t.due_hour != null ? `${t.due_hour}시` : '종일')
-                : t.end_date ? '기간' : '마감'}
-            </span>
-            <span style={{
-              fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              color: (t.completed || t.done) ? '#B0B0B6' : '#3A3A3E',
-              textDecoration: (t.completed || t.done) ? 'line-through' : 'none',
-            }}>
-              {t.title || t.text}
-              {t.place && <span style={{ color: '#9A9AA0', fontWeight: 400 }}> · {t.place}</span>}
-            </span>
+          <div key={t.id}>
+            {/* 누르면 수정·삭제가 열린다 — 잘못 넣은 약속을 지울 길이 없으면 달력이 쓰레기통이 된다 */}
+            <button
+              onClick={() => { setEditing(editing?.id === t.id ? null : { id: t.id, title: t.title || t.text || '' }) }}
+              style={{ ...row, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <span style={{ width: 5, height: 5, borderRadius: 3, background: TODO_DOT, flexShrink: 0 }} />
+              <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>
+                {t.todo_type === 'appointment'
+                  ? (t.due_hour != null ? `${t.due_hour}시` : '종일')
+                  : t.todo_type === 'period' ? '계획'
+                  : t.end_date ? '기간' : '마감'}
+              </span>
+              <span style={{
+                fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                color: (t.completed || t.done) ? '#B0B0B6' : '#3A3A3E',
+                textDecoration: (t.completed || t.done) ? 'line-through' : 'none',
+              }}>
+                {t.title || t.text}
+                {t.place && <span style={{ color: '#9A9AA0', fontWeight: 400 }}> · {t.place}</span>}
+              </span>
+              <span style={{ fontSize: 13, color: '#C7C7CC', flexShrink: 0 }}>
+                {editing?.id === t.id ? '▲' : '⋯'}
+              </span>
+            </button>
+
+            {editing?.id === t.id && (
+              <div style={{
+                display: 'flex', gap: 6, margin: '2px 0 8px', padding: 10,
+                borderRadius: 12, background: '#FAFAFB', border: '1px solid #ECECEF',
+              }}>
+                <input
+                  autoFocus
+                  value={editing.title}
+                  onChange={e => setEditing(v => ({ ...v, title: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') applyEdit()
+                    if (e.key === 'Escape') setEditing(null)
+                  }}
+                  style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                />
+                <button onClick={applyEdit} disabled={!editing.title.trim()} style={{
+                  border: 'none', borderRadius: 10, padding: '0 12px', fontSize: 12, fontWeight: 800,
+                  cursor: editing.title.trim() ? 'pointer' : 'default',
+                  background: editing.title.trim() ? '#FF6B2C' : '#F1F1F4',
+                  color: editing.title.trim() ? '#FFFFFF' : '#B0B0B6',
+                }}>
+                  수정
+                </button>
+                <button onClick={() => { onDeleteTodo?.(t.id); setEditing(null) }} style={{
+                  border: '1px solid rgba(210,59,46,0.3)', borderRadius: 10, padding: '0 12px',
+                  background: '#FFFFFF', color: '#D23B2E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                }}>
+                  삭제
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
@@ -198,12 +252,15 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
             지난 날짜에는 숨긴다 (만들자마자 "지난 것"이 되어 알람 제안까지 오염된다) */}
         {onAddTodo && picked >= todayKey && (
           draft === null ? (
-            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+            <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
               <button onClick={() => setDraft({ kind: 'appointment', title: '', hour: null, place: '' })} style={addBtn}>
-                📍 약속 추가
+                📍 약속
               </button>
               <button onClick={() => setDraft({ kind: 'plan', title: '', span: '2' })} style={addBtn}>
-                🗂 일정 추가
+                🗂 일정
+              </button>
+              <button onClick={() => setDraft({ kind: 'period', title: '', span: 'week' })} style={addBtn}>
+                📆 월·주간 계획
               </button>
             </div>
           ) : (
@@ -212,8 +269,8 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
               background: '#FFF9F5', border: '1px solid #FFE1CE',
             }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, color: '#111111', marginBottom: 10 }}>
-                {draft.kind === 'appointment' ? '📍 약속' : '🗂 일정'} · {pickedLabel}
-                {draft.kind === 'plan' && (
+                {KIND_LABEL[draft.kind]} · {pickedLabel}
+                {draft.kind !== 'appointment' && (
                   <span style={{ color: '#8E8E93', fontWeight: 600 }}>
                     {' '}~ {endDateFor(picked, draft.span).slice(5).replace('-', '/')}
                   </span>
@@ -245,7 +302,10 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
                 </>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-                  {[['2','2일'],['3','3일'],['4','4일'],['5','5일'],['6','6일'],['week','주간'],['month','월간']].map(([v, label]) => (
+                  {(draft.kind === 'period'
+                    ? [['week','주간'],['month','월간']]
+                    : [['2','2일'],['3','3일'],['4','4일'],['5','5일'],['6','6일']]
+                  ).map(([v, label]) => (
                     <button
                       key={v}
                       onClick={() => setDraft(d => ({ ...d, span: v }))}
@@ -267,7 +327,8 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
                 value={draft.title}
                 onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setDraft(null) }}
-                placeholder={draft.kind === 'appointment' ? '약속 내용' : '일정 내용'}
+                placeholder={draft.kind === 'appointment' ? '약속 내용'
+                  : draft.kind === 'period' ? '이번 주/달에 할 일' : '일정 내용'}
                 style={inputStyle}
               />
 
@@ -327,10 +388,16 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
   )
 }
 
+const KIND_LABEL = {
+  appointment: '📍 약속',
+  plan:        '🗂 일정',
+  period:      '📆 월·주간 계획',
+}
+
 const addBtn = {
   flex: 1, border: '1px solid #FFD2B8', borderRadius: 12,
   background: 'rgba(255,107,44,0.08)', color: '#D9531B',
-  fontSize: 12.5, fontWeight: 800, padding: '11px 8px', cursor: 'pointer',
+  fontSize: 11.5, fontWeight: 800, padding: '11px 4px', cursor: 'pointer',
 }
 
 const inputStyle = {

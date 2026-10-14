@@ -12,28 +12,6 @@ import { theme } from '../styles/theme'
 
 const pad = n => String(n).padStart(2, '0')
 
-// ── 24시간 타임라인 한 행 ─────────────────────────────────
-function TimelineRow({ hours, currentHour, activeColor, showCurrent }) {
-  return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 18 }}>
-      {Array.from({ length: 24 }, (_, h) => {
-        const isActive = hours.has ? hours.has(h) : !!hours[h]
-        const isCur    = showCurrent && h === currentHour
-        return (
-          <div key={h} style={{
-            flex: 1, borderRadius: 2,
-            height: isCur ? 18 : isActive ? 14 : 6,
-            background: isCur
-              ? 'linear-gradient(180deg,#D9531B,#FF6B2C)'
-              : isActive ? activeColor : 'rgba(0,0,0,0.03)',
-            transition: 'height 0.3s ease',
-          }} />
-        )
-      })}
-    </div>
-  )
-}
-
 // ── 카드 공통 스타일 ───────────────────────────────────────
 const cardStyle = {
   background: 'rgba(0,0,0,0.03)',
@@ -60,15 +38,15 @@ export default function HomePage({
   lifeStage = null,
   checkins = [],
   nowLabel = null,
-  alarmCount = 0,
   todos = [],
   onTabChange,
   alarmHours = {},
-  customAlarms = [],
   isLoggedIn = false,
   calendarSync = false,
   calendarIds = [],
   onAddTodo,
+  onUpdateTodo,
+  onDeleteTodo,
   notes = [],
   onAddNote,
   onDeleteNote,
@@ -89,8 +67,6 @@ export default function HomePage({
   const todoPct      = todos.length ? Math.round(doneTodos.length / todos.length * 100) : 0
 
   // 알람 통계
-  const totalActiveHours = Object.values(alarmHours).filter(Boolean).length
-  const customAlarmHours = new Set(customAlarms.filter(a => a.isEnabled).map(a => a.hour))
 
   return (
     <div>
@@ -108,24 +84,16 @@ export default function HomePage({
       {/* 웹에서만: PC 는 PWA 설치, 폰 웹은 Play 앱 (네이티브에서는 아무것도 안 뜬다) */}
       <InstallPrompt />
 
-      {/* 알람 시간대 한 줄 — 설정으로 가는 입구만 남긴다 */}
-      <button
-        onClick={() => onTabChange('alarms')}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
-          border: '1px solid #ECECEF', borderRadius: 20, padding: '13px 16px',
-          background: '#fff', cursor: 'pointer', textAlign: 'left',
-        }}
-      >
-        <span style={{ fontSize: 16 }}>🔔</span>
-        <span style={{ flex: 1, fontSize: 13.5, color: '#3A3A3E', fontWeight: 600 }}>
-          오늘 알람 {totalActiveHours}시간대 · {alarmCount}회 울림
-        </span>
-        <span style={{ fontSize: 16, color: '#C7C7CC' }}>›</span>
-      </button>
-
       {/* ── 오늘의 추천 미션 (접을 수 있음) ── */}
       <MissionCard stage={lifeStage} collapsible />
+
+      {/* ── 월간 캘린더 — 일정·마감·오구 지수를 한 장에 ── */}
+      <MonthCalendar
+        todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
+        onTabChange={onTabChange} onAddTodo={onAddTodo}
+        onUpdateTodo={onUpdateTodo} onDeleteTodo={onDeleteTodo}
+      />
+
 
       {/* ── 카드 2: 할일 현황 ── */}
       <section style={cardStyle}>
@@ -219,12 +187,6 @@ export default function HomePage({
         onAdd={onAddNote}
         onDelete={onDeleteNote}
         onLoginOpen={onLoginOpen}
-      />
-
-      {/* ── 월간 캘린더 — 일정·마감·오구 지수를 한 장에 ── */}
-      <MonthCalendar
-        todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
-        onTabChange={onTabChange} onAddTodo={onAddTodo}
       />
 
       {/* ── 카카오 공유 + SNS 공유 ── */}
