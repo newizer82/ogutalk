@@ -742,3 +742,34 @@ console.log('✓ 설정 동기화 우선순위 검증 통과')
   assert.ok(!map['2026-10-18'])
 }
 console.log('✓ 약속·일정 검증 통과')
+
+// ── 분류 안 된 앱 집계 ───────────────────────────────────────────
+{
+  const { addUnmapped, summarize } = await import('../src/lib/unmapped.js')
+  const d1 = new Date(2026, 9, 12, 10).getTime()
+  const d2 = new Date(2026, 9, 13, 10).getTime()
+
+  let st = {}
+  st = addUnmapped(st, { pkg: 'com.foo', label: '포토에디터', minutes: 30 }, d1)
+  st = addUnmapped(st, { pkg: 'com.foo', label: '포토에디터', minutes: 20 }, d2)
+  st = addUnmapped(st, { pkg: 'com.bar', label: '은행', minutes: 10 }, d2)
+
+  const s = summarize(st)
+  assert.equal(s.apps.length, 2)
+  assert.equal(s.apps[0].pkg, 'com.foo')          // 많이 쓴 순
+  assert.equal(s.apps[0].min, 50)                 // 같은 앱은 더한다
+  assert.equal(s.totalMin, 60)
+  assert.equal(s.dayCount, 2, '이틀치')
+  assert.equal(s.perDayMin, 30, '하루 평균 = 총합 / 날짜 수')
+
+  // 0분·빈 패키지는 세지 않는다 (슬롯은 잡혔는데 사용시간이 0인 경우)
+  assert.deepEqual(addUnmapped({}, { pkg: 'x', minutes: 0 }), {})
+  assert.deepEqual(addUnmapped({}, { pkg: '', minutes: 5 }), {})
+
+  // 기록이 없으면 0으로 나눈 NaN 이 아니라 0 이 나와야 한다
+  const empty = summarize({})
+  assert.equal(empty.perDayMin, 0)
+  assert.equal(empty.dayCount, 1)
+  assert.deepEqual(empty.apps, [])
+}
+console.log('✓ 분류 안 된 앱 집계 검증 통과')

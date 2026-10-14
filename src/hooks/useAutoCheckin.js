@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { buildSlots, slotKey, floorToSlot, MIN_ACTIVE_MS } from '../lib/checkinSlots'
 import { categoryForApp } from '../data/appCategories'
+import { noteUnmapped } from '../lib/unmapped'
 import { getUsage, hasUsageAccess } from '../lib/usageStats'
 import { saveCheckin, updateCheckinCategory, loadLocalCheckins } from '../lib/checkinStore'
 import { logEvent } from '../lib/firebase'
@@ -95,7 +96,11 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
           saved:    !!category,
         })
 
-        if (!category) continue                       // 미분류 앱은 기록하지 않음
+        if (!category) {
+          // 버려지는 시간의 크기를 남긴다 — 분류표를 늘릴지 판단할 근거가 된다 (기기 안에만)
+          noteUnmapped({ pkg: top.pkg, label: top.label, minutes: Math.round(top.seconds / 60) }, slot.start)
+          continue                                    // 미분류 앱은 기록하지 않음
+        }
 
         await saveCheckin(category, userId, slot.start)
         saved++

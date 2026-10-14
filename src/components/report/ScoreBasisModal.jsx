@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CATEGORIES, GROUPS, groupOf, labelOf, categoryForApp } from '../../data/appCategories'
+import { loadUnmapped, summarize } from '../../lib/unmapped'
 import { getUsage } from '../../lib/usageStats'
 import { minutesOf, formatMinutes } from '../../lib/alarmContext'
 
@@ -19,6 +20,8 @@ function saveOverrides(map) {
 export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClose }) {
   const [overrides, setOverrides] = useState(loadOverrides)
   const [apps, setApps] = useState([])
+  // 분류 못 해 버려진 시간 — 분류표를 늘릴지 판단할 근거 (기기 안에만 쌓인다)
+  const unmapped = useMemo(() => summarize(loadUnmapped()), [overrides])
 
   // 오늘 많이 쓴 앱 — 분류를 고칠 대상이다 (네이티브·권한 없으면 빈 배열)
   useEffect(() => {
@@ -220,6 +223,49 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
               </div>
             ))}
           </div>
+        )}
+
+        {/* 분류 안 된 앱 — 이 시간은 점수에 아예 안 들어간다. 크기를 보여줘야 고칠 마음이 생긴다 */}
+        {unmapped.apps.length > 0 && (
+          <>
+            <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#111111', marginBottom: 2 }}>
+              분류 안 된 앱 {unmapped.apps.length}개
+            </div>
+            <div style={{ color: '#9A9AA0', fontSize: 12, marginBottom: 8, lineHeight: 1.5 }}>
+              최근 {unmapped.dayCount}일 동안 <b style={{ color: '#D23B2E' }}>하루 평균 {unmapped.perDayMin}분</b>이
+              점수에 들어가지 못했어요. 분류를 정해주면 다음부터 기록돼요.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {unmapped.apps.slice(0, 8).map(a => (
+                <div key={a.pkg} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+                  borderRadius: 10, background: '#FAFAFB', border: '1px solid #ECECEF',
+                }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: '#3A3A3E',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {a.label}
+                  </span>
+                  <span style={{ fontSize: 11.5, color: '#9A9AA0', flexShrink: 0 }}>{a.min}분</span>
+                  <select
+                    value=""
+                    onChange={e => { if (e.target.value) changeOverride(a.pkg, e.target.value) }}
+                    style={{
+                      border: '1px solid #ECECEF', borderRadius: 8, padding: '5px 6px',
+                      fontSize: 11.5, color: '#D9531B', background: '#FFFFFF', flexShrink: 0,
+                    }}
+                  >
+                    <option value="">분류 정하기</option>
+                    {Object.entries(GROUPS).map(([id, g]) => (
+                      <option key={id} value={id}>{g.label}</option>
+                    ))}
+                    {Object.entries(CATEGORIES).map(([id, c]) => (
+                      <option key={id} value={id}>· {c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         <button
