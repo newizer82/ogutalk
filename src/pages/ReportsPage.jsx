@@ -5,7 +5,8 @@ import { useCheckinReport } from '../hooks/useCheckinReport'
 import { S, gradients } from '../styles/theme'
 import { GROUPS, CATEGORIES, groupOf, labelOf, emojiOf, colorOf } from '../data/appCategories'
 import OguScoreCard from '../components/report/OguScoreCard'
-import { oguScore } from '../lib/oguScore'
+import { oguScore, AXES, AXIS_LABEL } from '../lib/oguScore'
+import { axisMinutesByDay, formatMinutes } from '../lib/alarmContext'
 import ScoreBasisModal from '../components/report/ScoreBasisModal'
 import { todayLog, yesterdayScore, yesterdayIncomparable, streakDays, saveDayScore } from '../lib/dayLog'
 import { todayMissions } from '../lib/missionStore'
@@ -339,13 +340,17 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
   // 24시간 시간대 활동 맵
   const maxHourCount = Math.max(...Object.values(hourCount), 1)
 
+  // 최근 7일 축별 추이 — 리포트의 고유 가치는 "흐름" 이다
+  const week = axisMinutesByDay(checkins, 7)
+  const weekMax = Math.max(...week.map(d => d.produce + d.consume + d.connect), 0)
+
   return (
     <GlassCard style={{ marginBottom: 14, padding: 18 }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E' }}>⏱️ 오구 체크인 기록</div>
-          <div style={{ fontSize: 10, color: '#B0B0B6', marginTop: 2 }}>알람 시 활동 선택 기록 (최근 1주일)</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E' }}>📈 최근 7일 추세</div>
+          <div style={{ fontSize: 10, color: '#B0B0B6', marginTop: 2 }}>오늘 하루는 홈에서, 흐름은 여기서</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#D9531B', lineHeight: 1 }}>{total}</div>
@@ -369,30 +374,42 @@ function CheckinReport({ checkins, todayCheckins, activityCount, hourCount, load
 
       {!loading && total > 0 && (
         <>
-          {/* 오늘 요약 */}
-          {todayTotal > 0 && (
-            <div style={{
-              marginBottom: 14, padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(255,107,44,0.08)', border: '1px solid rgba(255,107,44,0.14)',
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 18 }}>📅</span>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ color: '#D9531B', fontSize: 12, fontWeight: 700 }}>오늘 체크인 {todayTotal}회</div>
-                <div style={{
-                  color: '#B0B0B6', fontSize: 10, marginTop: 2,
-                  lineHeight: 1.8, wordBreak: 'break-all', whiteSpace: 'normal',
-                }}>
-                  {todayCheckins.map(c => emojiOf(c.activity_type)).join('  ')}
-                </div>
-              </div>
+          {/* 주간 3축 추이 — 홈은 오늘, 리포트는 흐름 */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+              {AXES.map(a => (
+                <span key={a} style={{ fontSize: 10.5, fontWeight: 700, color: GROUPS[a].color }}>
+                  {AXIS_LABEL[a]}
+                </span>
+              ))}
             </div>
-          )}
-
-          {/* 그룹 분포 — "의도적이었나(생산), 순삭이었나(소비)"가 한눈에 보이는 헤드라인 */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ color: '#8E8E93', fontSize: 11, fontWeight: 700, marginBottom: 8 }}>📊 활동 분포</div>
-            {groups.map(a => <DistributionBar key={a.key} item={a} total={groupedTotal} height={6} />)}
+            <div style={{ display: 'flex', gap: 5, alignItems: 'flex-end', height: 72 }}>
+              {week.map(d => {
+                const h = m => (weekMax ? Math.round((m / weekMax) * 64) : 0)
+                return (
+                  <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    <div style={{
+                      width: '100%', display: 'flex', flexDirection: 'column-reverse',
+                      justifyContent: 'flex-start', height: 64, gap: 1,
+                    }}>
+                      {AXES.map(a => d[a] > 0 && (
+                        <div key={a} title={`${AXIS_LABEL[a]} ${formatMinutes(d[a])}`} style={{
+                          height: Math.max(2, h(d[a])), borderRadius: 2, background: GROUPS[a].color,
+                        }} />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 9.5, color: '#B0B0B6', fontVariantNumeric: 'tabular-nums' }}>
+                      {d.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            {weekMax === 0 && (
+              <div style={{ color: '#B0B0B6', fontSize: 11, marginTop: 6 }}>
+                아직 쌓인 기록이 없어요. 자동 활동 기록을 켜면 저절로 채워져요.
+              </div>
+            )}
           </div>
 
           {/* 세부 분포 — 자동 기록이 있을 때만 */}

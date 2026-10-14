@@ -51,19 +51,28 @@ export default function ScoreGoalSection({
       <div style={{ fontSize: 13, fontWeight: 700, color: '#3A3A3E', marginBottom: 4 }}>
         🎯 오구 지수 목표
       </div>
-      <div style={{ color: '#9A9AA0', fontSize: 12, lineHeight: 1.6, marginBottom: 6 }}>
-        리포트의 오구 지수는 이 기준과 비교해 매겨집니다.
-        폰을 안 쓴 시간은 점수를 깎지 않아요.
+      <div style={{ color: '#9A9AA0', fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>
+        오구 지수 = <b style={{ color: '#3A3A3E' }}>성장 40 + 균형 20 + 실행 40</b><br />
+        아래 두 값이 성장·균형 점수의 기준이 됩니다. 폰을 안 쓴 시간은 점수를 깎지 않아요.
       </div>
       <GoalRow
-        icon="🌱" label="성장의 시간 목표" desc="업무·학습·운동·제작 — 채우면 만점 (35점)"
+        icon="🌱" label="성장의 시간 목표" desc="업무·학습·AI·제작·구매·운동 — 채우면 만점 (40점)"
         value={produceTarget} onChange={setProduceTarget} color="#D9531B"
       />
       <div style={{ height: 1, background: 'rgba(0,0,0,0.035)' }} />
       <GoalRow
-        icon="🌿" label="힐링의 시간 한도" desc="영상·게임·검색 — 넘으면 30분마다 5점씩"
+        icon="🌿" label="힐링의 시간 한도" desc="영상·게임·검색 — 넘으면 균형에서 −10점"
         value={consumeLimit} onChange={setConsumeLimit} color="#B4740F"
       />
+      <div style={{
+        marginTop: 8, padding: '9px 11px', borderRadius: 10, lineHeight: 1.6,
+        background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.04)',
+        color: '#8E8E93', fontSize: 11.5,
+      }}>
+        <b style={{ color: '#3A3A3E' }}>⚖️ 균형 20점</b>은 설정이 없어요.
+        성장·힐링·소통 세 가지가 모두 <b style={{ color: '#3A3A3E' }}>10분 이상</b>이면 만점,
+        비는 쪽마다 −7점입니다. 힐링·소통은 많다고 점수가 오르지 않아요.
+      </div>
 
       {/* 생애주기 — 오늘의 추천 미션을 고를 때만 쓴다. 성별로는 나누지 않는다(편견만 생기고 관리도 번거롭다) */}
       <div style={{ height: 1, background: 'rgba(0,0,0,0.035)', margin: '6px 0 12px' }} />

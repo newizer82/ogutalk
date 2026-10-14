@@ -802,3 +802,32 @@ console.log('✓ 분류 안 된 앱 집계 검증 통과')
   delete globalThis.localStorage
 }
 console.log('✓ 점수 공식 전환 검증 통과')
+
+// ── 주간 축별 추이 ───────────────────────────────────────────────
+{
+  const { axisMinutesByDay } = await import('../src/lib/alarmContext.js')
+  const now = new Date(2026, 9, 14, 20, 0).getTime()
+  const at = (dayOffset, h) => new Date(2026, 9, 14 - dayOffset, h, 0, 0, 0).toISOString()
+  const rows = axisMinutesByDay([
+    { activity_type: 'work',      created_at: at(0, 9) },   // 오늘 성장 30
+    { activity_type: 'video',     created_at: at(0, 11) },  // 오늘 힐링 30
+    { activity_type: 'messenger', created_at: at(2, 10) },  // 이틀 전 소통 30
+    { activity_type: 'finance',   created_at: at(2, 11) },  // 이틀 전 생활 → other
+    { activity_type: 'work',      created_at: at(30, 9) },  // 한 달 전 — 창 밖이라 버린다
+  ], 7, now)
+
+  assert.equal(rows.length, 7)
+  assert.equal(rows[6].key, '2026-10-14', '마지막이 오늘')
+  assert.equal(rows[0].key, '2026-10-08', '7일 전부터')
+  assert.equal(rows[6].produce, 30)
+  assert.equal(rows[6].consume, 30)
+  assert.equal(rows[6].total, 60)
+  assert.equal(rows[4].connect, 30, '이틀 전 소통')
+  assert.equal(rows[4].other, 30, '생활은 other 로 — 점수 밖이지만 잰 시간이다')
+  assert.equal(rows[4].total, 60)
+  // 창 밖 기록은 어느 칸에도 들어가지 않는다
+  assert.equal(rows.reduce((s, r) => s + r.total, 0), 120)
+  // 기록이 없어도 날짜 칸은 다 나온다 (빈 날이 보여야 추세다)
+  assert.equal(axisMinutesByDay([], 7, now).length, 7)
+}
+console.log('✓ 주간 축별 추이 검증 통과')

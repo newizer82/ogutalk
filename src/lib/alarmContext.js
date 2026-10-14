@@ -22,6 +22,42 @@ export function minutesOf(entry) {
   return (m === 0 || m === 30) ? 30 : 60
 }
 
+/**
+ * 최근 며칠간 축별 시간(분) — 리포트의 "추세" 는 이것뿐이다.
+ * 홈이 오늘 하루를 보여주니, 리포트가 같은 걸 또 보여줄 이유가 없다.
+ * @returns [{ key:'2026-10-14', label:'14', produce, consume, connect, other, total }] 옛날 → 오늘 순
+ */
+export function axisMinutesByDay(checkins = [], days = 7, now = Date.now()) {
+  const p = n => String(n).padStart(2, '0')
+  const keyOf = ms => {
+    const d = new Date(ms)
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+  const out = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now - i * 86400000)
+    out.push({
+      key: keyOf(d.getTime()),
+      label: String(d.getDate()),
+      produce: 0, consume: 0, connect: 0, other: 0, total: 0,
+    })
+  }
+  const index = Object.fromEntries(out.map((r, i) => [r.key, i]))
+  for (const c of checkins) {
+    const t = new Date(c.created_at).getTime()
+    if (Number.isNaN(t)) continue
+    const row = out[index[keyOf(t)]]
+    if (!row) continue
+    const g = groupOf(c.activity_type)
+    const min = minutesOf(c)
+    if (g === 'produce' || g === 'consume' || g === 'connect') row[g] += min
+    else if (g) row.other += min      // 생활 — 점수 밖이지만 잰 시간이다
+    else continue
+    row.total += min
+  }
+  return out
+}
+
 /** 오늘(자정 이후) 그룹별 누적 분 */
 export function todayTotals(checkins = [], now = Date.now()) {
   const start = new Date(now); start.setHours(0, 0, 0, 0)
