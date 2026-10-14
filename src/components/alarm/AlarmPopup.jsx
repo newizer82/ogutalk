@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import GlassCard from '../common/GlassCard'
-import { OGU_TONES } from '../../data/oguData'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
 import { moodHeadline, formatMinutes, todoHint, eventLine, shortPlace } from '../../lib/alarmContext'
@@ -20,10 +19,10 @@ const summaryLabel = c => (GROUPS[c] ? labelOf(c) : `${labelOf(groupOf(c))} · $
 const MOOD_COLOR = { binge: '#fbbf24', focus: '#34d399', normal: '#f1f5f9' }
 
 export default function AlarmPopup({
-  alarmContent, pendingCount = 0, oguTone = '유쾌', onClose, onCheckin,
+  alarmContent, onClose, onCheckin,
   autoSummary = null, autoMode = false,
-  mood = null, todayTotals = null, nextTodo = null, onTodoDone = null, dayScore = null,
-  nextEvent = null, nextMission = null, onMissionDone = null, missionIntro = null,
+  mood = null, todayTotals = null, nextTodo = null, dayScore = null,
+  nextEvent = null, nextMission = null, missionIntro = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -31,12 +30,13 @@ export default function AlarmPopup({
 
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
-  const [todoDone, setTodoDone]   = useState(false)
 
   // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 추천 미션.
   // 집중 중에는 아무것도 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
-  const suggestTodo    = !!nextTodo && !!onTodoDone
-  const suggestMission = !suggestTodo && !!nextMission && !!onMissionDone
+  // v1.21.0: 알람 순간에 "완료" 를 누르게 하지 않는다 — 1분 개입은 보는 것으로 충분하다.
+  // 완료는 할일 탭·미션 카드에서 (알람 중 체크는 점수를 벌려고 누르는 행위가 되기 쉽다)
+  const suggestTodo    = !!nextTodo
+  const suggestMission = !suggestTodo && !!nextMission
   const showTodo = (suggestTodo || suggestMission) && mood?.mood !== 'focus' && !checkedIn
 
   // 자동 기록 모드에서는 고를 버튼이 없다 → 평소 상태에서 질문을 던지면 답할 곳이 없어 보인다
@@ -52,14 +52,6 @@ export default function AlarmPopup({
     : mood?.mood === 'binge' ? '한 가지만 끝내고 다시 보셔도 돼요'
     : '폰을 안 썼다면 그냥 닫아도 돼요'
 
-  const handleTodoDone = () => {
-    if (todoDone) return
-    setTodoDone(true)
-    if (suggestTodo) onTodoDone(nextTodo)
-    else onMissionDone(nextMission)
-    setTimeout(onClose, 900)
-  }
-
   const handleCheckin = (activityId) => {
     if (checkedIn) return
     setSelected(activityId)
@@ -72,7 +64,7 @@ export default function AlarmPopup({
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999, padding: 20,
-      background: 'radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.25) 0%, rgba(0,0,0,0.95) 70%)',
+      background: 'radial-gradient(ellipse at 50% 30%, rgba(255,107,44,0.22) 0%, rgba(0,0,0,0.95) 70%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {/* 펄스 링 */}
@@ -96,39 +88,27 @@ export default function AlarmPopup({
         background: 'linear-gradient(180deg,rgba(30,41,59,0.9),rgba(8,15,30,0.95))',
         backdropFilter: 'blur(20px)',
         borderRadius: 28, padding: 28, textAlign: 'center',
-        border: '1px solid rgba(99,102,241,0.3)',
-        boxShadow: '0 0 80px rgba(99,102,241,0.2)',
+        border: '1px solid rgba(255,107,44,0.28)',
+        boxShadow: '0 0 80px rgba(255,107,44,0.18)',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 4 }}>⏰</div>
         <div style={{
-          fontSize: 56, fontWeight: 900, lineHeight: 1,
+          fontSize: 52, fontWeight: 900, lineHeight: 1, letterSpacing: '-2px',
           background: gradients.logo,
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>
           {HH}:{MM}
         </div>
-        <div style={{ color: '#94a3b8', fontSize: 13, margin: '6px 0 24px' }}>
-          {OGU_TONES[oguTone]?.emoji} 오구! 정각이 다가옵니다
+        <div style={{ color: '#9aa3b8', fontSize: 13.5, fontWeight: 600, margin: '8px 0 20px' }}>
+          오구! 곧 {((now.getHours() + 1) % 12) || 12}시예요
         </div>
-
-        {pendingCount > 0 && !showTodo && mood?.mood !== 'focus' && (
-          <GlassCard style={{
-            marginBottom: 10, textAlign: 'left',
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-          }}>
-            <div style={{ color: '#f87171', fontSize: 13 }}>
-              ✅ 미완료 할일 {pendingCount}개 남아있어요
-            </div>
-          </GlassCard>
-        )}
 
         {/* ── 체크인 섹션 ── */}
         <div style={{
           marginBottom: 20,
-          background: 'rgba(99,102,241,0.08)',
-          border: '1px solid rgba(99,102,241,0.35)',
+          background: 'rgba(255,107,44,0.07)',
+          border: '1px solid rgba(255,107,44,0.3)',
           borderRadius: 20, padding: '18px 14px',
-          boxShadow: '0 0 24px rgba(99,102,241,0.12)',
+          boxShadow: '0 0 24px rgba(255,107,44,0.1)',
         }}>
           {autoMode && !autoSummary ? (
             /* 자동 모드지만 아직 소급 계산이 끝나지 않음 — 수동 4버튼이 잠깐 떴다 사라지며
@@ -212,11 +192,15 @@ export default function AlarmPopup({
                 })}
               </div>
               <div style={{
-                display: 'flex', justifyContent: 'space-between', marginTop: 7,
-                color: '#94a3b8', fontSize: 12, fontVariantNumeric: 'tabular-nums',
+                display: 'flex', justifyContent: 'space-between', marginTop: 8, gap: 6,
+                color: '#9aa3b8', fontSize: 11.5, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>오늘 {labelOf('produce')} {formatMinutes(todayTotals.byGroup.produce)}</span>
-                <span>{labelOf('consume')} {formatMinutes(todayTotals.byGroup.consume)}</span>
+                {['produce', 'consume', 'connect'].map(g => (
+                  <span key={g} style={{ whiteSpace: 'nowrap' }}>
+                    <span style={{ color: GROUPS[g].color, fontWeight: 800 }}>{labelOf(g)}</span>
+                    {' '}{formatMinutes(todayTotals.byGroup[g] ?? 0)}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -226,8 +210,8 @@ export default function AlarmPopup({
         {missionIntro && (
           <div style={{
             marginBottom: 10, padding: '9px 12px', borderRadius: 12,
-            background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)',
-            color: '#c7d2fe', fontSize: 12.5, fontWeight: 700, textAlign: 'left',
+            background: 'rgba(255,107,44,0.1)', border: '1px solid rgba(255,107,44,0.28)',
+            color: '#FFCFAE', fontSize: 12.5, fontWeight: 700, textAlign: 'left',
           }}>
             🎯 {missionIntro}
           </div>
@@ -293,42 +277,22 @@ export default function AlarmPopup({
           </div>
         )}
 
-        {/* 지금 하나만 — 팝업이 "몇 분 썼다"로 끝나지 않고 다음 행동 하나로 이어지게 한다.
-            탭 한 번으로 끝내고 앱 화면으로 보내지 않는다 (1분 개입 유지). */}
+        {/* 지금 하나만 — 알람은 가리키기만 한다. 누르게 하지 않는다.
+            완료 버튼이 있던 자리였는데, 알람 중 체크는 "점수를 벌려고" 누르는 행위가 되기 쉽다. */}
         {showTodo && (
           <div style={{
-            marginBottom: 12, padding: '14px', borderRadius: 16, textAlign: 'left',
-            background: todoDone ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${todoDone ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            display: 'flex', alignItems: 'center', gap: 12,
+            marginBottom: 12, padding: '12px 14px', borderRadius: 16, textAlign: 'left',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
           }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
-                {todoDone ? '✓ 하나 해냈어요' : (suggestTodo ? '지금 하나만' : '🎯 오늘의 추천 미션')}
-              </div>
-              <div style={{
-                color: '#e2e8f0', fontSize: 14, fontWeight: 700, lineHeight: 1.35,
-                textDecoration: todoDone ? 'line-through' : 'none', opacity: todoDone ? 0.6 : 1,
-              }}>
-                {suggestTodo ? nextTodo.title : nextMission.text}
-              </div>
-              {!todoDone && (suggestTodo ? todoHint(nextTodo) : '5분이면 돼요') && (
-                <div style={{ color: '#64748b', fontSize: 11, marginTop: 3 }}>
-                  {suggestTodo ? todoHint(nextTodo) : '5분이면 돼요'}
-                </div>
-              )}
+            <div style={{ color: '#FFB37A', fontSize: 11, fontWeight: 800, marginBottom: 4 }}>
+              {suggestTodo ? '지금 하나만' : '🎯 오늘의 추천 미션'}
             </div>
-            {!todoDone && (
-              <button
-                onClick={handleTodoDone}
-                style={{
-                  flexShrink: 0, padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: gradients.button, color: '#fff', fontSize: 13, fontWeight: 800,
-                }}
-              >
-                완료
-              </button>
-            )}
+            <div style={{ color: '#e8eaf0', fontSize: 14.5, fontWeight: 700, lineHeight: 1.35 }}>
+              {suggestTodo ? nextTodo.title : nextMission.text}
+            </div>
+            <div style={{ color: '#8b93a7', fontSize: 11, marginTop: 4 }}>
+              {suggestTodo ? (todoHint(nextTodo) || '끝내면 할일 탭에서 체크하세요') : '5분이면 돼요'}
+            </div>
           </div>
         )}
 

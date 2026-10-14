@@ -325,9 +325,16 @@ export default function App() {
   const activeTodosForAlarm = activeTodos.filter(t => !t.completed).length
 
   // 할일 수정·삭제 — 할일 탭과 달력이 같이 쓴다
-  const handleToggleTodo = userId
-    ? toggleTodo
-    : id => setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed: !t.completed } : t))
+  // 할일 완료는 오구 지수의 "실행" 10점으로 이어진다.
+  // 알람 팝업에서 완료 버튼을 뺀 뒤로는(v1.21.0) 이 경로가 유일한 기록 지점이다.
+  const handleToggleTodo = (id, next) => {
+    const todo = activeTodos.find(t => t.id === id)
+    // 호출부가 다음 상태를 주면 그걸 쓰고, 안 주면 현재의 반대로 (화면마다 호출 형태가 다르다)
+    const completed = next === undefined ? !(todo?.completed || todo?.done) : !!next
+    if (completed && !(todo?.completed || todo?.done)) logTodoDone()
+    if (userId) toggleTodo(id, completed)
+    else setLocalTodos(p => p.map(t => t.id === id ? { ...t, completed } : t))
+  }
   const handleUpdateTodo = userId
     ? updateTodo
     : (id, updates) => setLocalTodos(p => p.map(t => t.id === id ? { ...t, ...updates } : t))
@@ -431,22 +438,14 @@ export default function App() {
     return () => { alive = false }
   }, [showAlarmPopup, calendarSync, calendarIds])
 
-  const handleMissionDoneFromPopup = useCallback((mission) => {
-    if (!mission) return
-    completeMission(mission.id)
-    logEvent('mission_done', { from: 'alarm' })
-    // 미션은 '미션' 칸으로만 센다 — 여기서 logTodoDone() 을 부르면
-    // 알람에서 미션을 끝낸 날만 '내 할일' 10점이 공짜로 붙어 경로마다 점수가 달라진다
-    logAlarmAction()
-  }, [])
+  // 알람 팝업은 :59 에만 뜬다 → 개발 중에는 콘솔에서 window.__oguFire() 로 띄워 본다
+  // (배포 빌드에서는 이 블록째 사라진다)
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    window.__oguFire = fireAlarm
+    return () => { delete window.__oguFire }
+  }, [fireAlarm])
 
-  const handleTodoDoneFromPopup = useCallback((todo) => {
-    if (!todo) return
-    logEvent('todo_done_from_popup')
-    logTodoDone()
-    if (userId) toggleTodo(todo.id, true)
-    else setLocalTodos(p => p.map(t => (t.id === todo.id ? { ...t, completed: true } : t)))
-  }, [userId, toggleTodo])
   // 권한이 없다고 확정된 경우(false)에만 즉시 수동 모드로 — 미확인(null)인 동안은
   // 자동 모드로 간주해 "준비 중" 화면을 보여주고, 수동 4버튼이 잠깐 떴다 사라지는 것을 막는다
   const autoCheckinMode = autoCheckin && hasAccess !== false
@@ -644,7 +643,6 @@ export default function App() {
             onDeleteTodo={handleDeleteTodo}
             alarmHours={alarmHours}
             oguTone={oguTone}
-            onTestAlarm={fireAlarm}
             customAlarms={customAlarms}
             isLoggedIn={isLoggedIn}
             notes={notes}
@@ -740,7 +738,6 @@ export default function App() {
             consumeLimit={consumeLimit}
             setConsumeLimit={setConsumeLimit}
             onTabChange={setActiveTab}
-            onTestAlarm={fireAlarm}
             todos={activeTodos}
             goals={localGoals}
             onLoginOpen={() => setLoginOpen(true)}
@@ -757,8 +754,6 @@ export default function App() {
       {showAlarmPopup && alarmContent && (
         <AlarmPopup
           alarmContent={alarmContent}
-          pendingCount={activeTodosForAlarm}
-          oguTone={oguTone}
           onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
           onCheckin={(a) => { logAlarmAction(); return saveCheckin(a) }}
           autoSummary={autoCheckin ? lastHourSummary : null}
@@ -766,11 +761,9 @@ export default function App() {
           mood={popupContext.mood}
           todayTotals={popupContext.totals}
           nextTodo={popupContext.nextTodo}
-          onTodoDone={handleTodoDoneFromPopup}
           dayScore={popupContext.dayScore}
           nextEvent={nextEvent}
           nextMission={popupContext.nextMission}
-          onMissionDone={handleMissionDoneFromPopup}
           missionIntro={missionIntro}
         />
       )}

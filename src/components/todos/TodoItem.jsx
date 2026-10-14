@@ -44,7 +44,7 @@ const styles = {
 export default function TodoItem({ todo, onToggle, onDelete }) {
   return (
     <div style={styles.item}>
-      <div style={styles.checkbox(todo.completed)} onClick={() => onToggle(todo.id, todo.completed)}>
+      <div style={styles.checkbox(todo.completed)} onClick={() => onToggle(todo.id, !todo.completed)}>
         {todo.completed && <span style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 800 }}>✓</span>}
       </div>
       <span style={styles.title(todo.completed)}>{todo.title}</span>
