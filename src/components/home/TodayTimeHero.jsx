@@ -1,4 +1,5 @@
 import { GROUPS, groupOf } from '../../data/appCategories'
+import { AXES, AXIS_LABEL } from '../../lib/oguScore'
 import { todayTotals, minutesOf, formatMinutes } from '../../lib/alarmContext'
 
 // 홈의 주인공 — "오늘 내 시간이 어디로 갔나".
@@ -39,8 +40,11 @@ export default function TodayTimeHero({
   const blocks = buildBlocks(checkins, now)
   const hour = new Date(now).getHours()
 
-  const healing = byGroup.consume
-  const growth  = byGroup.produce
+  // 점수와 같은 눈금으로 보여준다 — 홈 2축 / 분류 4그룹 / 지수 9분류 로 갈라져 있던 것을 하나로.
+  // 생활(금융·이동)은 점수 밖이라 "그 외" 로 묶는다 (숨기면 합이 안 맞아 보인다)
+  const axes = AXES.map(a => ({ key: a, label: AXIS_LABEL[a], min: byGroup[a] ?? 0, color: GROUPS[a].color }))
+  const axisTotal = axes.reduce((s, a) => s + a.min, 0)
+  const other = Math.max(0, total - axisTotal)
 
   return (
     <section style={{
@@ -53,26 +57,37 @@ export default function TodayTimeHero({
         </div>
       </div>
 
-      {/* 두 숫자가 주인공 */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <div style={{ flex: 1, background: '#FFF4EE', borderRadius: 18, padding: '14px 15px' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#C2521C' }}>🌿 힐링의 시간</div>
-          <div style={{
-            fontSize: 25, fontWeight: 900, color: '#FF6B2C', lineHeight: 1.15,
-            letterSpacing: '-1.2px', fontVariantNumeric: 'tabular-nums', marginTop: 4, whiteSpace: 'nowrap',
-          }}>
-            {formatMinutes(healing)}
-          </div>
+      {/* 세 축이 주인공 — 성장·힐링·소통 */}
+      <div style={{ marginTop: 14 }}>
+        <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', background: '#F2F2F5' }}>
+          {axisTotal > 0
+            ? axes.map(a => (
+                a.min > 0 && <div key={a.key} style={{
+                  flexGrow: a.min, flexBasis: 0, background: a.color, transition: 'flex-grow .5s ease',
+                }} />
+              ))
+            : null}
         </div>
-        <div style={{ flex: 1, background: '#F4F6FB', borderRadius: 18, padding: '14px 15px' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#3A51A8' }}>🌱 성장의 시간</div>
-          <div style={{
-            fontSize: 25, fontWeight: 900, color: '#4B6BD4', lineHeight: 1.15,
-            letterSpacing: '-1.2px', fontVariantNumeric: 'tabular-nums', marginTop: 4, whiteSpace: 'nowrap',
-          }}>
-            {formatMinutes(growth)}
-          </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+          {axes.map(a => (
+            <div key={a.key} style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: a.color, whiteSpace: 'nowrap' }}>
+                {a.label}
+              </div>
+              <div style={{
+                fontSize: 17, fontWeight: 900, color: a.min > 0 ? '#111111' : '#C7C7CC',
+                letterSpacing: '-0.6px', fontVariantNumeric: 'tabular-nums', marginTop: 2, whiteSpace: 'nowrap',
+              }}>
+                {a.min > 0 ? formatMinutes(a.min) : '0분'}
+              </div>
+            </div>
+          ))}
         </div>
+        {other > 0 && (
+          <div style={{ fontSize: 11, color: '#B0B0B6', marginTop: 6 }}>
+            그 외(금융·이동) {formatMinutes(other)} — 점수에는 넣지 않아요
+          </div>
+        )}
       </div>
 
       {/* 하루 띠 — 오후에 무너졌는지가 한 줄로 보인다 */}
