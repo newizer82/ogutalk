@@ -187,7 +187,7 @@ export default function MonthCalendar({ todos = [], calendarSync = false, calend
 
         {!dayEvents.length && !dayTodos.length && (
           <div style={{ fontSize: 12.5, color: '#9A9AA0', padding: '4px 0' }}>
-            {calendarSync ? '이 날은 일정도 마감도 없어요' : '이 날 마감인 할일이 없어요'}
+            {calendarSync ? '이 날은 아무것도 없어요' : '이 날은 약속도 일정도 없어요'}
           </div>
         )}
 
