@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CATEGORIES, GROUPS, groupOf, labelOf, categoryForApp } from '../../data/appCategories'
+import { CATEGORIES, GROUPS, groupOf, labelOf, colorOf, categoryForApp } from '../../data/appCategories'
 import { loadUnmapped, summarize } from '../../lib/unmapped'
+import { updateCheckinCategory } from '../../lib/checkinStore'
 import { getUsage } from '../../lib/usageStats'
 import { minutesOf, formatMinutes } from '../../lib/alarmContext'
 
@@ -17,11 +18,27 @@ function saveOverrides(map) {
   try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(map)) } catch {}
 }
 
-export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClose }) {
+export default function ScoreBasisModal({ checkins = [], now = Date.now(), userId = null, onClose }) {
   const [overrides, setOverrides] = useState(loadOverrides)
   const [apps, setApps] = useState([])
   // 분류 못 해 버려진 시간 — 분류표를 늘릴지 판단할 근거 (기기 안에만 쌓인다)
   const unmapped = useMemo(() => summarize(loadUnmapped()), [overrides])
+
+  // 오늘 기록된 시간대 — "유튜브로 강의를 들었다" 같은 건 앱 분류로 못 푼다.
+  // 앱은 그대로 두고 그 시간대 하나만 고치는 길이 있어야 한다.
+  const todaySlots = useMemo(() => {
+    const start = new Date(now); start.setHours(0, 0, 0, 0)
+    return checkins
+      .filter(c => {
+        const t = new Date(c.created_at).getTime()
+        return !Number.isNaN(t) && t >= start.getTime() && t <= now
+      })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  }, [checkins, now])
+
+  const fixSlot = (createdAt, category) => {
+    updateCheckinCategory([createdAt], category, userId)   // ogu:checkin 이벤트로 목록이 새로 읽힌다
+  }
 
   // 오늘 많이 쓴 앱 — 분류를 고칠 대상이다 (네이티브·권한 없으면 빈 배열)
   useEffect(() => {
@@ -111,6 +128,57 @@ export default function ScoreBasisModal({ checkins = [], now = Date.now(), onClo
               </div>
             ))}
           </div>
+        )}
+
+        {/* 오늘 기록된 시간대 — 그 시간만 고친다 (앱 분류는 건드리지 않는다) */}
+        {todaySlots.length > 0 && (
+          <>
+            <div style={{ marginTop: 22, fontSize: 14, fontWeight: 800, color: '#111111', marginBottom: 2 }}>
+              오늘 기록된 시간대
+            </div>
+            <div style={{ color: '#9A9AA0', fontSize: 12, marginBottom: 8, lineHeight: 1.5 }}>
+              유튜브로 강의를 봤다면 그 시간만 학습으로 바꾸세요.
+              앱 분류는 그대로 둡니다.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 260, overflowY: 'auto' }}>
+              {todaySlots.map(c => {
+                const d = new Date(c.created_at)
+                const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+                return (
+                  <div key={c.created_at} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+                    borderRadius: 10, background: '#FAFAFB', border: '1px solid #ECECEF',
+                  }}>
+                    <span style={{
+                      fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{hhmm}</span>
+                    <span style={{
+                      width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+                      background: colorOf(c.activity_type) || '#C7C7CC',
+                    }} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: '#3A3A3E',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {labelOf(c.activity_type)}
+                    </span>
+                    <select
+                      value=""
+                      onChange={e => { if (e.target.value) fixSlot(c.created_at, e.target.value) }}
+                      style={{
+                        border: '1px solid #ECECEF', borderRadius: 8, padding: '4px 6px',
+                        fontSize: 11.5, color: '#D9531B', background: '#FFFFFF', flexShrink: 0,
+                      }}
+                    >
+                      <option value="">바꾸기</option>
+                      {Object.entries(CATEGORIES).map(([id, cat]) => (
+                        <option key={id} value={id}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* 오늘 많이 쓴 앱 — 여기서 분류를 고치면 다음부터 그 앱에 자동 적용된다 */}

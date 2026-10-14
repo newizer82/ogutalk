@@ -71,7 +71,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
           </div>
         </div>
         {basisOpen && (
-          <ScoreBasisModal checkins={checkins} onClose={() => setBasisOpen(false)} />
+          <ScoreBasisModal checkins={checkins} userId={userId} onClose={() => setBasisOpen(false)} />
         )}
       </div>
     )
@@ -275,7 +275,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
         </>
       )}
         {basisOpen && (
-          <ScoreBasisModal checkins={checkins} onClose={() => setBasisOpen(false)} />
+          <ScoreBasisModal checkins={checkins} userId={userId} onClose={() => setBasisOpen(false)} />
         )}
     </div>
   )
