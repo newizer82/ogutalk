@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
+import TimeBanner from '../components/home/TimeBanner'
 import TodayTimeHero from '../components/home/TodayTimeHero'
 import BannerCarousel from '../components/home/BannerCarousel'
 import InstallPrompt from '../components/common/InstallPrompt'
@@ -36,6 +37,7 @@ function minutesToNextAlarm(now, alarmHours = {}) {
 
 export default function HomePage({
   lifeStage = null,
+  scoreGoals = {},   // 오구 지수 기준 (연·월 목표용 goals 와 다른 값이다)
   checkins = [],
   nowLabel = null,
   todos = [],
@@ -72,6 +74,9 @@ export default function HomePage({
 
   return (
     <div>
+      {/* ── 시간대 배너 — 지금 내 숫자로 말한다 (닫기 없음) ── */}
+      <TimeBanner checkins={checkins} goals={scoreGoals} lifeStage={lifeStage} onTabChange={onTabChange} />
+
       {/* ── 히어로: 오늘 내 시간 (알람 카운트다운이 아니라 "시간이 어디로 갔나") ── */}
       <TodayTimeHero
         checkins={checkins}

@@ -638,6 +638,7 @@ export default function App() {
             onTabChange={setActiveTab}
             calendarSync={calendarSync}
             calendarIds={calendarIds}
+            scoreGoals={{ produceTarget, consumeLimit }}
             onAddTodo={handleAddTodo}
             onUpdateTodo={handleUpdateTodo}
             onDeleteTodo={handleDeleteTodo}

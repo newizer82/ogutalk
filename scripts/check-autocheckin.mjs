@@ -831,3 +831,61 @@ console.log('✓ 점수 공식 전환 검증 통과')
   assert.equal(axisMinutesByDay([], 7, now).length, 7)
 }
 console.log('✓ 주간 축별 추이 검증 통과')
+
+// ── 시간대 배너 ──────────────────────────────────────────────────
+{
+  const { bannerFor, slotOf } = await import('../src/lib/timeBanner.js')
+  const at = h => new Date(2026, 9, 14, h, 30, 0, 0).getTime()
+
+  // 경계 — ~9 / ~13 / ~18 / 그 이후
+  assert.equal(slotOf(8), 'morning')
+  assert.equal(slotOf(9), 'noon')
+  assert.equal(slotOf(12), 'noon')
+  assert.equal(slotOf(13), 'afternoon')
+  assert.equal(slotOf(17), 'afternoon')
+  assert.equal(slotOf(18), 'night')
+  assert.equal(slotOf(23), 'night')
+  assert.equal(slotOf(0), 'morning')
+
+  // 아침 — 기록이 없으면 미션으로, 있으면 내 숫자로
+  const m0 = bannerFor({ now: at(7), missionLeft: 3 })
+  assert.ok(m0.sub.includes('3개'), m0.sub)
+  const m1 = bannerFor({ now: at(7), byGroup: { produce: 30 } })
+  assert.ok(m1.title.includes('30분'), m1.title)
+
+  // 점심 — 목표까지 남은 양을 말한다
+  const n = bannerFor({ now: at(12), byGroup: { produce: 80 }, goals: { produceTarget: 120 } })
+  assert.ok(n.title.includes('1시간 20분'), n.title)
+  assert.ok(n.sub.includes('40분'), n.sub)
+  // 오전이 비면 다른 말을 한다
+  assert.ok(bannerFor({ now: at(12) }).title.includes('조용'), '빈 오전')
+
+  // 오후 — 힐링 한도를 넘었을 때만 경고로 바뀐다 (이탈 방지의 핵심)
+  const over = bannerFor({ now: at(15), byGroup: { consume: 150 }, goals: { consumeLimit: 120 } })
+  assert.ok(over.title.includes('힐링'), over.title)
+  assert.equal(over.cta, '지금 하나만')
+  const ok = bannerFor({ now: at(15), byGroup: { consume: 60 }, goals: { consumeLimit: 120 } })
+  assert.ok(!ok.title.includes('힐링'), ok.title)
+
+  // 밤 — 점수가 있으면 점수, 없으면 일반 문구 (없는 점수를 지어내지 않는다)
+  const night = bannerFor({ now: at(21), score: 72, yesterday: 64, streak: 3 })
+  assert.ok(night.title.includes('72점'), night.title)
+  assert.ok(night.sub.includes('▲8') && night.sub.includes('3일'), night.sub)
+  // 한 줄 안에 들어가야 한다 — 말줄임표가 되면 아무것도 안 읽힌다
+  for (const h of [7, 12, 15, 21]) {
+    const b = bannerFor({ now: at(h), byGroup: { produce: 90, consume: 150 },
+      goals: { produceTarget: 120, consumeLimit: 120 }, score: 72, yesterday: 64, streak: 3 })
+    assert.ok(b.title.length <= 18, `${h}시 제목 김: ${b.title}`)
+    assert.ok(b.sub.length <= 30, `${h}시 보조 김: ${b.sub}`)
+  }
+  assert.ok(!bannerFor({ now: at(21) }).title.includes('점'), '점수가 없으면 점수를 말하지 않는다')
+
+  // 네 상태 모두 제목·보조·CTA·색이 채워져 있어야 한다 (빈 배너는 자리만 먹는다)
+  for (const h of [7, 12, 15, 21]) {
+    const b = bannerFor({ now: at(h) })
+    for (const k of ['title', 'sub', 'cta', 'emoji', 'from', 'to']) {
+      assert.ok(b[k], `${h}시 ${k} 비어 있음`)
+    }
+  }
+}
+console.log('✓ 시간대 배너 검증 통과')
