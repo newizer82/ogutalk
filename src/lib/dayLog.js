@@ -2,6 +2,8 @@
 // 오구 지수의 "실행" 점수용. todos 테이블에 완료 시각이 없어서
 // 완료 개수만으로는 "오늘 끝낸 것"을 셀 수 없다 → 앱이 관찰한 행동만 날짜별로 센다.
 // ponytail: 스키마를 건드리지 않는 대신 설치 이후부터 집계된다. 과거는 0으로 둔다.
+import { FORMULA } from './oguScore.js'
+
 const KEY = 'ogu_day_log'
 const KEEP_DAYS = 70   // 월간 캘린더가 지난달 점수까지 보여준다
 
@@ -60,8 +62,21 @@ export function todayLog(now = Date.now()) {
   return { doneCount: 0, actedOnAlarm: false, ...read()[dayKey(now)] }
 }
 
+/**
+ * 어제 점수 — 같은 공식으로 잰 것만 돌려준다.
+ * 공식이 바뀐 날을 넘어 비교하면 "어제보다 ▲8" 이 거짓말이 된다.
+ * 공식 표시가 없는 옛 기록은 1 로 본다.
+ */
 export function yesterdayScore(now = Date.now()) {
-  return read()[dayKey(now - 86400000)]?.score ?? null
+  const rec = read()[dayKey(now - 86400000)]
+  if (typeof rec?.score !== 'number') return null
+  return (rec.formula ?? 1) === FORMULA ? rec.score : null
+}
+
+/** 어제 점수는 있는데 공식이 달라 비교를 못 하는 상태인가 (화면에 이유를 알려주려고) */
+export function yesterdayIncomparable(now = Date.now()) {
+  const rec = read()[dayKey(now - 86400000)]
+  return typeof rec?.score === 'number' && (rec.formula ?? 1) !== FORMULA
 }
 
 /** 할일 1건 완료 (팝업·할일 탭 공용) */
@@ -99,8 +114,14 @@ export function streakDays(threshold = 60, now = Date.now()) {
   const map = read()
   let n = 0
   // 오늘 점수가 아직 기준 미만이어도 어제까지의 연속은 살아 있다 → 오늘은 건너뛸 수 있게 한다
-  for (let i = (map[dayKey(now)]?.score ?? 0) >= threshold ? 0 : 1; i < KEEP_DAYS; i++) {
-    const s = map[dayKey(now - i * 86400000)]?.score
+  const scoreAt = (i) => {
+    const rec = map[dayKey(now - i * 86400000)]
+    // 다른 공식으로 잰 날은 연속에 세지 않는다 (기준이 달라 같은 선을 그을 수 없다)
+    if (typeof rec?.score !== 'number' || (rec.formula ?? 1) !== FORMULA) return undefined
+    return rec.score
+  }
+  for (let i = (scoreAt(0) ?? 0) >= threshold ? 0 : 1; i < KEEP_DAYS; i++) {
+    const s = scoreAt(i)
     if (s === undefined || s < threshold) break
     n++
   }
@@ -120,6 +141,6 @@ export function dayScores() {
 export function saveDayScore(score, now = Date.now()) {
   const map = read()
   const k = dayKey(now)
-  map[k] = { doneCount: 0, actedOnAlarm: false, ...map[k], score }
+  map[k] = { doneCount: 0, actedOnAlarm: false, ...map[k], score, formula: FORMULA }
   write(map)
 }

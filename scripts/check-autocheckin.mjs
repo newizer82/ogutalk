@@ -748,3 +748,57 @@ console.log('✓ 약속·일정 검증 통과')
   assert.deepEqual(empty.apps, [])
 }
 console.log('✓ 분류 안 된 앱 집계 검증 통과')
+
+// ── 공식이 바뀐 날을 넘어 비교하지 않는다 ─────────────────────────
+{
+  // dayLog 는 localStorage 를 쓰므로 최소한의 흉내를 내준다 (node 에는 없다)
+  const store = {}
+  globalThis.localStorage = {
+    getItem: k => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v) },
+    removeItem: k => { delete store[k] },
+  }
+  const { yesterdayScore, yesterdayIncomparable, streakDays, saveDayScore } =
+    await import('../src/lib/dayLog.js')
+  const { FORMULA } = await import('../src/lib/oguScore.js')
+
+  const DAY = 86400000
+  // write() 는 실제 오늘을 기준으로 오래된 날을 버린다 → 고정 미래 날짜를 쓰면 저장이 사라진다
+  const now = Date.now()
+  const key = ms => {
+    const d = new Date(ms); const p = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+
+  // 옛 공식으로 적힌 어제 — 비교하지 않는다 (formula 표시가 없는 옛 기록 포함)
+  store['ogu_day_log'] = JSON.stringify({ [key(now - DAY)]: { score: 72 } })
+  assert.equal(yesterdayScore(now), null, '옛 공식 점수와는 비교하지 않는다')
+  assert.equal(yesterdayIncomparable(now), true, '이유를 알려줄 수 있어야 한다')
+
+  // 같은 공식이면 비교한다
+  store['ogu_day_log'] = JSON.stringify({ [key(now - DAY)]: { score: 72, formula: FORMULA } })
+  assert.equal(yesterdayScore(now), 72)
+  assert.equal(yesterdayIncomparable(now), false)
+
+  // 기록이 아예 없으면 비교 대상이 없을 뿐, "기준이 바뀌었다" 가 아니다
+  store['ogu_day_log'] = JSON.stringify({})
+  assert.equal(yesterdayScore(now), null)
+  assert.equal(yesterdayIncomparable(now), false)
+
+  // 스트릭 — 옛 공식 날에서 끊긴다
+  store['ogu_day_log'] = JSON.stringify({
+    [key(now)]:           { score: 80, formula: FORMULA },
+    [key(now - DAY)]:     { score: 75, formula: FORMULA },
+    [key(now - 2 * DAY)]: { score: 90 },                   // 옛 공식 → 여기서 끊김
+    [key(now - 3 * DAY)]: { score: 95, formula: FORMULA },
+  })
+  assert.equal(streakDays(60, now), 2, '옛 공식 날을 건너뛰어 잇지 않는다')
+
+  // 저장하면 공식 번호가 함께 남는다
+  store['ogu_day_log'] = JSON.stringify({})
+  saveDayScore(88, now)
+  assert.equal(JSON.parse(store['ogu_day_log'])[key(now)].formula, FORMULA)
+
+  delete globalThis.localStorage
+}
+console.log('✓ 점수 공식 전환 검증 통과')

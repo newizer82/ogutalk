@@ -42,8 +42,12 @@ export const OVER_HEAL_PENALTY  = 10    // 힐링이 한도를 넘었을 때
 /** 축이 "있다" 고 볼 최소 시간(분) — 1분 스친 것으로 균형 점수를 주지 않는다 */
 export const AXIS_MIN_MINUTES = 10
 
-/** 이 날짜부터 새 공식(성장·균형·실행). 그 전 점수는 다른 잣대라 비교하지 않는다 */
-export const FORMULA_SINCE = '2026-10-14'
+/**
+ * 공식 버전. 1 = 5:9 (v1.11~1.19), 2 = 성장·균형·실행 (v1.20~)
+ * 공식이 바뀌면 과거 점수는 다른 잣대로 잰 값이다 — "어제보다 ▲8" 이 거짓말이 된다.
+ * 숫자로 두는 이유: 날짜로 가르면 기기 시계·시간대에 따라 경계가 흔들린다.
+ */
+export const FORMULA = 2
 
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n))
 

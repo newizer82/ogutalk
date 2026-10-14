@@ -15,7 +15,7 @@ const SIZE = 132, STROKE = 11
 const R = (SIZE - STROKE) / 2
 const C = 2 * Math.PI * R
 
-export default function OguScoreCard({ result, yesterday = null, streak = 0, onOpenApps }) {
+export default function OguScoreCard({ result, yesterday = null, formulaChanged = false, streak = 0, onOpenApps }) {
   if (!result) return null
   const { score, produce, balance, done, grade, color, advice, byGroup, measured, measuredMinutes } = result
   const diff = yesterday === null ? null : score - yesterday
@@ -63,6 +63,11 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
             {diff !== null && (
               <span style={{ fontSize: 13, fontWeight: 700, color: diff >= 0 ? '#1E7A58' : '#D23B2E' }}>
                 어제보다 {diff >= 0 ? '▲' : '▼'}{Math.abs(diff)}
+              </span>
+            )}
+            {diff === null && formulaChanged && (
+              <span style={{ fontSize: 11.5, color: '#9A9AA0' }}>
+                점수 기준이 바뀌어 어제와 비교하지 않아요
               </span>
             )}
           </div>
