@@ -88,23 +88,29 @@ export function todosByDay(todos = []) {
   return map
 }
 
-/** 기간 선택 → 끝나는 날. 2~6일은 숫자, 주간은 7일, 월간은 한 달 뒤 하루 전 */
-export function endDateFor(startKey, span) {
+/**
+ * 기간 선택 → 실제 구간 { start, end }.
+ *   주간  고른 날이 속한 주의 일요일~토요일
+ *   월간  고른 날이 속한 달의 1일~말일
+ *   2~6일 고른 날부터 N일
+ * 주간·월간은 고른 날이 아니라 "그 주/그 달" 전체다 — 10/15 에 월간을 고르면 10/1~10/31.
+ */
+export function spanRange(startKey, span) {
   const d = new Date(`${startKey}T00:00:00`)
-  if (span === 'month') {
-    // 1/31 + 한 달은 '2/31' 이 없어 3월로 튄다 → 그 달 마지막 날로 묶는다
-    const day = d.getDate()
-    d.setDate(1)
-    d.setMonth(d.getMonth() + 1)
-    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-    if (day > last) d.setDate(last)                      // 2/28 에서 끝
-    else { d.setDate(day); d.setDate(d.getDate() - 1) }  // 같은 날짜 하루 전
-  } else {
-    const days = span === 'week' ? 7 : Number(span)
-    if (!Number.isFinite(days) || days < 2) return startKey
-    d.setDate(d.getDate() + days - 1)
+  if (span === 'week') {
+    const sun = new Date(d); sun.setDate(d.getDate() - d.getDay())
+    const sat = new Date(sun); sat.setDate(sun.getDate() + 6)
+    return { start: dateKey(sun), end: dateKey(sat) }
   }
-  return dateKey(d)
+  if (span === 'month') {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1)
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return { start: dateKey(first), end: dateKey(last) }
+  }
+  const days = Number(span)
+  if (!Number.isFinite(days) || days < 2) return { start: startKey, end: startKey }
+  const end = new Date(d); end.setDate(d.getDate() + days - 1)
+  return { start: startKey, end: dateKey(end) }
 }
 
 /** 오구 지수 → 칸 배경. 점수가 없는 날은 투명 (0점과 '안 쟀음'은 다르다) */

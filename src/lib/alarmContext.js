@@ -101,8 +101,12 @@ const PRIORITY_RANK = { high: 0, medium: 1, low: 2 }
  * "지금 하나만" 으로 제안할 할일 1개.
  * 순서: 마감이 지났거나 가까운 것 → 우선순위 → 먼저 만든 것
  */
+// 달력에서 넣은 약속·일정·계획은 "지금 하나만" 후보가 아니다.
+// 지난 날짜로도 기록할 수 있게 되면서, 마감 지난 항목이 제안을 독차지하게 된다.
+const CALENDAR_KINDS = new Set(['appointment', 'plan', 'period'])
+
 export function pickNextTodo(todos = [], now = Date.now()) {
-  const open = todos.filter(t => t && !t.completed && !t.done && t.title)
+  const open = todos.filter(t => t && !t.completed && !t.done && t.title && !CALENDAR_KINDS.has(t.todo_type))
   if (!open.length) return null
 
   const score = t => {

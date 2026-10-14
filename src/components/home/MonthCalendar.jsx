@@ -1,14 +1,18 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getEvents } from '../../lib/calendar'
 import { dayScores } from '../../lib/dayLog'
-import { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, endDateFor } from '../../lib/monthGrid'
+import { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, spanRange } from '../../lib/monthGrid'
 
 // 홈 하단 월간 캘린더 — 기기 일정 + 내 할일 마감 + 오구 지수를 한 장에 겹쳐 본다.
 // "이번 달 내 시간이 어땠나"를 보여주는 자리지, 일정을 관리하는 자리가 아니다
 // (일정 추가·수정은 기기 캘린더 앱의 몫 — 우리는 읽기만 한다).
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
-const EVENT_DOT = '#4B6BD4'
-const TODO_DOT  = '#FF6B2C'
+const EVENT_DOT = '#4B6BD4'   // 기기 캘린더 일정
+const TODO_DOT  = '#FF6B2C'   // 📍 약속 · 할일 마감
+const PLAN_DOT  = '#1E9E8A'   // 🗂 일정 · 📆 계획 (기간이 있는 것)
+
+const isPlanLike = t => t?.todo_type === 'plan' || t?.todo_type === 'period' || !!t?.end_date
+const dotColorOf = t => (isPlanLike(t) ? PLAN_DOT : TODO_DOT)
 
 const hhmm = ms => {
   const d = new Date(ms)
@@ -18,6 +22,7 @@ const hhmm = ms => {
 export default function MonthCalendar({
   todos = [], calendarSync = false, calendarIds = [],
   onTabChange, onAddTodo, onUpdateTodo, onDeleteTodo,
+  hidePeriod = false,          // 홈에서는 월·주간 계획을 숨긴다 (계획은 할일 탭에서 본다)
 }) {
   const today = new Date()
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
@@ -42,7 +47,10 @@ export default function MonthCalendar({
   }, [calendarSync, calendarIds, weeks])
 
   const evMap   = useMemo(() => eventsByDay(events), [events])
-  const todoMap = useMemo(() => todosByDay(todos), [todos])
+  const shownTodos = useMemo(
+    () => (hidePeriod ? todos.filter(t => t.todo_type !== 'period') : todos),
+    [todos, hidePeriod])
+  const todoMap = useMemo(() => todosByDay(shownTodos), [shownTodos])
 
   const todayKey = dateKey(today)
   const move = step => {
@@ -63,8 +71,11 @@ export default function MonthCalendar({
           due_hour: draft.hour,                     // null 이면 종일
           place: draft.place?.trim() || null,
         })
-      // 일정(2~6일)과 월·주간 계획은 기간만 다르다 — 목록에서 갈라 보이게 종류를 나눈다
-      : await onAddTodo?.(title, draft.kind, picked, { end_date: endDateFor(picked, draft.span) })
+      // 주간·월간은 고른 날이 아니라 "그 주/그 달" 전체다 → 시작일도 함께 맞춘다
+      : await (() => {
+          const { start, end } = spanRange(picked, draft.span)
+          return onAddTodo?.(title, draft.kind, start, { end_date: end })
+        })()
     // 로컬 저장(비로그인)은 아무것도 돌려주지 않는다 → undefined 는 성공으로 본다.
     // 서버가 거부했을 때만 입력창을 열어 둔다. 닫아버리면 쓴 내용을 잃는다.
     if (ok === false) { setFailed(true); return }
@@ -124,7 +135,9 @@ export default function MonthCalendar({
           const isToday  = cell.key === todayKey
           const isPicked = cell.key === picked
           const hasEv    = !!evMap[cell.key]?.length
-          const hasTodo  = !!todoMap[cell.key]?.length
+          const dayItems = todoMap[cell.key] ?? []
+          const hasTodo  = dayItems.some(t => !isPlanLike(t))
+          const hasPlan  = dayItems.some(isPlanLike)
           return (
             <button
               key={cell.key}
@@ -149,10 +162,18 @@ export default function MonthCalendar({
               <span style={{ display: 'flex', gap: 3, height: 4 }}>
                 {hasEv   && <span style={{ width: 4, height: 4, borderRadius: 2, background: EVENT_DOT }} />}
                 {hasTodo && <span style={{ width: 4, height: 4, borderRadius: 2, background: TODO_DOT }} />}
+                {hasPlan && <span style={{ width: 4, height: 4, borderRadius: 2, background: PLAN_DOT }} />}
               </span>
             </button>
           )
         })}
+      </div>
+
+      {/* 점 색 안내 — 색만 다르고 설명이 없으면 알아볼 수 없다 */}
+      <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 10.5, color: '#9A9AA0' }}>
+        <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: TODO_DOT, marginRight: 3 }} />약속·마감</span>
+        <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: PLAN_DOT, marginRight: 3 }} />일정·계획</span>
+        {calendarSync && <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, marginRight: 3 }} />기기 캘린더</span>}
       </div>
 
       {/* 선택한 날 */}
@@ -188,12 +209,16 @@ export default function MonthCalendar({
               onClick={() => { setEditing(editing?.id === t.id ? null : { id: t.id, title: t.title || t.text || '' }) }}
               style={{ ...row, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
             >
-              <span style={{ width: 5, height: 5, borderRadius: 3, background: TODO_DOT, flexShrink: 0 }} />
-              <span style={{ fontSize: 11.5, color: '#8E8E93', flexShrink: 0, minWidth: 38 }}>
+              <span style={{ width: 5, height: 5, borderRadius: 3, background: dotColorOf(t), flexShrink: 0 }} />
+              <span style={{
+                fontSize: 11.5, flexShrink: 0, minWidth: 42,
+                color: isPlanLike(t) ? PLAN_DOT : '#8E8E93',
+                fontWeight: isPlanLike(t) ? 700 : 400,
+              }}>
                 {t.todo_type === 'appointment'
-                  ? (t.due_hour != null ? `${t.due_hour}시` : '종일')
-                  : t.todo_type === 'period' ? '계획'
-                  : t.end_date ? '기간' : '마감'}
+                  ? (t.due_hour != null ? `📍${t.due_hour}시` : '📍종일')
+                  : t.todo_type === 'period' ? '📆계획'
+                  : t.end_date ? '🗂일정' : '마감'}
               </span>
               <span style={{
                 fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -250,7 +275,7 @@ export default function MonthCalendar({
 
         {/* 약속 / 일정 추가 — 날짜를 고르는 행위가 곧 입력의 시작이다.
             지난 날짜에는 숨긴다 (만들자마자 "지난 것"이 되어 알람 제안까지 오염된다) */}
-        {onAddTodo && picked >= todayKey && (
+        {onAddTodo && (
           draft === null ? (
             <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
               <button onClick={() => setDraft({ kind: 'appointment', title: '', hour: null, place: '' })} style={addBtn}>
@@ -259,9 +284,11 @@ export default function MonthCalendar({
               <button onClick={() => setDraft({ kind: 'plan', title: '', span: '2' })} style={addBtn}>
                 🗂 일정
               </button>
-              <button onClick={() => setDraft({ kind: 'period', title: '', span: 'week' })} style={addBtn}>
-                📆 월·주간 계획
-              </button>
+              {!hidePeriod && (
+                <button onClick={() => setDraft({ kind: 'period', title: '', span: 'week' })} style={addBtn}>
+                  📆 월·주간 계획
+                </button>
+              )}
             </div>
           ) : (
             <div style={{
@@ -270,11 +297,15 @@ export default function MonthCalendar({
             }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, color: '#111111', marginBottom: 10 }}>
                 {KIND_LABEL[draft.kind]} · {pickedLabel}
-                {draft.kind !== 'appointment' && (
-                  <span style={{ color: '#8E8E93', fontWeight: 600 }}>
-                    {' '}~ {endDateFor(picked, draft.span).slice(5).replace('-', '/')}
-                  </span>
-                )}
+                {draft.kind !== 'appointment' && (() => {
+                  const { start, end } = spanRange(picked, draft.span)
+                  const fmt = k => k.slice(5).replace('-', '/')
+                  return (
+                    <span style={{ color: '#8E8E93', fontWeight: 600 }}>
+                      {' '}→ {fmt(start)} ~ {fmt(end)}
+                    </span>
+                  )
+                })()}
               </div>
 
               {draft.kind === 'appointment' ? (

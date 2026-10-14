@@ -698,7 +698,7 @@ console.log('✓ 설정 동기화 우선순위 검증 통과')
 
 // ── 약속·일정 (달력에서 추가) ────────────────────────────────────
 {
-  const { spanDays, todosByDay, endDateFor } = await import('../src/lib/monthGrid.js')
+  const { spanDays, todosByDay, spanRange } = await import('../src/lib/monthGrid.js')
 
   // 하루짜리는 한 칸
   assert.deepEqual(spanDays({ due_date: '2026-10-15' }), ['2026-10-15'])
@@ -712,13 +712,24 @@ console.log('✓ 설정 동기화 우선순위 검증 통과')
   // end_date 가 start 보다 앞서면 하루로 (잘못 들어온 값에 무한 루프 금지)
   assert.deepEqual(spanDays({ due_date: '2026-10-15', end_date: '2026-10-01' }), ['2026-10-15'])
 
-  // 기간 선택 → 끝나는 날
-  assert.equal(endDateFor('2026-10-15', '2'), '2026-10-16')
-  assert.equal(endDateFor('2026-10-15', '6'), '2026-10-20')
-  assert.equal(endDateFor('2026-10-15', 'week'), '2026-10-21')
-  assert.equal(endDateFor('2026-10-15', 'month'), '2026-11-14')
-  // 월말 시작도 깨지지 않는다
-  assert.equal(endDateFor('2026-01-31', 'month'), '2026-02-28')
+  // 2~6일은 고른 날부터
+  assert.deepEqual(spanRange('2026-10-15', '2'), { start: '2026-10-15', end: '2026-10-16' })
+  assert.deepEqual(spanRange('2026-10-15', '6'), { start: '2026-10-15', end: '2026-10-20' })
+
+  // 주간 = 고른 날이 속한 주의 일요일~토요일 (고른 날부터 7일이 아니다)
+  // 2026-10-15 는 목요일 → 10/11(일) ~ 10/17(토)
+  assert.deepEqual(spanRange('2026-10-15', 'week'), { start: '2026-10-11', end: '2026-10-17' })
+  // 일요일을 고르면 그 날이 시작
+  assert.deepEqual(spanRange('2026-10-11', 'week'), { start: '2026-10-11', end: '2026-10-17' })
+  // 토요일을 고르면 그 주의 일요일로 당겨진다
+  assert.deepEqual(spanRange('2026-10-17', 'week'), { start: '2026-10-11', end: '2026-10-17' })
+  // 주가 달을 넘어도 끊기지 않는다 (2026-11-01 은 일요일)
+  assert.deepEqual(spanRange('2026-10-31', 'week'), { start: '2026-10-25', end: '2026-10-31' })
+
+  // 월간 = 그 달 1일~말일
+  assert.deepEqual(spanRange('2026-10-15', 'month'), { start: '2026-10-01', end: '2026-10-31' })
+  assert.deepEqual(spanRange('2026-02-20', 'month'), { start: '2026-02-01', end: '2026-02-28' })
+  assert.deepEqual(spanRange('2024-02-10', 'month'), { start: '2024-02-01', end: '2024-02-29' })  // 윤년
 
   // 날짜별 묶기 — 기간 일정이 3일에 모두 걸린다
   const map = todosByDay([

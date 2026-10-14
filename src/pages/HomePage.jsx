@@ -62,9 +62,11 @@ export default function HomePage({
   const H = now.getHours(), M = now.getMinutes()
 
   // 할일 계산
-  const doneTodos    = todos.filter(t => t.completed || t.done)
-  const pendingTodos = todos.filter(t => !t.completed && !t.done)
-  const todoPct      = todos.length ? Math.round(doneTodos.length / todos.length * 100) : 0
+  // 홈의 "오늘의 약속·일정" — 월·주간 계획은 여기 넣지 않는다 (할일 탭에서 본다)
+  const shown        = todos.filter(t => t.todo_type !== 'period')
+  const doneTodos    = shown.filter(t => t.completed || t.done)
+  const pendingTodos = shown.filter(t => !t.completed && !t.done)
+  const todoPct      = shown.length ? Math.round(doneTodos.length / shown.length * 100) : 0
 
   // 알람 통계
 
@@ -92,6 +94,7 @@ export default function HomePage({
         todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
         onTabChange={onTabChange} onAddTodo={onAddTodo}
         onUpdateTodo={onUpdateTodo} onDeleteTodo={onDeleteTodo}
+        hidePeriod
       />
 
 
@@ -100,7 +103,7 @@ export default function HomePage({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15 }}>✅</span>
-            <span style={{ color: '#3A3A3E', fontSize: 13, fontWeight: 700 }}>할일 현황</span>
+            <span style={{ color: '#3A3A3E', fontSize: 13, fontWeight: 700 }}>약속 · 일정</span>
             {pendingTodos.length > 0 && (
               <span style={{
                 fontSize: 10, padding: '2px 7px', borderRadius: 10,
