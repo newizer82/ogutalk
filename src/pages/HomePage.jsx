@@ -67,7 +67,16 @@ export default function HomePage({
   // 홈의 "오늘의 약속·일정" — 월·주간 계획은 여기 넣지 않는다 (할일 탭에서 본다)
   const shown        = todos.filter(t => t.todo_type !== 'period')
   const doneTodos    = shown.filter(t => t.completed || t.done)
-  const pendingTodos = shown.filter(t => !t.completed && !t.done)
+  // 기한 없는 것 먼저, 그 다음 날짜 순. 등록 순서로 두면 어제 적어둔 게 맨 위에 남는다.
+  // 날짜는 'YYYY-MM-DD' 문자열 그대로 비교한다 — new Date() 로 돌리면 UTC 로 읽혀 하루가 밀린다
+  const pendingTodos = shown
+    .filter(t => !t.completed && !t.done)
+    .sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0      // 같은 그룹 안에서는 원래 순서 (sort 는 안정적이다)
+      if (!a.due_date) return -1
+      if (!b.due_date) return 1
+      return String(a.due_date).localeCompare(String(b.due_date))
+    })
   const todoPct      = shown.length ? Math.round(doneTodos.length / shown.length * 100) : 0
 
   // 알람 통계
@@ -178,11 +187,18 @@ export default function HomePage({
                   )
                 })()}
               </span>
-              {t.due_date && (
-                <span style={{ color: theme.text.muted, fontSize: 10, flexShrink: 0 }}>
-                  D-{Math.ceil((new Date(t.due_date) - new Date()) / 86400000)}
-                </span>
-              )}
+              {t.due_date && (() => {
+                // 지난 것은 D--6 이 아니라 "6일 지남" — 마이너스 두 개는 아무 뜻도 아니다
+                const d = Math.ceil((new Date(t.due_date) - new Date()) / 86400000)
+                return (
+                  <span style={{
+                    fontSize: 10, flexShrink: 0, fontWeight: d < 0 ? 800 : 400,
+                    color: d < 0 ? theme.status.error : theme.text.muted,
+                  }}>
+                    {d < 0 ? `${-d}일 지남` : d === 0 ? 'D-DAY' : `D-${d}`}
+                  </span>
+                )
+              })()}
             </div>
           ))
         )}
