@@ -1,6 +1,8 @@
 // SNS 공유 유틸 (v1.6.0)
 // - shareApp(): 링크만 공유 → 안드로이드 시트 (인스타·X·Threads·복사 등)
-// - sharePromoImage(): 홍보 이미지 첨부 공유 → 인스타 스토리에 이미지 자동 로드
+// - sharePromoImage({ score, grade }): 홍보 이미지 첨부 공유 → 인스타 스토리에 이미지 자동 로드
+//   점수를 주면 "오늘 내 점수" 가 그려진다. 자랑할 것이 있어야 누르지,
+//   남의 광고를 대신 올려주는 버튼은 아무도 안 누른다.
 import { IS_NATIVE } from './capacitor'
 import { logEvent } from './firebase'
 import { INSTALL_LINK, SHARE_TEXT as APP_TEXT, SHARE_TITLE } from './shareCopy'
@@ -35,10 +37,10 @@ export async function shareApp() {
 
 // ── 홍보 이미지 공유 (인스타 스토리 등) ────────────────────────
 // public/promo.png 를 device 임시 파일로 복사 후 Share.files 로 첨부
-export async function sharePromoImage() {
-  logEvent('share_click', { channel: 'image' })
+export async function sharePromoImage(opts = {}) {
+  logEvent('share_click', { channel: 'image', with_score: typeof opts.score === 'number' })
   try {
-    const blob = await makePromoBlob()
+    const blob = await makePromoBlob(opts)
     const base64 = await blobToBase64(blob)
 
     if (IS_NATIVE) {
@@ -78,7 +80,7 @@ export async function sharePromoImage() {
 // ── 홍보 이미지 그리기 ─────────────────────────────────────────
 // 그림(promo-bg.png)은 고정, 글자는 캔버스로 올린다.
 // 문구가 바뀔 때마다 이미지를 다시 그리지 않아도 되고, 오타가 박히지도 않는다.
-export async function makePromoBlob() {
+export async function makePromoBlob({ score = null, grade = '', color = '#FF6B2C' } = {}) {
   const { w, h } = PROMO_SIZE
   const c = document.createElement('canvas')
   c.width = w; c.height = h
@@ -111,16 +113,30 @@ export async function makePromoBlob() {
   ctx.fillStyle = '#FFFFFF'
   ctx.fillText(badge, w / 2, 287)
 
-  // 본문
-  ctx.fillStyle = '#1A1208'
-  ctx.font = '800 86px sans-serif'
-  ;['내 하루의', '성장과 힐링을', '재주는 앱'].forEach((line, i) => {
-    ctx.fillText(line, w / 2, 450 + i * 118)
-  })
+  // 본문 — 점수가 있으면 내 숫자를, 없으면 앱 소개를
+  if (typeof score === 'number') {
+    ctx.fillStyle = '#8A6A55'
+    ctx.font = '600 44px sans-serif'
+    ctx.fillText('오늘의 오구 지수', w / 2, 440)
 
-  ctx.fillStyle = '#8A6A55'
-  ctx.font = '500 42px sans-serif'
-  ctx.fillText('오늘 내 시간은 어디에 있었을까?', w / 2, 830)
+    ctx.fillStyle = color
+    ctx.font = '900 260px sans-serif'
+    ctx.fillText(String(score), w / 2, 690)
+
+    ctx.fillStyle = '#1A1208'
+    ctx.font = '800 62px sans-serif'
+    ctx.fillText(grade || '오늘도 기록했어요', w / 2, 800)
+  } else {
+    ctx.fillStyle = '#1A1208'
+    ctx.font = '800 86px sans-serif'
+    ;['내 하루의', '성장과 힐링을', '재주는 앱'].forEach((line, i) => {
+      ctx.fillText(line, w / 2, 450 + i * 118)
+    })
+
+    ctx.fillStyle = '#8A6A55'
+    ctx.font = '500 42px sans-serif'
+    ctx.fillText('오늘 내 시간은 어디에 있었을까?', w / 2, 830)
+  }
 
   // 하단: 앱 이름 + 설치 안내 (주황 바탕 위 → 흰 글씨 + 옅은 그림자로 대비 확보)
   ctx.shadowColor = 'rgba(150,60,10,0.35)'

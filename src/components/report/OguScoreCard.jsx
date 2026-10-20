@@ -1,6 +1,7 @@
 import { GROUPS, labelOf } from '../../data/appCategories'
 import { formatMinutes } from '../../lib/alarmContext'
 import { WEIGHTS, AXIS_LABEL } from '../../lib/oguScore'
+import { sharePromoImage } from '../../lib/promoShare'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
 // 성장 40 + 균형 20 + 실행 40 (v1.20.0 — 9칸 다양성은 설명해도 알 수 없어서 걷어냈다)
@@ -158,18 +159,32 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
           오늘 측정 {formatMinutes(measuredMinutes)} · {labelOf('produce')} {formatMinutes(byGroup.produce)} · {labelOf('consume')} {formatMinutes(byGroup.consume)}
           {!measured && ' · 추정치'}
         </div>
-        {onOpenApps && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          {/* 공유는 자랑할 것이 생긴 자리에 둔다 — 홈에 혼자 떠 있던 버튼을 여기로 옮겼다 */}
           <button
-            onClick={onOpenApps}
+            onClick={() => sharePromoImage({ score, grade, color })}
+            aria-label="오늘 점수 이미지로 공유"
             style={{
               border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.03)',
               color: '#3A3A3E', fontSize: 12, fontWeight: 700,
-              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            오늘 시간이 어디로 갔나 →
+            📷 공유
           </button>
-        )}
+          {onOpenApps && (
+            <button
+              onClick={onOpenApps}
+              style={{
+                border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.03)',
+                color: '#3A3A3E', fontSize: 12, fontWeight: 700,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              오늘 시간이 어디로 갔나 →
+            </button>
+          )}
+        </div>
       </div>
 
       {!measured && (

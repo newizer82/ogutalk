@@ -1,6 +1,7 @@
-// SNS 공유 두 버튼 (링크 + 인스타 홍보 이미지)
-// 카카오 공유(ShareButton) 아래에 배치
-import { shareApp, sharePromoImage } from '../../lib/promoShare'
+// 링크 공유 — 카카오 공유(ShareButton) 아래에 배치.
+// 인스타 홍보 이미지 버튼은 리포트의 점수 카드로 옮겼다 (v1.21.0).
+// 홈 맨 아래에 맥락 없이 떠 있으면 "뭘 공유하라는 건지" 를 알 수 없다.
+import { shareApp } from '../../lib/promoShare'
 import { theme } from '../../styles/theme'
 
 export default function SnsShareButtons() {
@@ -21,10 +22,6 @@ export default function SnsShareButtons() {
       <button onClick={shareApp} style={btnBase}>
         <span style={{ fontSize: 14 }}>📤</span>
         <span>다른 앱으로 공유</span>
-      </button>
-      <button onClick={sharePromoImage} style={btnBase}>
-        <span style={{ fontSize: 14 }}>📷</span>
-        <span>인스타 홍보 이미지</span>
       </button>
     </div>
   )
