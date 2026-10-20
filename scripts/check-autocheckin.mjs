@@ -947,3 +947,20 @@ console.log('✓ 시간대 배너 검증 통과')
   assert.equal(new Set(PROMPT_CARDS.map(c => c.id)).size, PROMPT_CARDS.length, 'id 중복')
 }
 console.log('✓ 오구 브리지 검증 통과')
+
+// ── 23. 돌아올 다리 — 공유로 들어온 글의 첫 줄 ──────────────────
+{
+  const { firstLine } = await import('../src/lib/sharedText.js')
+
+  // AI 답은 여러 줄이다. 통째로 할일 제목에 넣으면 목록이 망가진다
+  assert.equal(firstLine('첫 줄\n둘째 줄\n셋째'), '첫 줄')
+  assert.equal(firstLine('\n\n  앞이 빈 줄  \n다음'), '앞이 빈 줄')
+  assert.equal(firstLine(''), '')
+  assert.equal(firstLine('   \n  '), '')
+  // 길면 자르고 말줄임 — 자른 티를 내지 않으면 잘린 걸 모른다
+  const long = 'ㄱ'.repeat(80)
+  assert.equal(firstLine(long).length, 60)
+  assert.ok(firstLine(long).endsWith('…'))
+  assert.equal(firstLine('짧은 줄'), '짧은 줄', '짧으면 건드리지 않는다')
+}
+console.log('✓ 돌아올 다리 검증 통과')

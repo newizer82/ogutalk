@@ -103,6 +103,22 @@ async function copyOnly(text) {
   }
 }
 
+/**
+ * 돌아올 다리 — 공유 시트로 들어온 텍스트를 가져온다 (가져가면 비워진다).
+ * 건너가기만 되고 돌아올 길이 없으면, AI 가 준 답이 매시간 증발한다.
+ * @returns string  없으면 ''
+ */
+export async function takeSharedText() {
+  try {
+    if (!(await ensurePlugin())) return ''
+    const { text } = await _plugin.takeShared()
+    return typeof text === 'string' ? text.trim() : ''
+  } catch (e) {
+    console.warn('[공유 수신] 실패:', e)
+    return ''
+  }
+}
+
 /** 건넨 뒤 보여줄 한 줄 */
 export function resultMessage({ ok, mode, label }) {
   if (!ok) return '복사하지 못했어요'

@@ -31,6 +31,44 @@ import java.util.List;
 public class AiAppsPlugin extends Plugin {
 
     /**
+     * 공유 시트로 들어온 텍스트 (돌아올 다리).
+     * 이벤트로 쏘지 않고 들고 있다가 JS 가 가져가게 한다 —
+     * 콜드 스타트에서는 WebView 가 뜨기 전에 인텐트가 먼저 도착하므로,
+     * 이벤트를 쏘면 아무도 듣는 사람이 없다.
+     */
+    private String pendingShared = null;
+
+    @Override
+    public void load() {
+        captureShared(getActivity() == null ? null : getActivity().getIntent());
+    }
+
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        captureShared(intent);
+    }
+
+    private void captureShared(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return;
+        String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+        if (text == null || text.trim().isEmpty()) return;
+        pendingShared = text;
+        // 액티비티가 다시 만들어질 때 같은 글이 또 들어오지 않게 비운다
+        intent.removeExtra(Intent.EXTRA_TEXT);
+    }
+
+    /** 가져가면 비운다 — 한 번 받은 글을 두 번 묻지 않는다 */
+    @PluginMethod
+    public void takeShared(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("text", pendingShared == null ? "" : pendingShared);
+        pendingShared = null;
+        call.resolve(ret);
+    }
+
+
+    /**
      * 후보 — 앞에 있을수록 먼저 고른다.
      * 안드로이드 기본 탑재인 Gemini 가 1순위다 (도달률).
      * 여기 없는 앱은 감지되지 않을 뿐, 아무것도 깨지지 않는다.

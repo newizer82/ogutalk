@@ -22,6 +22,8 @@ import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
 import { buildContext, pickPrompt } from './lib/promptPick'
+import { takeSharedText } from './lib/aiApps'
+import SharedTextModal from './components/common/SharedTextModal'
 import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
@@ -302,6 +304,25 @@ export default function App() {
 
   // 빠른 메모 (로그인 사용자 전용, 최대 9개)
   const { notes, addNote, deleteNote } = useNotes(userId)
+
+  // ── 돌아올 다리 — 다른 앱에서 공유로 넘어온 글 ────────────────
+  // 이벤트로 받지 않는다: 콜드 스타트에서는 인텐트가 WebView 보다 먼저 도착해
+  // 이벤트를 쏴도 듣는 사람이 없다. 그래서 플러그인이 들고 있고 우리가 가져간다.
+  const [sharedText, setSharedText] = useState('')
+  useEffect(() => {
+    const take = () => {
+      // 브라우저에는 공유 시트가 없다 → 화면 확인용 (배포 빌드에서는 블록째 사라진다)
+      if (import.meta.env.DEV) {
+        const fake = localStorage.getItem('ogu_dev_shared')
+        if (fake) { setSharedText(fake); return }
+      }
+      takeSharedText().then(t => { if (t) setSharedText(t) })
+    }
+    take()
+    const onVis = () => { if (document.visibilityState === 'visible') take() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
 
   // 로컬 todos/goals (비로그인 fallback)
   const [localTodos, setLocalTodos] = useState([
@@ -778,6 +799,15 @@ export default function App() {
           promptCard={popupContext.promptCard}
         />
       )}
+
+      {/* 돌아올 다리 — 공유로 들어온 글을 할일·메모로 */}
+      <SharedTextModal
+        text={sharedText}
+        isLoggedIn={!!userId}
+        onAddTodo={handleAddTodo}
+        onAddNote={addNote}
+        onClose={() => setSharedText('')}
+      />
 
       {/* 로그인 모달 */}
       <LoginModal

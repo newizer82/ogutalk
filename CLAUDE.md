@@ -366,6 +366,16 @@ src/data/promptCards.js(15장) + promptPick.js(순수) + lib/aiApps.js + AiAppsP
 - 집중(focus) 중에는 띄우지 않는다. 알람의 최대 불만이 "집중을 깬다" 였다
 - 카드 문구가 이 기능의 전부다. 미션 60개를 손으로 쓴 것과 같은 이유로 여기를 아끼면 실패한다
 - 측정 이벤트: bridge_tap, ai_app_pick
+
+돌아올 다리 (2단계, v1.21.0)
+- 건너가기만 되면 반쪽이다 — AI 가 준 답을 어딘가에 남기지 않으면 매시간 증발한다
+- Manifest 의 MainActivity 에 ACTION_SEND/text\/plain intent-filter → 공유 시트에 오구톡이 뜬다
+- 이벤트로 쏘지 않는다: 콜드 스타트에서는 인텐트가 WebView 보다 먼저 도착해 듣는 사람이 없다.
+  플러그인이 pendingShared 에 들고 있고 JS 가 takeShared() 로 가져간다 (가져가면 비워진다)
+- App.jsx 는 마운트 때 + visibilitychange 때 가져간다
+- SharedTextModal: 고쳐서 할일(첫 줄) 또는 메모(앞 200자)로. 메모는 로그인 필요
+- firstLine 은 sharedText.js(순수) — aiApps.js 는 네이티브를 import 해서 node 로 못 돌린다
+- 측정 이벤트: shared_in, shared_saved
 ```
 
 ## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)

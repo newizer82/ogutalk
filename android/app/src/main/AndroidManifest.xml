@@ -41,6 +41,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 돌아올 다리 — AI 답(또는 아무 텍스트)을 오구톡으로 공유하면 할일·메모로 꽂는다.
+                 건너가기만 되고 돌아올 길이 없으면 깨달은 것이 매시간 증발한다. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
             <!-- 카카오 OAuth 딥링크: com.ogutalk.app://login-callback#access_token=... -->
             <!-- host 제약 제거: Supabase가 fragment(#) 형태로 보낼 때 일부 OS에서 host 매칭 실패 회피 -->
             <intent-filter>
