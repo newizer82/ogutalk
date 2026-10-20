@@ -40,10 +40,21 @@ public class AiAppsPlugin extends Plugin {
         { "com.openai.chatgpt",                      "ChatGPT" },
         { "com.anthropic.claude",                    "Claude" },
         { "ai.perplexity.app.android",               "Perplexity" },
+        { "ai.x.grok",                               "Grok" },
         { "com.microsoft.copilot",                   "Copilot" },
         // 마지막 보루 — Gemini 앱이 없어도 구글 앱이 어시스턴트를 품고 있다
         { "com.google.android.googlequicksearchbox", "Google" },
     };
+
+    /**
+     * 공유로 보내면 안 되는 앱.
+     * 구글 앱의 text/plain 수신처는 SavesShareReceiver — 질문을 던지는 게 아니라
+     * "Google에 저장" 으로 북마크가 된다. 사용자는 보냈다고 믿는데 아무 일도 안 일어난다.
+     * (실기기 확인: cmd package query-activities -a SEND -t text/plain)
+     */
+    private static boolean launchOnly(String pkg) {
+        return "com.google.android.googlequicksearchbox".equals(pkg);
+    }
 
     /** 설치된 AI 앱 목록 (후보 순서 그대로) */
     @PluginMethod
@@ -58,7 +69,7 @@ public class AiAppsPlugin extends Plugin {
             JSObject o = new JSObject();
             o.put("pkg", pkg);
             o.put("label", labelOf(pm, pkg, c[1]));
-            o.put("canSend", hasSendHandler(pm, pkg));
+            o.put("canSend", !launchOnly(pkg) && hasSendHandler(pm, pkg));
             apps.put(o);
         }
 
@@ -85,11 +96,12 @@ public class AiAppsPlugin extends Plugin {
             return;
         }
 
-        copyToClipboard(text);
-
         PackageManager pm = getContext().getPackageManager();
 
-        if (!text.isEmpty() && hasSendHandler(pm, pkg)) {
+        // 프리필이 되는 앱이면 클립보드는 건드리지 않는다.
+        // 질문이 이미 입력창에 들어갔는데 "복사했어요" 토스트가 뜨면
+        // 사용자는 뭐가 일어난 건지 되묻게 된다 (실기기 확인).
+        if (!text.isEmpty() && !launchOnly(pkg) && hasSendHandler(pm, pkg)) {
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType("text/plain");
             send.setPackage(pkg);
@@ -103,6 +115,9 @@ public class AiAppsPlugin extends Plugin {
                 // 공유 액티비티가 있다고 해놓고 거절하는 앱이 있다 → 아래로 떨어진다
             }
         }
+
+        // 여기부터는 앱만 열린다 → 붙여넣을 수 있게 복사해 둔다. 빈손으로 보내지 않는다.
+        copyToClipboard(text);
 
         Intent launch = pm.getLaunchIntentForPackage(pkg);
         if (launch == null) {
