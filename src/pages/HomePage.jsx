@@ -99,7 +99,7 @@ export default function HomePage({
         todos={todos} calendarSync={calendarSync} calendarIds={calendarIds}
         onTabChange={onTabChange} onAddTodo={onAddTodo}
         onUpdateTodo={onUpdateTodo} onDeleteTodo={onDeleteTodo}
-        hidePeriod
+        hidePeriod compact
       />
 
 

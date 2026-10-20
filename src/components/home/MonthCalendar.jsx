@@ -23,6 +23,7 @@ export default function MonthCalendar({
   todos = [], calendarSync = false, calendarIds = [],
   onTabChange, onAddTodo, onUpdateTodo, onDeleteTodo,
   hidePeriod = false,          // 홈에서는 월·주간 계획을 숨긴다 (계획은 할일 탭에서 본다)
+  compact = false,             // 홈: 칸을 낮추고 하루 목록을 접는다 (홈은 "이번 달이 어땠나" 를 보는 자리)
 }) {
   const today = new Date()
   const [view, setView]   = useState({ y: today.getFullYear(), m: today.getMonth() })
@@ -33,6 +34,7 @@ export default function MonthCalendar({
   const [draft, setDraft] = useState(null)
   const [failed, setFailed] = useState(false)   // 서버 저장 실패 — 조용히 사라지면 쓴 걸 잃는다
   const [editing, setEditing] = useState(null)  // 누른 항목 id (제목 수정 · 삭제)
+  const [open, setOpen] = useState(false)       // compact 에서 하루 목록 펼침 — 날을 누르면 열린다
 
   const weeks  = useMemo(() => monthCells(view.y, view.m), [view])
   const scores = useMemo(() => dayScores(), [view])
@@ -51,6 +53,10 @@ export default function MonthCalendar({
     () => (hidePeriod ? todos.filter(t => t.todo_type !== 'period') : todos),
     [todos, hidePeriod])
   const todoMap = useMemo(() => todosByDay(shownTodos), [shownTodos])
+  // 마감일이 없으면 어느 칸에도 올라가지 못한다 → 달력이 모르는 할일이 된다
+  const undated = useMemo(
+    () => shownTodos.filter(t => !t.due_date && !(t.completed || t.done)),
+    [shownTodos])
 
   const todayKey = dateKey(today)
   const move = step => {
@@ -92,6 +98,8 @@ export default function MonthCalendar({
   const dayEvents = evMap[picked] ?? []
   const dayTodos  = todoMap[picked] ?? []
   const dayScore  = scores[picked]
+  const dayCount  = dayEvents.length + dayTodos.length
+  const bodyOpen  = !compact || open
   const pickedLabel = (() => {
     const [, mm, dd] = picked.split('-')
     const wd = WEEKDAYS[new Date(`${picked}T00:00:00`).getDay()]
@@ -141,17 +149,22 @@ export default function MonthCalendar({
           return (
             <button
               key={cell.key}
-              onClick={() => { setPicked(cell.key); setDraft(null); setEditing(null) }}
+              onClick={() => {
+                setPicked(cell.key); setDraft(null); setEditing(null)
+                // 빈 날을 눌러 "아무것도 없어요" 를 펼치게 하지 않는다
+                setOpen(hasEv || dayItems.length > 0)
+              }}
               style={{
-                height: 44, padding: 0, cursor: 'pointer', borderRadius: 11,
+                height: compact ? 34 : 44, padding: 0, cursor: 'pointer', borderRadius: compact ? 9 : 11,
                 background: scoreTint(scores[cell.key]),
                 border: isPicked ? '1.5px solid #FF6B2C' : isToday ? '1.5px solid #FFD2B8' : '1.5px solid transparent',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: compact ? 1 : 3,
                 opacity: cell.inMonth ? 1 : 0.32,
               }}
             >
               <span style={{
-                fontSize: 12.5, fontWeight: isToday ? 800 : 600,
+                fontSize: compact ? 12 : 12.5, fontWeight: isToday ? 800 : 600,
                 color: isToday ? '#D9531B'
                   : cell.weekday === 0 ? '#D23B2E'
                   : cell.weekday === 6 ? '#4B6BD4' : '#3A3A3E',
@@ -169,16 +182,36 @@ export default function MonthCalendar({
         })}
       </div>
 
-      {/* 점 색 안내 — 색만 다르고 설명이 없으면 알아볼 수 없다 */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 10.5, color: '#9A9AA0' }}>
+      {/* 점 색 안내 — 색만 다르고 설명이 없으면 알아볼 수 없다.
+          compact 에서는 파란 점(기기 캘린더)이 섞일 때만 — 주황·초록은 아래 추가 버튼이 곧 설명이다 */}
+      {(!compact || calendarSync) && (
+      <div style={{ display: 'flex', gap: 10, marginTop: compact ? 6 : 8, fontSize: 10.5, color: '#9A9AA0' }}>
         <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: TODO_DOT, marginRight: 3 }} />약속·마감</span>
         <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: PLAN_DOT, marginRight: 3 }} />일정·계획</span>
         {calendarSync && <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, marginRight: 3 }} />기기 캘린더</span>}
       </div>
+      )}
 
-      {/* 선택한 날 */}
-      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F0F0F3' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      {/* 날짜 없는 할일 — 어느 칸에도 못 올라간다. 여기서 세지 않으면 달력의 "아무것도 없어요" 와
+          홈 카드의 "2개 남음" 이 같은 화면에서 서로 다른 말을 한다 */}
+      {compact && undated.length > 0 && (
+        <button onClick={() => onTabChange?.('todos')} style={{
+          display: 'flex', alignItems: 'center', gap: 6, width: '100%', marginTop: 8,
+          border: '1px dashed #ECECEF', background: '#FAFAFB', borderRadius: 10,
+          padding: '7px 10px', cursor: 'pointer', textAlign: 'left',
+        }}>
+          <span style={{ fontSize: 12, color: '#8E8E93', flex: 1 }}>
+            날짜 없는 할일 {undated.length}개
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#D9531B' }}>할일 탭 ›</span>
+        </button>
+      )}
+
+      {/* 선택한 날 — compact 에서는 접어 둔다 (날을 누르면 열린다) */}
+      <div style={{
+        marginTop: compact ? 10 : 12, paddingTop: compact ? 10 : 12, borderTop: '1px solid #F0F0F3',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: bodyOpen ? 8 : 0 }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: '#111111' }}>{pickedLabel}</span>
           {typeof dayScore === 'number' && (
             <span style={{
@@ -188,8 +221,24 @@ export default function MonthCalendar({
               오구 지수 {dayScore}
             </span>
           )}
+          {compact && (
+            <>
+              <span style={{ flex: 1 }} />
+              <button
+                onClick={() => setOpen(v => !v)}
+                aria-expanded={open}
+                style={{
+                  border: 'none', background: 'transparent', color: dayCount ? '#D9531B' : '#9A9AA0',
+                  fontSize: 11.5, fontWeight: 800, cursor: 'pointer', padding: '2px 0',
+                }}
+              >
+                {dayCount ? `${dayCount}건` : '없음'} {open ? '⌃' : '⌄'}
+              </button>
+            </>
+          )}
         </div>
 
+        {bodyOpen && (<>
         {dayEvents.map(e => (
           <div key={`${e.id}-${e.startMs}`} style={row}>
             <span style={{ width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, flexShrink: 0 }} />
@@ -272,6 +321,7 @@ export default function MonthCalendar({
             {calendarSync ? '이 날은 아무것도 없어요' : '이 날은 약속도 일정도 없어요'}
           </div>
         )}
+        </>)}
 
         {/* 약속 / 일정 추가 — 날짜를 고르는 행위가 곧 입력의 시작이다.
             지난 날짜에는 숨긴다 (만들자마자 "지난 것"이 되어 알람 제안까지 오염된다) */}
@@ -406,9 +456,12 @@ export default function MonthCalendar({
           <button
             onClick={() => onTabChange?.('settings')}
             style={{
-              marginTop: 8, width: '100%', border: '1px solid #ECECEF', borderRadius: 12,
-              background: '#FAFAFB', color: '#8E8E93', fontSize: 12, fontWeight: 700,
-              padding: '9px 10px', cursor: 'pointer',
+              marginTop: 8, width: '100%', borderRadius: 12, cursor: 'pointer',
+              color: '#8E8E93', fontSize: 12, fontWeight: 700,
+              // 홈에서는 테두리 없는 한 줄로 — 안내가 카드만큼 자리를 먹으면 안 된다
+              border: compact ? 'none' : '1px solid #ECECEF',
+              background: compact ? 'transparent' : '#FAFAFB',
+              padding: compact ? '2px 0' : '9px 10px',
             }}
           >
             📅 캘린더를 연동하면 기기 일정도 함께 보여요
