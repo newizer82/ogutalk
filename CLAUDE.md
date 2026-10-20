@@ -369,7 +369,7 @@ src/data/promptCards.js(15장) + promptPick.js(순수) + lib/aiApps.js + AiAppsP
 
 돌아올 다리 (2단계, v1.21.0)
 - 건너가기만 되면 반쪽이다 — AI 가 준 답을 어딘가에 남기지 않으면 매시간 증발한다
-- Manifest 의 MainActivity 에 ACTION_SEND/text\/plain intent-filter → 공유 시트에 오구톡이 뜬다
+- Manifest 의 MainActivity 에 ACTION_SEND + text/plain intent-filter → 공유 시트에 오구톡이 뜬다
 - 이벤트로 쏘지 않는다: 콜드 스타트에서는 인텐트가 WebView 보다 먼저 도착해 듣는 사람이 없다.
   플러그인이 pendingShared 에 들고 있고 JS 가 takeShared() 로 가져간다 (가져가면 비워진다)
 - App.jsx 는 마운트 때 + visibilitychange 때 가져간다
