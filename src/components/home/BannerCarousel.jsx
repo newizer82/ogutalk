@@ -91,7 +91,7 @@ export default function BannerCarousel({ onTabChange }) {
   return (
     // 배너 영역만 옅은 주황 바탕 — 흰 카드가 흰 배경에 묻히지 않게 한다
     <div style={{
-      marginBottom: 12, padding: '10px 10px 4px', borderRadius: 20,
+      marginBottom: 12, padding: '7px 7px 3px', borderRadius: 18,
       background: '#FFF4EC', border: '1px solid #FFE1CE',
     }}>
       <div
@@ -115,34 +115,34 @@ export default function BannerCarousel({ onTabChange }) {
               onClick={() => open(b)}
               style={{
                 flex: '0 0 100%', scrollSnapAlign: 'center', textAlign: 'left',
-                display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
-                padding: '12px 14px', minHeight: 68, boxSizing: 'border-box',
-                borderRadius: 16,
+                display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+                padding: '9px 11px', minHeight: 48, boxSizing: 'border-box',
+                borderRadius: 13,
                 background: isEvent ? '#FF6B2C' : '#FFFFFF',
                 border: `1px solid ${isEvent ? '#FF6B2C' : '#ECECEF'}`,
               }}
             >
               <span style={{
-                width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                width: 28, height: 28, borderRadius: 9, flexShrink: 0,
                 background: isEvent ? 'rgba(255,255,255,0.22)' : kind.iconBg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
               }}>
                 {b.emoji ?? '📢'}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{
-                  display: 'inline-block', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
-                  background: isEvent ? '#FFFFFF' : kind.tagBg,
-                  color: isEvent ? '#B23F0D' : kind.tagText,
-                }}>
-                  {kind.label}
-                </span>
-                <span style={{
-                  display: 'block', fontSize: 14, fontWeight: 800, marginTop: 4, lineHeight: 1.35,
-                  color: isEvent ? '#FFFFFF' : '#111111',
-                }}>
-                  {b.text}
-                </span>
+              <span style={{
+                flex: 1, minWidth: 0, fontSize: 13, fontWeight: 800, lineHeight: 1.35,
+                color: isEvent ? '#FFFFFF' : '#111111',
+              }}>
+                {/* 태그는 공지·카드뉴스에만. 본문과 같은 줄에 둬서 카드 높이를 건드리지 않는다 */}
+                {(b.kind === 'notice' || b.kind === 'news') && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 4, marginRight: 5,
+                    background: kind.tagBg, color: kind.tagText, whiteSpace: 'nowrap',
+                  }}>
+                    {kind.label}
+                  </span>
+                )}
+                {b.text}
               </span>
               <span style={{ fontSize: 15, color: isEvent ? 'rgba(255,255,255,0.85)' : '#C7C7CC', flexShrink: 0 }}>›</span>
             </button>
@@ -150,7 +150,7 @@ export default function BannerCarousel({ onTabChange }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '0 3px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, padding: '0 3px' }}>
         {banners.map((b, i) => (
           <span key={b.id} style={{
             width: i === index ? 14 : 4, height: 4, borderRadius: 2,
@@ -160,12 +160,14 @@ export default function BannerCarousel({ onTabChange }) {
         <span style={{ flex: 1 }} />
         <button
           onClick={hideToday}
+          aria-label="오늘 하루 안 보기"
+          title="오늘 하루 안 보기"
           style={{
             border: 0, background: 'transparent', color: '#A0A0A6',
-            fontSize: 11.5, fontWeight: 700, cursor: 'pointer', padding: '2px 4px',
+            fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '2px 6px', lineHeight: 1,
           }}
         >
-          오늘 하루 안 보기
+          ✕
         </button>
       </div>
     </div>
