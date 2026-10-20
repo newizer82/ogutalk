@@ -889,3 +889,61 @@ console.log('✓ 주간 축별 추이 검증 통과')
   }
 }
 console.log('✓ 시간대 배너 검증 통과')
+
+// ── 22. 오구 브리지 — 프롬프트 카드 고르기 ──────────────────────
+{
+  const { buildContext, canUse, fill, pickPrompt } = await import('../src/lib/promptPick.js')
+  const { PROMPT_CARDS } = await import('../src/data/promptCards.js')
+  const at = (h, d = 20) => new Date(2026, 9, d, h, 59).getTime()
+
+  // 빈칸이 남은 프롬프트는 쓰지 않는다 — 이게 이 기능의 생사다
+  assert.equal(fill('오늘 {todos} 정리', {}), null)
+  assert.equal(fill('오늘 {todos} 정리', { todos: '- 보고서' }), '오늘 - 보고서 정리')
+
+  const ctx = buildContext({
+    todos: [
+      { title: '보고서 초안', completed: false },
+      { title: '끝난 것', completed: true },
+      { title: '주간 계획', todo_type: 'period' },
+    ],
+    byGroup: { produce: 80, consume: 150, connect: 20 },
+  })
+  assert.ok(ctx.todos.includes('보고서 초안'))
+  assert.ok(!ctx.todos.includes('끝난 것'), '완료된 할일은 AI에 넘기지 않는다')
+  assert.ok(!ctx.todos.includes('주간 계획'), '월·주간 계획은 할일 목록이 아니다')
+  assert.equal(ctx.topTodo, '보고서 초안')
+  assert.equal(ctx.consume, '150')
+
+  // 할일이 없으면 할일을 요구하는 카드는 후보에서 빠진다
+  const empty = buildContext({ todos: [] })
+  const needsTodos = PROMPT_CARDS.find(c => c.need.includes('todos'))
+  assert.ok(!canUse(needsTodos, empty), '할일 없이 할일 카드를 꺼내면 빈 프롬프트가 나간다')
+  assert.ok(canUse(needsTodos, ctx))
+
+  // 할일이 하나도 없어도 뭔가는 나온다 (조건 없는 카드가 받쳐준다)
+  const bare = pickPrompt({ now: at(8), ctx: empty })
+  assert.ok(bare && bare.prompt && !/\{\w+\}/.test(bare.prompt), bare?.prompt)
+
+  // 시간대에 맞는 카드를 먼저 고른다
+  const morning = pickPrompt({ now: at(8), ctx })
+  const card = PROMPT_CARDS.find(c => c.id === morning.id)
+  assert.ok(['morning', 'any'].includes(card.slot), `아침에 ${card.slot} 카드`)
+
+  // 같은 시각이면 같은 카드 (리렌더마다 바뀌면 읽다 말고 놓친다)
+  assert.equal(pickPrompt({ now: at(8), ctx }).id, pickPrompt({ now: at(8) + 59_000, ctx }).id)
+  // 시간이 지나면 넘어간다 — 같은 카드를 하루 종일 보여주지 않는다
+  const slotIds = new Set([14, 15, 16, 17].map(h => pickPrompt({ now: at(h), ctx, consumeHigh: true }).id))
+  assert.ok(slotIds.size > 1, '오후 내내 같은 카드만 나온다')
+
+  // 모든 카드가 조건만 갖추면 빈칸 없이 채워져야 한다
+  const full = { ...ctx, event: '팀 회의' }
+  for (const c of PROMPT_CARDS) {
+    if (!canUse(c, full, { measured: true, consumeHigh: true })) continue
+    assert.ok(fill(c.prompt, full), `${c.id} 의 빈칸이 안 채워진다`)
+    assert.ok(c.title.length <= 12, `${c.id} 제목 김: ${c.title}`)
+    assert.ok(c.hint.length <= 20, `${c.id} 힌트 김: ${c.hint}`)
+  }
+  assert.ok(PROMPT_CARDS.length >= 12, '카드가 12장은 돼야 하루가 돈다')
+  assert.equal(new Set(PROMPT_CARDS.map(c => c.id)).size, PROMPT_CARDS.length, 'id 중복')
+}
+console.log('✓ 오구 브리지 검증 통과')

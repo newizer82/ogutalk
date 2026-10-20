@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import AutoCheckinSection from '../components/settings/AutoCheckinSection'
 import CalendarSection from '../components/settings/CalendarSection'
 import ScoreGoalSection from '../components/settings/ScoreGoalSection'
+import AiBridgeSection from '../components/settings/AiBridgeSection'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -177,6 +178,11 @@ export default function SettingsPage({
         lifeStage={lifeStage} setLifeStage={setLifeStage}
       />
 
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#9A9AA0', margin: '18px 4px 8px' }}>
+        오구 브리지
+      </div>
+
+      <AiBridgeSection />
 
       <div style={{ fontSize: 12, fontWeight: 800, color: '#9A9AA0', margin: '18px 4px 8px' }}>
         공유

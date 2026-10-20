@@ -5,6 +5,8 @@ import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
 import { moodHeadline, formatMinutes, todoHint, eventLine, shortPlace } from '../../lib/alarmContext'
 import { mapUrlFor } from '../../lib/calendar'
 import { openUrl } from '../../lib/capacitor'
+import { sendToAi, resultMessage } from '../../lib/aiApps'
+import { logEvent } from '../../lib/firebase'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -23,6 +25,7 @@ export default function AlarmPopup({
   autoSummary = null, autoMode = false,
   mood = null, todayTotals = null, nextTodo = null, dayScore = null,
   nextEvent = null, nextMission = null, missionIntro = null,
+  promptCard = null,
 }) {
   const now = new Date()
   const HH  = pad(now.getHours())
@@ -30,6 +33,7 @@ export default function AlarmPopup({
 
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
+  const [bridge, setBridge] = useState(null)   // AI 로 건넌 결과 한 줄
 
   // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 추천 미션.
   // 집중 중에는 아무것도 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
@@ -293,6 +297,43 @@ export default function AlarmPopup({
             <div style={{ color: '#8b93a7', fontSize: 11, marginTop: 4 }}>
               {suggestTodo ? (todoHint(nextTodo) || '끝내면 할일 탭에서 체크하세요') : '5분이면 돼요'}
             </div>
+          </div>
+        )}
+
+        {/* 오구 브리지 — 폰을 실행 도구로.
+            오구톡은 AI를 품지 않는다. 폰에 이미 있다. 희소한 건 지능이 아니라
+            "맞는 순간의 질문" 이고, 그건 매시 59분에 우리만 가지고 있다.
+            집중 중에는 띄우지 않는다 (알람의 최대 불만이 "집중을 깬다" 였다). */}
+        {promptCard && mood?.mood !== 'focus' && !checkedIn && (
+          <div style={{
+            marginBottom: 12, padding: '12px 14px', borderRadius: 16, textAlign: 'left',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+          }}>
+            <div style={{ color: '#7DD3C0', fontSize: 11, fontWeight: 800, marginBottom: 4 }}>
+              🤖 지금 AI에 물어볼 것
+            </div>
+            <div style={{ color: '#e8eaf0', fontSize: 14.5, fontWeight: 700, lineHeight: 1.35 }}>
+              {promptCard.title}
+            </div>
+            <div style={{ color: '#8b93a7', fontSize: 11, marginTop: 4 }}>
+              {bridge ?? promptCard.hint}
+            </div>
+            {!bridge && (
+              <button
+                onClick={async () => {
+                  logEvent('bridge_tap', { card: promptCard.id })
+                  setBridge('여는 중…')
+                  setBridge(resultMessage(await sendToAi(promptCard.prompt)))
+                }}
+                style={{
+                  marginTop: 9, width: '100%', padding: '9px 0', borderRadius: 11, cursor: 'pointer',
+                  border: '1px solid rgba(125,211,192,0.35)', background: 'rgba(125,211,192,0.12)',
+                  color: '#9BE7D6', fontSize: 12.5, fontWeight: 800,
+                }}
+              >
+                내 AI로 보내기 ›
+              </button>
+            )}
           </div>
         )}
 

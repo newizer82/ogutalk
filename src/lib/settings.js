@@ -38,6 +38,8 @@ export const DEFAULT_SETTINGS = {
   // 오구 지수 목표 (분) — 남이 정한 기준이 아니라 사용자의 기준과 비교한다
   produceTarget:  120,
   consumeLimit:   120,
+  // 오구 브리지가 쓸 AI 앱 패키지. null = 설치된 것 중 자동 (Gemini 우선)
+  aiApp:          null,
 }
 
 // ── 마이그레이션: 옛 6개 키 → 새 통합 키 ───────────────────────

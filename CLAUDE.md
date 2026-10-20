@@ -348,6 +348,26 @@ src/lib/monthGrid.js(순수) + components/home/MonthCalendar.jsx
 
 ---
 
+### 14. 오구 브리지 — AI로 보내기 (v1.21.0)
+
+```
+src/data/promptCards.js(15장) + promptPick.js(순수) + lib/aiApps.js + AiAppsPlugin.java
+- 오구톡은 AI를 품지 않는다. 사용자 폰에 이미 있다.
+  희소한 건 지능이 아니라 "맞는 순간의 질문" 이고, 그건 매시 59분에 우리만 가지고 있다.
+  → 서버 비용 0, API 키 0, "사용시간은 기기 밖으로 안 나간다" 는 약속 그대로
+- 알람 팝업에 "지금 AI에 물어볼 것" 한 장. 누르면 설치된 AI 앱이 질문과 함께 열린다
+- 앱 감지: CANDIDATES 순서대로 getLaunchIntentForPackage (Gemini 우선 — 안드로이드 도달률)
+  QUERY_ALL_PACKAGES 는 쓰지 않는다. Manifest <queries> 의 MAIN/LAUNCHER + SEND 선언으로 충분
+- 건네기 순서: 클립보드에 먼저 넣고 → ACTION_SEND → 실패하면 그냥 앱 열기.
+  프리필은 앱마다 되기도 안 되기도 한다(문서화된 인텐트가 없다). 빈손으로 보내지 않는 게 유일한 약속
+- 빈칸이 남은 프롬프트는 건네지 않는다 — "{todos}" 가 그대로 박히면 그 순간 이 기능은 끝이다
+  (promptPick.fill 이 null 을 돌려주면 그 카드는 후보에서 빠진다)
+- 같은 시각이면 같은 카드. 씨앗은 Math.floor(now/3600000) — 매시간 1씩 올라 pool 을 한 바퀴 돈다
+- 집중(focus) 중에는 띄우지 않는다. 알람의 최대 불만이 "집중을 깬다" 였다
+- 카드 문구가 이 기능의 전부다. 미션 60개를 손으로 쓴 것과 같은 이유로 여기를 아끼면 실패한다
+- 측정 이벤트: bridge_tap, ai_app_pick
+```
+
 ## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)
 
 ```

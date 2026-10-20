@@ -50,6 +50,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AudioFocusPlugin.class);
         registerPlugin(UsageStatsPlugin.class);
         registerPlugin(CalendarPlugin.class);
+        registerPlugin(AiAppsPlugin.class);
         super.onCreate(savedInstanceState);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ensureAlarmChannels();

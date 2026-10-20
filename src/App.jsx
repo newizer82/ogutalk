@@ -21,6 +21,7 @@ import { IS_NATIVE } from './lib/capacitor'
 import { initAdMob, showBanner, hideBanner, removeBanner, resumeBanner, isAdFree, BANNER_HEIGHT_PX } from './lib/admob'
 import Layout from './components/layout/Layout'
 import AlarmPopup from './components/alarm/AlarmPopup'
+import { buildContext, pickPrompt } from './lib/promptPick'
 import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
@@ -395,12 +396,21 @@ export default function App() {
                    goals: { produceTarget, consumeLimit }, measured: autoCheckin, now })
       : null
     if (score) saveDayScore(score.score, now)
+    const totals = sumToday(checkins, now)
     return {
       mood:     alarmMood({ checkins, autoSummary: autoCheckin ? lastHourSummary : null, now }),
-      totals:   sumToday(checkins, now),
+      totals,
       nextTodo: pickNextTodo(activeTodos, now),
       nextMission: nextUndoneMission(lifeStage, now),
       dayScore: score,
+      // 오구 브리지 — 지금 AI에 던질 질문 한 장.
+      // 다음 일정(nextEvent)은 따로 들어오므로 여기서는 쓰지 않는다 (의존성이 늘면 팝업이 매번 다시 계산된다)
+      promptCard: pickPrompt({
+        now,
+        ctx: buildContext({ todos: activeTodos, byGroup: totals.byGroup, now }),
+        measured: autoCheckin && totals.total > 0,
+        consumeHigh: totals.byGroup.consume > consumeLimit,
+      }),
     }
   }, [showAlarmPopup, lastHourSummary, autoCheckin, activeTodos, produceTarget, consumeLimit, lifeStage])
 
@@ -765,6 +775,7 @@ export default function App() {
           nextEvent={nextEvent}
           nextMission={popupContext.nextMission}
           missionIntro={missionIntro}
+          promptCard={popupContext.promptCard}
         />
       )}
 

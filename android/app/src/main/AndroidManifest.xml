@@ -13,6 +13,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
         </intent>
+        <!-- AI 앱에 프롬프트 건네기 (오구 브리지) — 텍스트를 받을 수 있는 앱인지 확인한다 -->
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
     </queries>
 
     <application
