@@ -1,4 +1,4 @@
-# 출시 노트 — 오구톡 1.21.0 (versionCode 49)
+# 출시 노트 — 오구톡 1.21.0 (versionCode 50)
 
 Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전의 새로운 기능** 에 붙여넣습니다.
 한국어 기준 500자 제한. 아래 A안이 기본, 길면 B안.
@@ -16,6 +16,8 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 받은 답은 공유로 오구톡에 되돌려 할일·메모로 담을 수 있어요.
 보낸 내용은 서버에 남지 않습니다.
 
+• 홈 맨 위에서 오늘 모은 점수가 차오릅니다
+• 오늘의 도장 4개 — 뭘 하면 점수가 오르는지 한눈에
 • 홈이 짧아졌어요 — 달력과 배너를 줄였습니다
 • 약속·일정이 날짜순으로 정렬돼요. 기한 없는 일이 맨 위
 • 지난 일정은 "3일 지남" 으로 또렷하게
@@ -36,9 +38,9 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 받은 답은 공유로 되돌리면 할일·메모로 담겨요.
 보낸 내용은 서버에 남지 않습니다.
 
-이번엔 홈도 정리했어요. 달력과 배너를 줄여
-한 화면에 더 많이 담기고, 약속·일정은 날짜순으로
-정렬됩니다. 지난 일정은 "3일 지남" 으로 보여요.
+홈 맨 위에서는 오늘 모은 점수가 차오릅니다.
+도장 4개로 뭘 하면 오르는지 한눈에 보여요.
+달력과 배너도 줄여 한 화면에 더 많이 담았습니다.
 ```
 
 ---
@@ -46,7 +48,7 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 ## C안 — 한 줄 (업데이트 알림용)
 
 ```
-알람이 울릴 때 "지금 AI에 물어볼 것" 을 한 장 꺼내 드려요. 받은 답은 공유로 되돌려 할일·메모로 담깁니다.
+알람이 울릴 때 "지금 AI에 물어볼 것" 을 한 장 꺼내 드려요. 받은 답은 공유로 되돌려 할일·메모로 담깁니다. 홈 맨 위에 오늘의 도장 4개가 생겼어요.
 ```
 
 ---
@@ -62,11 +64,11 @@ question ready, filled in with today's tasks and screen
 time. Share the answer back and it lands in your notes.
 Nothing you send touches our servers.
 
+• Today's four stamps, right at the top of home
 • A shorter home screen
 • Appointments sorted by date, undated first
 • Overdue items now read "3 days past"
-• Share your Ogu Score as an image (Report → 📷)
-• A simpler alarm popup
+• Share your score as an image (Report → 📷)
 ```
 
 ---
