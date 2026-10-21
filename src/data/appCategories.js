@@ -153,6 +153,10 @@ export const BUILTIN_CATEGORY = {
   'com.dho.mobilefax':                          'work',
   'com.canva.editor':                           'create',
   'ai.x.grok':                                  'ai',
+  'com.microsoft.copilot':                      'ai',
+  'com.google.android.apps.gemini':             'ai',   // Gemini 패키지명 변경 대비
+  'ai.wrtn.app':                                'ai',   // 뤼튼
+  'com.naver.cue':                              'ai',   // 클로바X
   'classcard.net':                              'learning',
   'com.naver.labs.translator':                  'learning', // 파파고
   'com.samsung.android.messaging':              'messenger',
