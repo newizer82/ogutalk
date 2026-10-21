@@ -1,4 +1,4 @@
-# 출시 노트 — 오구톡 1.21.0 (versionCode 47)
+# 출시 노트 — 오구톡 1.21.0 (versionCode 49)
 
 Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전의 새로운 기능** 에 붙여넣습니다.
 한국어 기준 500자 제한. 아래 A안이 기본, 길면 B안.
@@ -13,6 +13,7 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 매시 59분, "지금 물어볼 것" 을 한 장 꺼내 드려요.
 누르면 폰에 깔린 AI 앱이 질문과 함께 열립니다.
 오늘 할 일과 오늘 쓴 시간이 질문에 담겨 나가요.
+받은 답은 공유로 오구톡에 되돌려 할일·메모로 담을 수 있어요.
 보낸 내용은 서버에 남지 않습니다.
 
 • 홈이 짧아졌어요 — 달력과 배너를 줄였습니다
@@ -31,7 +32,8 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 
 매시 59분, "지금 물어볼 것" 을 한 장 꺼내 드려요.
 누르면 폰에 깔린 AI 앱이 질문과 함께 열립니다.
-오늘 할 일과 쓴 시간이 질문에 담겨 나가고,
+오늘 할 일과 쓴 시간이 질문에 담겨 나갑니다.
+받은 답은 공유로 되돌리면 할일·메모로 담겨요.
 보낸 내용은 서버에 남지 않습니다.
 
 이번엔 홈도 정리했어요. 달력과 배너를 줄여
@@ -44,7 +46,7 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 ## C안 — 한 줄 (업데이트 알림용)
 
 ```
-알람이 울릴 때 "지금 AI에 물어볼 것" 을 한 장 꺼내 드려요. 홈도 더 짧고 깔끔하게 정리했습니다.
+알람이 울릴 때 "지금 AI에 물어볼 것" 을 한 장 꺼내 드려요. 받은 답은 공유로 되돌려 할일·메모로 담깁니다.
 ```
 
 ---
@@ -55,12 +57,13 @@ Play Console > 출시 > 내부 테스트(또는 프로덕션) > **이번 버전�
 🤖 Ask your AI, right from the alarm
 
 At :59 past every hour, OguTalk hands you one question
-worth asking — tap it and your AI app opens with the
+worth asking. Tap it and your AI app opens with the
 question ready, filled in with today's tasks and screen
-time. Nothing you send touches our servers.
+time. Share the answer back and it lands in your notes.
+Nothing you send touches our servers.
 
-• A shorter home screen — smaller calendar and banner
-• Appointments sorted by date, undated items first
+• A shorter home screen
+• Appointments sorted by date, undated first
 • Overdue items now read "3 days past"
 • Share your Ogu Score as an image (Report → 📷)
 • A simpler alarm popup
