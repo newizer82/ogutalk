@@ -376,6 +376,16 @@ src/data/promptCards.js(15장) + promptPick.js(순수) + lib/aiApps.js + AiAppsP
 - SharedTextModal: 고쳐서 할일(첫 줄) 또는 메모(앞 200자)로. 메모는 로그인 필요
 - firstLine 은 sharedText.js(순수) — aiApps.js 는 네이티브를 import 해서 node 로 못 돌린다
 - 측정 이벤트: shared_in, shared_saved
+
+기록을 남기면 그 시간이 성장이 된다 (sharedText.pickSlotToPromote)
+- "유튜브로 강의를 들었다" 를 성장으로 세는 방법. 좋아요·댓글은 잴 수 없다 —
+  UsageStats 는 "YouTube 가 몇 분 떠 있었다" 만 준다. 접근성 서비스나 YouTube API 를
+  붙이면 좋아요는 알 수 있지만, 1초짜리 좋아요가 1시간을 성장으로 바꾸는 구멍이 남는다.
+- 그래서 다른 걸 잰다: 남겼는가. 공유로 돌아온 글을 저장하면
+  직전 2시간 안의 힐링 슬롯 하나를 learning(성장)으로 올린다
+- 없으면 아무것도 안 한다. 한 슬롯은 한 번만 (올리고 나면 힐링이 아니라 다시 안 걸린다)
+- 실제로 바뀐 경우에만 화면에 말한다 — 안 바뀌었는데 바뀌었다고 하면 그게 거짓말이다
+- 측정 이벤트: slot_promoted
 ```
 
 ## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)

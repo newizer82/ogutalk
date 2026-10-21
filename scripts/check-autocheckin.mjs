@@ -964,3 +964,41 @@ console.log('✓ 오구 브리지 검증 통과')
   assert.equal(firstLine('짧은 줄'), '짧은 줄', '짧으면 건드리지 않는다')
 }
 console.log('✓ 돌아올 다리 검증 통과')
+
+// ── 24. 기록을 남기면 그 시간이 성장이 된다 ─────────────────────
+{
+  const { pickSlotToPromote, PROMOTE_TO, PROMOTE_WINDOW_MIN } =
+    await import('../src/lib/sharedText.js')
+  const { groupOf } = await import('../src/data/appCategories.js')
+
+  const now = new Date(2026, 9, 21, 15, 0).getTime()
+  const ago = m => new Date(now - m * 60000).toISOString()
+  const ck = (m, type) => ({ created_at: ago(m), activity_type: type })
+
+  // 올릴 분류는 성장이어야 한다 (이게 틀리면 기능 전체가 거짓말이 된다)
+  assert.equal(groupOf(PROMOTE_TO), 'produce', `${PROMOTE_TO} 가 성장이 아니다`)
+
+  // 직전 힐링 슬롯 중 가장 최근 것
+  const list = [ck(90, 'video'), ck(30, 'game'), ck(10, 'work')]
+  assert.equal(pickSlotToPromote(list, now), ago(30), '가장 최근 힐링을 골라야 한다')
+
+  // 힐링이 없으면 아무것도 올리지 않는다 — 없는 걸 만들지 않는다
+  assert.equal(pickSlotToPromote([ck(20, 'work'), ck(40, 'messenger')], now), null)
+  assert.equal(pickSlotToPromote([], now), null)
+
+  // 구간 밖은 안 본다 (어제 본 영상이 오늘 메모로 성장이 되면 안 된다)
+  assert.equal(pickSlotToPromote([ck(PROMOTE_WINDOW_MIN + 5, 'video')], now), null)
+  assert.equal(pickSlotToPromote([ck(PROMOTE_WINDOW_MIN - 5, 'video')], now), ago(PROMOTE_WINDOW_MIN - 5))
+
+  // 미래 기록은 무시 (기기 시계가 틀어졌을 때)
+  assert.equal(pickSlotToPromote([{ created_at: new Date(now + 60000).toISOString(), activity_type: 'video' }], now), null)
+  assert.equal(pickSlotToPromote([{ created_at: 'not-a-date', activity_type: 'video' }], now), null)
+
+  // 한 슬롯은 한 번만 — 올리고 나면 힐링이 아니라서 다시 안 걸린다
+  const once = [ck(30, 'video')]
+  const first = pickSlotToPromote(once, now)
+  assert.ok(first)
+  const after = once.map(c => c.created_at === first ? { ...c, activity_type: PROMOTE_TO } : c)
+  assert.equal(pickSlotToPromote(after, now), null, '같은 슬롯을 두 번 올리면 점수가 부푼다')
+}
+console.log('✓ 시간 승격 검증 통과')

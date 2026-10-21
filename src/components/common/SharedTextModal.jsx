@@ -10,11 +10,12 @@ import { firstLine } from '../../lib/sharedText'
 // 고치고 저장하게 한다 — AI 답은 길고, 내가 쓸 한 줄은 그 안 어딘가에 있다.
 const NOTE_MAX = 200   // useNotes 가 자르는 길이. 미리 보여주지 않으면 잘린 걸 나중에 안다
 
-export default function SharedTextModal({ text, isLoggedIn, onAddTodo, onAddNote, onClose }) {
+export default function SharedTextModal({ text, isLoggedIn, onAddTodo, onAddNote, onSaved, onClose }) {
   const [draft, setDraft] = useState(text ?? '')
   const [saved, setSaved] = useState(null)
+  const [promoted, setPromoted] = useState(false)   // 직전 힐링 시간이 성장으로 바뀌었는가
 
-  useEffect(() => { setDraft(text ?? ''); setSaved(null) }, [text])
+  useEffect(() => { setDraft(text ?? ''); setSaved(null); setPromoted(false) }, [text])
   useEffect(() => { if (text) logEvent('shared_in', { len: String(text).length }) }, [text])
 
   if (!text) return null
@@ -22,10 +23,13 @@ export default function SharedTextModal({ text, isLoggedIn, onAddTodo, onAddNote
   const body = draft.trim()
   const title = firstLine(body)
 
-  const done = (where) => {
+  const done = async (where) => {
     logEvent('shared_saved', { where })
     setSaved(where)
-    setTimeout(onClose, 900)   // 저장됐다는 걸 보고 닫히게
+    // 남겼으니 직전 힐링 시간을 성장으로 — 실제로 바뀐 경우에만 말한다
+    const ok = await onSaved?.()
+    if (ok) { setPromoted(true); logEvent('slot_promoted') }
+    setTimeout(onClose, ok ? 1800 : 900)   // 바뀐 걸 읽을 시간은 줘야 한다
   }
 
   const toTodo = async () => {
@@ -94,6 +98,11 @@ export default function SharedTextModal({ text, isLoggedIn, onAddTodo, onAddNote
             background: 'rgba(30,122,88,0.1)', color: '#1E7A58', fontSize: 13.5, fontWeight: 800,
           }}>
             {saved === 'todo' ? '할일에 담았어요' : '메모에 담았어요'}
+            {promoted && (
+              <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6, color: '#1E7A58' }}>
+                🌱 방금 그 시간이 성장으로 바뀌었어요
+              </div>
+            )}
           </div>
         ) : (
           <>

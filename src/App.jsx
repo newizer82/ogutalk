@@ -9,7 +9,7 @@ import { useNotes } from './hooks/useNotes'
 import { loadSettings, saveSettings, pickSettings } from './lib/settings'
 import { pullSync, pushSync } from './lib/syncPrefs'
 import { allDays, replaceAll, mergeDayLog } from './lib/dayLog'
-import { loadLocalCheckins } from './lib/checkinStore'
+import { loadLocalCheckins, updateCheckinCategory } from './lib/checkinStore'
 import { labelOf } from './data/appCategories'
 import { alarmMood, todayTotals as sumToday, pickNextTodo, pickUpcomingEvent } from './lib/alarmContext'
 import { getEvents } from './lib/calendar'
@@ -24,6 +24,7 @@ import AlarmPopup from './components/alarm/AlarmPopup'
 import { buildContext, pickPrompt } from './lib/promptPick'
 import { takeSharedText } from './lib/aiApps'
 import SharedTextModal from './components/common/SharedTextModal'
+import { pickSlotToPromote, PROMOTE_TO } from './lib/sharedText'
 import HomePage from './pages/HomePage'
 import GoalsPage from './pages/GoalsPage'
 import TodosPage from './pages/TodosPage'
@@ -806,6 +807,13 @@ export default function App() {
         isLoggedIn={!!userId}
         onAddTodo={handleAddTodo}
         onAddNote={addNote}
+        onSaved={async () => {
+          // 남겼으면 그 시간은 "그냥 본 것" 이 아니다 → 직전 힐링 슬롯 하나를 학습으로
+          const slot = pickSlotToPromote(loadLocalCheckins())
+          if (!slot) return false
+          await updateCheckinCategory([slot], PROMOTE_TO, userId)
+          return true
+        }}
         onClose={() => setSharedText('')}
       />
 
