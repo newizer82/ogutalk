@@ -424,6 +424,21 @@ console.log('✓ shortPlace 검증 통과')
   assert.ok(binge.advice.includes('힐링'), binge.advice)
   assert.ok(binge.balance.overHeal > 0)
 }
+  // 도장 — 실행 40점과 어긋나면 화면이 거짓말을 한다
+  {
+    const { STAMPS, WEIGHTS, doneScore } = await import('../src/lib/oguScore.js')
+    assert.equal(STAMPS.length, 4, '도장은 넷이다')
+    assert.equal(new Set(STAMPS.map(s => s.key)).size, 4, 'key 중복')
+    const full = doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, actedOnAlarm: true })
+    for (const st of STAMPS) {
+      assert.ok(st.key in full.parts, `${st.key} 가 doneScore 에 없다`)
+      assert.equal(WEIGHTS[st.key], 10, `${st.key} 는 10점이어야 한다`)
+      assert.ok(st.short.length <= 3, `${st.key} short 가 길다: ${st.short}`)
+    }
+    assert.equal(full.total, 40, '도장 넷을 다 찍으면 40점')
+    const none = doneScore({})
+    assert.equal(STAMPS.filter(st => none.parts[st.key]).length, 0, '아무것도 안 했으면 0개')
+  }
 console.log('✓ 오구 지수(성장·균형·실행) 검증 통과')
 
 // ── 오늘의 미션 고르기 ───────────────────────────────────────────
@@ -886,6 +901,13 @@ console.log('✓ 주간 축별 추이 검증 통과')
     assert.ok(b.sub.length <= 30, `${h}시 보조 김: ${b.sub}`)
   }
   assert.ok(!bannerFor({ now: at(21) }).title.includes('점'), '점수가 없으면 점수를 말하지 않는다')
+
+  // showsScore — 제목이 점수를 말하면 도장 줄에서 "오늘 NN" 을 또 쓰지 않는다
+  assert.equal(bannerFor({ now: at(21), score: 72 }).showsScore, true)
+  for (const h of [7, 12, 15]) {
+    assert.ok(!bannerFor({ now: at(h), score: 72 }).showsScore, `${h}시 배너가 점수를 말하면 안 된다`)
+  }
+  assert.ok(!bannerFor({ now: at(21) }).showsScore, '점수가 없으면 showsScore 도 아니다')
 
   // 네 상태 모두 제목·보조·CTA·색이 채워져 있어야 한다 (빈 배너는 자리만 먹는다)
   for (const h of [7, 12, 15, 21]) {

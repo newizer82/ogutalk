@@ -37,6 +37,20 @@ export const WEIGHTS = {
   alarmAnswer: 10,   // 알람에 한 번 이상 반응
 }
 
+/**
+ * 오늘의 도장 — 실행 40점의 얼굴.
+ * "실행 4가지 10/40" 은 읽고 계산해야 하지만, 빈 동그라미 셋은 보자마자 읽힌다.
+ * 이진 항목이라 게임화해도 정직하다 — 찍혔거나 안 찍혔거나.
+ * (성장 40점은 잰 시간이라 게임 화폐로 만들지 않는다. 점수를 벌려고 앱을 켜게 된다.)
+ * short 는 홈 배너용, label 은 리포트용.
+ */
+export const STAMPS = [
+  { key: 'missionOne',  short: '미션', label: '미션 1개' },
+  { key: 'missionAll',  short: '완주', label: '미션 완주' },
+  { key: 'todoDone',    short: '할일', label: '내 할일' },
+  { key: 'alarmAnswer', short: '알람', label: '알람 응답' },
+]
+
 export const EMPTY_AXIS_PENALTY = 7     // 비어 있는 축 하나당
 export const OVER_HEAL_PENALTY  = 10    // 힐링이 한도를 넘었을 때
 /** 축이 "있다" 고 볼 최소 시간(분) — 1분 스친 것으로 균형 점수를 주지 않는다 */

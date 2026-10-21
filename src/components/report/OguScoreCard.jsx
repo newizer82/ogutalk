@@ -1,17 +1,10 @@
 import { GROUPS, labelOf } from '../../data/appCategories'
 import { formatMinutes } from '../../lib/alarmContext'
-import { WEIGHTS, AXIS_LABEL } from '../../lib/oguScore'
+import { WEIGHTS, AXIS_LABEL, STAMPS } from '../../lib/oguScore'
 import { sharePromoImage } from '../../lib/promoShare'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
 // 성장 40 + 균형 20 + 실행 40 (v1.20.0 — 9칸 다양성은 설명해도 알 수 없어서 걷어냈다)
-const DONE_ITEMS = [
-  { key: 'missionOne',  label: '미션 1개' },
-  { key: 'missionAll',  label: '미션 완주' },
-  { key: 'todoDone',    label: '내 할일' },
-  { key: 'alarmAnswer', label: '알람 응답' },
-]
-
 const SIZE = 132, STROKE = 11
 const R = (SIZE - STROKE) / 2
 const C = 2 * Math.PI * R
@@ -122,20 +115,29 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
                 color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>✅ 실행 <span style={{ color: '#9A9AA0' }}>4가지</span></span>
-                <span>{done.total} / 40</span>
+                <span>🏅 오늘의 도장</span>
+                <span>{STAMPS.filter(it => done.parts[it.key]).length} / {STAMPS.length}</span>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {DONE_ITEMS.map(it => (
-                  <div key={it.key} style={{
-                    flex: 1, height: 6, borderRadius: 3,
-                    background: done.parts[it.key] ? GROUPS.connect.color : 'rgba(0,0,0,0.05)',
-                    transition: 'background .3s ease',
-                  }} />
-                ))}
-              </div>
-              <div style={{ color: '#9A9AA0', fontSize: 11, marginTop: 4 }}>
-                {DONE_ITEMS.filter(it => done.parts[it.key]).map(it => it.label).join(' · ') || '아직 없어요'}
+              {/* 막대 4개보다 도장 4개가 빠르다 — 빈 동그라미는 "남았다" 가 바로 읽힌다 */}
+              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                {STAMPS.map(it => {
+                  const on = !!done.parts[it.key]
+                  return (
+                    <div key={it.key} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{
+                        width: 30, height: 30, margin: '0 auto 4px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 14, fontWeight: 800, color: '#FFFFFF',
+                        background: on ? '#FF6B2C' : 'transparent',
+                        border: on ? 'none' : '1.5px dashed #D8D8DE',
+                        transition: 'background .3s ease',
+                      }}>
+                        {on ? '✓' : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: on ? '#3A3A3E' : '#9A9AA0' }}>{it.label}</div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

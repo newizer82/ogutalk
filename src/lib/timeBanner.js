@@ -19,8 +19,9 @@ export function slotOf(hour) {
 }
 
 /**
- * @returns { slot, emoji, title, sub, cta, tab, from, to }
+ * @returns { slot, emoji, title, sub, cta, tab, from, to, showsScore }
  *   tab = 눌렀을 때 갈 곳. 'home' 이면 화면 이동 없이 그 자리 강조만 한다.
+ *   showsScore = 제목이 이미 점수를 말하고 있다 → 도장 줄에서 숫자를 또 쓰지 않는다
  */
 export function bannerFor({
   now = Date.now(), byGroup = {}, goals = {},
@@ -76,7 +77,7 @@ export function bannerFor({
     if (streak > 0) parts.push(`🔥 ${streak}일 연속`)
     if (!parts.length) parts.push('내일 할 일 한 줄만 적어둘까요?')
     return { ...base, title: `오늘 오구 지수 ${score}점`, sub: parts.join(' · '),
-      cta: '리포트', tab: 'report' }
+      cta: '리포트', tab: 'report', showsScore: true }
   }
   return { ...base, title: '오늘 하루는 어땠나요?',
     sub: '기록을 보면 내일이 조금 달라져요', cta: '리포트', tab: 'report' }
