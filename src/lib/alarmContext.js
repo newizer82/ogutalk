@@ -175,6 +175,19 @@ export function todoHint(t, now = Date.now()) {
   return { high: '우선순위 높음', medium: '', low: '' }[t.priority] ?? ''
 }
 
+/**
+ * "지금 하나만" 한 줄 — 마감만 적으면 뭘 하라는 건지 알 수 없다.
+ * 약속에는 시각과 장소가 있는데 팝업이 그걸 버리고 있었다.
+ * 예: "오늘 마감 · 14시 · 강남역"
+ */
+export function todoDetail(t, now = Date.now()) {
+  if (!t) return ''
+  const parts = [todoHint(t, now)]
+  if (t.due_hour != null) parts.push(`${t.due_hour}시`)
+  if (t.place) parts.push(shortPlace(t.place))
+  return parts.filter(Boolean).join(' · ')
+}
+
 /** 분 → "3시간 10분" / "40분" */
 export function formatMinutes(min) {
   if (!min) return '0분'

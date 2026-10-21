@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import GlassCard from '../common/GlassCard'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
-import { moodHeadline, formatMinutes, todoHint, eventLine, shortPlace } from '../../lib/alarmContext'
+import { moodHeadline, formatMinutes, todoHint, todoDetail, eventLine, shortPlace } from '../../lib/alarmContext'
 import { mapUrlFor } from '../../lib/calendar'
 import { openUrl } from '../../lib/capacitor'
-import { sendToAi, resultMessage } from '../../lib/aiApps'
+import { sendToAi, resultMessage, activeAiApp } from '../../lib/aiApps'
 import { logEvent } from '../../lib/firebase'
 
 const pad = n => String(n).padStart(2, '0')
@@ -34,6 +34,9 @@ export default function AlarmPopup({
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
   const [bridge, setBridge] = useState(null)   // AI 로 건넌 결과 한 줄
+  // 버튼에 진짜 앱 이름을 쓴다 — "내 AI" 보다 "Gemini" 가 어디로 가는지 분명하다
+  const [aiName, setAiName] = useState(null)
+  useEffect(() => { activeAiApp().then(a => setAiName(a?.label ?? null)) }, [])
 
   // 제안은 언제나 하나다: 내 할일이 남아 있으면 할일, 없으면 아직 안 한 오늘의 추천 미션.
   // 집중 중에는 아무것도 들이밀지 않는다 — 59분 알람의 가장 큰 불만이 "집중을 깬다" 였다.
@@ -184,9 +187,17 @@ export default function AlarmPopup({
             </div>
           )}
 
-          {/* 오늘 누적 — "지금 1시간"만 보면 하루가 어디로 샜는지 안 보인다 */}
+          {/* 오늘 누적 — "지금 1시간"만 보면 하루가 어디로 샜는지 안 보인다.
+              라벨을 반드시 붙인다: 위 제목이 "지난 1시간" 인데 여기 7시간이 적혀 있으면
+              카드 전체가 거짓말로 읽힌다 (실기기에서 실제로 그렇게 보였다). */}
           {todayTotals?.total > 0 && (
             <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{
+                color: '#64748b', fontSize: 11, fontWeight: 800, textAlign: 'left', marginBottom: 7,
+                letterSpacing: '0.2px',
+              }}>
+                오늘 전체 · {formatMinutes(todayTotals.total)}
+              </div>
               <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', gap: 1 }}>
                 {Object.entries(GROUPS).map(([id, g]) => {
                   const w = (todayTotals.byGroup[id] / todayTotals.total) * 100
@@ -295,7 +306,7 @@ export default function AlarmPopup({
               {suggestTodo ? nextTodo.title : nextMission.text}
             </div>
             <div style={{ color: '#8b93a7', fontSize: 11, marginTop: 4 }}>
-              {suggestTodo ? (todoHint(nextTodo) || '끝내면 할일 탭에서 체크하세요') : '5분이면 돼요'}
+              {suggestTodo ? (todoDetail(nextTodo) || '끝내면 할일 탭에서 체크하세요') : '5분이면 돼요'}
             </div>
           </div>
         )}
@@ -310,7 +321,7 @@ export default function AlarmPopup({
             background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
           }}>
             <div style={{ color: '#7DD3C0', fontSize: 11, fontWeight: 800, marginBottom: 4 }}>
-              🤖 지금 AI에 물어볼 것
+              🤖 오구가 고른 질문
             </div>
             <div style={{ color: '#e8eaf0', fontSize: 14.5, fontWeight: 700, lineHeight: 1.35 }}>
               {promptCard.title}
@@ -331,7 +342,7 @@ export default function AlarmPopup({
                   color: '#9BE7D6', fontSize: 12.5, fontWeight: 800,
                 }}
               >
-                내 AI로 보내기 ›
+                {aiName ? `${aiName}로 물어보기` : 'AI에게 물어보기'} ›
               </button>
             )}
           </div>

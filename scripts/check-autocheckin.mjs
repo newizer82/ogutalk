@@ -359,6 +359,26 @@ console.log('✓ 캘린더 일정 검증 통과')
   assert.equal(shortPlace('아주아주아주아주아주아주아주긴장소이름입니다'), '아주아주아주아주아주아주아주긴장소…')
   assert.equal(shortPlace('  스타벅스 역삼점  , 서울'), '스타벅스 역삼점')
 }
+// ── todoDetail — "지금 하나만" 한 줄 ────────────────────────────
+{
+  const { todoDetail } = await import('../src/lib/alarmContext.js')
+  const today = new Date(2026, 9, 22, 12, 0)
+  const d = (y, m, dd) => `${y}-${String(m).padStart(2,'0')}-${String(dd).padStart(2,'0')}`
+
+  // 마감만 있으면 마감만
+  assert.equal(todoDetail({ due_date: d(2026,10,22) }, today.getTime()), '오늘 마감')
+  // 약속이면 시각·장소까지 — 팝업이 이걸 버리고 있었다
+  assert.equal(
+    todoDetail({ due_date: d(2026,10,22), due_hour: 14, place: '강남역' }, today.getTime()),
+    '오늘 마감 · 14시 · 강남역')
+  // 0시는 떨어뜨리지 않는다 (null 과 0 을 구분해야 한다)
+  assert.ok(todoDetail({ due_date: d(2026,10,22), due_hour: 0 }, today.getTime()).includes('0시'))
+  // 마감이 없으면 있는 것만
+  assert.equal(todoDetail({ due_hour: 9 }, today.getTime()), '9시')
+  assert.equal(todoDetail({}, today.getTime()), '')
+  assert.equal(todoDetail(null), '')
+}
+console.log('✓ todoDetail 검증 통과')
 console.log('✓ shortPlace 검증 통과')
 
 // ── 오구 지수 — 성장 40 + 균형 20 + 실행 40 ──────────────────────
