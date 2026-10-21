@@ -233,7 +233,7 @@ console.log('✓ alarmContext 검증 통과')
     getItem: k => store[k] ?? null,
     setItem: (k, v) => { store[k] = String(v) },
   }
-  const { streakDays, saveDayScore, logTodoDone, todayLog } = await import('../src/lib/dayLog.js')
+  const { streakDays, saveDayScore, logTodoDone, logAlarmAction, todayLog } = await import('../src/lib/dayLog.js')
   const day = n => Date.now() - n * 86400000
 
   // 오늘 아직 기준 미만이어도 어제까지의 연속은 유지된다
@@ -246,10 +246,17 @@ console.log('✓ alarmContext 검증 통과')
   saveDayScore(30, day(0))
   assert.equal(streakDays(60), 2, '오늘 점수가 낮으면 어제까지만 센다')
 
-  // 할일 완료는 오늘 로그에 쌓이고 알람 반응도 함께 표시된다
+  // 할일 완료는 오늘 로그에 쌓이되, 알람 응답 도장은 찍지 않는다.
+  // v1.21.0 에서 알람 팝업의 완료 버튼을 없앴다 — 그대로 두면 알람을 한 번도 안 보고
+  // 할일 하나만 끝내도 20점이 들어온다 (내 할일 10 + 알람 응답 10).
   logTodoDone(); logTodoDone()
   assert.equal(todayLog().doneCount, 2)
-  assert.equal(todayLog().actedOnAlarm, true)
+  assert.equal(todayLog().actedOnAlarm, false, '할일 완료가 알람 응답까지 찍으면 실행 40점의 절반이 한 번에 들어온다')
+
+  // 알람에 실제로 반응했을 때만 찍힌다
+  logAlarmAction()
+  assert.equal(todayLog().actedOnAlarm, true, '알람 반응은 여전히 기록돼야 한다')
+  assert.equal(todayLog().doneCount, 2, '알람 반응이 할일 수를 건드리면 안 된다')
   delete globalThis.localStorage
 }
 console.log('✓ dayLog 검증 통과')

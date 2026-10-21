@@ -79,12 +79,19 @@ export function yesterdayIncomparable(now = Date.now()) {
   return typeof rec?.score === 'number' && (rec.formula ?? 1) !== FORMULA
 }
 
-/** 할일 1건 완료 (팝업·할일 탭 공용) */
+/**
+ * 할일 1건 완료 (할일 탭·달력).
+ *
+ * actedOnAlarm 은 건드리지 않는다. 예전엔 완료 버튼이 알람 팝업 안에 있어서
+ * "할일을 완료했다 = 알람에 반응했다" 가 맞았지만, v1.21.0 에서 그 버튼을 없앴다.
+ * 그대로 두면 알람을 한 번도 안 보고 할일 하나만 끝내도 20점이 들어온다
+ * (내 할일 10 + 알람 응답 10) — 실행 40점의 절반이 한 번에.
+ */
 export function logTodoDone(now = Date.now()) {
   const map = read()
   const k = dayKey(now)
   const cur = { doneCount: 0, actedOnAlarm: false, ...map[k] }
-  map[k] = { ...cur, doneCount: cur.doneCount + 1, actedOnAlarm: true }
+  map[k] = { ...cur, doneCount: cur.doneCount + 1 }
   write(map)
 }
 
