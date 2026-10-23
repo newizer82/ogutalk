@@ -1,6 +1,6 @@
 import { GROUPS, labelOf } from '../../data/appCategories'
 import { formatMinutes } from '../../lib/alarmContext'
-import { WEIGHTS, AXIS_LABEL, STAMPS } from '../../lib/oguScore'
+import { WEIGHTS, AXIS_LABEL, CHECKS } from '../../lib/oguScore'
 import { sharePromoImage } from '../../lib/promoShare'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
@@ -113,12 +113,12 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
                 display: 'flex', justifyContent: 'space-between', fontSize: 12,
                 color: '#8E8E93', marginBottom: 3, fontVariantNumeric: 'tabular-nums',
               }}>
-                <span>🏅 오늘의 도장</span>
-                <span>{STAMPS.filter(it => done.parts[it.key]).length} / {STAMPS.length}</span>
+                <span>✅ 오늘의 체크</span>
+                <span>{CHECKS.filter(it => done.parts[it.key]).length} / {CHECKS.length}</span>
               </div>
-              {/* 막대 4개보다 도장 4개가 빠르다 — 빈 동그라미는 "남았다" 가 바로 읽힌다 */}
+              {/* 막대 4개보다 체크 4개가 빠르다 — 빈 동그라미는 "남았다" 가 바로 읽힌다 */}
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                {STAMPS.map(it => {
+                {CHECKS.map(it => {
                   const on = !!done.parts[it.key]
                   return (
                     <div key={it.key} style={{ flex: 1, textAlign: 'center' }}>

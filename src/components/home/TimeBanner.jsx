@@ -3,13 +3,13 @@ import { bannerFor } from '../../lib/timeBanner'
 import { todayTotals } from '../../lib/alarmContext'
 import { todayMissions } from '../../lib/missionStore'
 import { yesterdayScore, streakDays, todayLog } from '../../lib/dayLog'
-import { oguScore, STAMPS } from '../../lib/oguScore'
+import { oguScore, CHECKS } from '../../lib/oguScore'
 import { logEvent } from '../../lib/firebase'
 
-// 홈 맨 위 — 시간대마다 "지금 내 숫자" 를 말하고, 아래 줄에 오늘의 도장을 찍는다.
+// 홈 맨 위 — 시간대마다 "지금 내 숫자" 를 말하고, 아래 줄에 오늘의 체크을 찍는다.
 // 닫기 버튼은 두지 않는다. 닫히는 순간 이 배너의 목적(복귀 유도)이 사라진다.
 //
-// 도장을 여기 붙인 이유: 배너("지금 내 숫자")와 도장("지금 할 수 있는 것")은
+// 체크를 여기 붙인 이유: 배너("지금 내 숫자")와 체크("지금 할 수 있는 것")은
 // 같은 이야기를 하고 있었다. 따로 두면 홈이 두 번 말한다. 높이는 84 → 108px.
 //
 // 숫자는 "오구 지수 34점" 이 아니라 "오늘 34" 로 쓴다 — "점수" 라고 적는 순간
@@ -28,7 +28,7 @@ export default function TimeBanner({ checkins = [], goals = {}, lifeStage = null
     const m = todayMissions(lifeStage, now)
     const log = todayLog(now)
     const hour = new Date(now).getHours()
-    // 이제 하루 종일 계산한다 — 도장과 "오늘 NN" 이 차오르는 걸 보여줘야 하므로.
+    // 이제 하루 종일 계산한다 — 체크와 "오늘 NN" 이 차오르는 걸 보여줘야 하므로.
     // 다만 밤 배너의 제목에만 "오구 지수 NN점" 으로 쓴다 (하루를 닫는 숫자).
     const result = oguScore({
       checkins, goals, now,
@@ -107,16 +107,16 @@ export default function TimeBanner({ checkins = [], goals = {}, lifeStage = null
       </span>
       </span>
 
-      {/* 오늘의 도장 — 이진 항목이라 정직하고, 빈 칸이 "남았다" 를 바로 말한다 */}
+      {/* 오늘의 체크 — 이진 항목이라 정직하고, 빈 칸이 "남았다" 를 바로 말한다 */}
       <span style={{
         display: 'flex', alignItems: 'center', gap: 7, width: '100%',
         paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.25)',
       }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.92)', fontWeight: 700, flexShrink: 0 }}>
-          도장
+          체크
         </span>
         <span style={{ display: 'flex', gap: 5 }}>
-          {STAMPS.map(it => (
+          {CHECKS.map(it => (
             <span
               key={it.key}
               title={it.label}

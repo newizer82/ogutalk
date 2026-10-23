@@ -10,6 +10,7 @@ import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
 import NotesCard from '../components/notes/NotesCard'
 import { theme } from '../styles/theme'
+import { dateRangeLabel } from '../lib/alarmContext'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -179,14 +180,11 @@ export default function HomePage({
               }} />
               <span style={{ color: theme.text.primary, fontSize: 13, flex: 1, lineHeight: 1.4 }}>
                 <TextWithLinks text={t.title || t.text} />
-                {t.due_date && (() => {
-                  const dt = new Date(t.due_date)
-                  return (
-                    <span style={{ color: theme.text.secondary, fontWeight: 400, marginLeft: 4 }}>
-                      ({dt.getMonth() + 1}/{dt.getDate()})
-                    </span>
-                  )
-                })()}
+                {t.due_date && (
+                  <span style={{ color: theme.text.secondary, fontWeight: 400, marginLeft: 4 }}>
+                    ({dateRangeLabel(t)})
+                  </span>
+                )}
               </span>
               {t.due_date && (() => {
                 // 지난 것은 D--6 이 아니라 "6일 지남" — 마이너스 두 개는 아무 뜻도 아니다

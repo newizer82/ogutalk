@@ -249,7 +249,7 @@ console.log('✓ alarmContext 검증 통과')
   saveDayScore(30, day(0))
   assert.equal(streakDays(60), 2, '오늘 점수가 낮으면 어제까지만 센다')
 
-  // 할일 완료는 오늘 로그에 쌓이되, 알람 응답 도장은 찍지 않는다.
+  // 할일 완료는 오늘 로그에 쌓이되, 알람 응답 체크은 찍지 않는다.
   // v1.21.0 에서 알람 팝업의 완료 버튼을 없앴다 — 그대로 두면 알람을 한 번도 안 보고
   // 할일 하나만 끝내도 20점이 들어온다 (내 할일 10 + 알람 응답 10).
   logTodoDone(); logTodoDone()
@@ -382,6 +382,24 @@ console.log('✓ 캘린더 일정 검증 통과')
   assert.equal(todoDetail(null), '')
 }
 console.log('✓ todoDetail 검증 통과')
+
+// ── dateRangeLabel — 기간 일정은 끝까지 보여준다 ────────────────
+{
+  const { dateRangeLabel } = await import('../src/lib/alarmContext.js')
+  // "11번가 행사 (10/25)" 는 하루짜리로 읽힌다. 26일까지인데.
+  assert.equal(dateRangeLabel({ due_date: '2026-10-25', end_date: '2026-10-26' }), '10/25~26')
+  assert.equal(dateRangeLabel({ due_date: '2026-10-25' }), '10/25')
+  assert.equal(dateRangeLabel({ due_date: '2026-10-25', end_date: '2026-10-25' }), '10/25', '같은 날은 범위가 아니다')
+  // 달을 넘기면 월까지 쓴다
+  assert.equal(dateRangeLabel({ due_date: '2026-10-28', end_date: '2026-11-02' }), '10/28~11/2')
+  // 9월은 09 로 저장되지만 9 로 보여준다 (0 을 떼지 않으면 "09/5" 가 된다)
+  assert.equal(dateRangeLabel({ due_date: '2026-09-05', end_date: '2026-09-07' }), '9/5~7')
+  // 타임스탬프가 섞여 들어와도 날짜만 읽는다
+  assert.equal(dateRangeLabel({ due_date: '2026-10-25T00:00:00+09:00' }), '10/25')
+  assert.equal(dateRangeLabel({}), '')
+  assert.equal(dateRangeLabel(null), '')
+}
+console.log('✓ dateRangeLabel 검증 통과')
 console.log('✓ shortPlace 검증 통과')
 
 // ── 오구 지수 — 성장 40 + 균형 20 + 실행 40 ──────────────────────
@@ -447,9 +465,9 @@ console.log('✓ shortPlace 검증 통과')
   assert.ok(binge.advice.includes('힐링'), binge.advice)
   assert.ok(binge.balance.overHeal > 0)
 }
-  // 도장 — 실행 40점과 어긋나면 화면이 거짓말을 한다
+  // 체크 — 실행 40점과 어긋나면 화면이 거짓말을 한다
   {
-    const { STAMPS, WEIGHTS, doneScore } = await import('../src/lib/oguScore.js')
+    const { CHECKS, WEIGHTS, doneScore } = await import('../src/lib/oguScore.js')
     // 등급 문구 — 끝난 하루를 채점하지 않고 앞을 본다
     const { oguScore: score1 } = await import('../src/lib/oguScore.js')
     for (const pts of [0, 45, 70, 90]) {
@@ -460,17 +478,17 @@ console.log('✓ shortPlace 검증 통과')
       assert.ok(g.grade.length <= 12, `등급 문구가 길다(${g.grade.length}자): ${g.grade}`)
     }
 
-    assert.equal(STAMPS.length, 4, '도장은 넷이다')
-    assert.equal(new Set(STAMPS.map(s => s.key)).size, 4, 'key 중복')
+    assert.equal(CHECKS.length, 4, '체크는 넷이다')
+    assert.equal(new Set(CHECKS.map(s => s.key)).size, 4, 'key 중복')
     const full = doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, actedOnAlarm: true })
-    for (const st of STAMPS) {
+    for (const st of CHECKS) {
       assert.ok(st.key in full.parts, `${st.key} 가 doneScore 에 없다`)
       assert.equal(WEIGHTS[st.key], 10, `${st.key} 는 10점이어야 한다`)
       assert.ok(st.short.length <= 3, `${st.key} short 가 길다: ${st.short}`)
     }
-    assert.equal(full.total, 40, '도장 넷을 다 찍으면 40점')
+    assert.equal(full.total, 40, '체크 넷을 다 채우면 40점')
     const none = doneScore({})
-    assert.equal(STAMPS.filter(st => none.parts[st.key]).length, 0, '아무것도 안 했으면 0개')
+    assert.equal(CHECKS.filter(st => none.parts[st.key]).length, 0, '아무것도 안 했으면 0개')
   }
 console.log('✓ 오구 지수(성장·균형·실행) 검증 통과')
 
@@ -1015,7 +1033,7 @@ console.log('✓ 주간 축별 추이 검증 통과')
   }
   assert.ok(!bannerFor({ now: at(21) }).title.includes('점'), '점수가 없으면 점수를 말하지 않는다')
 
-  // showsScore — 제목이 점수를 말하면 도장 줄에서 "오늘 NN" 을 또 쓰지 않는다
+  // showsScore — 제목이 점수를 말하면 체크 줄에서 "오늘 NN" 을 또 쓰지 않는다
   assert.equal(bannerFor({ now: at(21), score: 72 }).showsScore, true)
   for (const h of [7, 12, 15]) {
     assert.ok(!bannerFor({ now: at(h), score: 72 }).showsScore, `${h}시 배너가 점수를 말하면 안 된다`)

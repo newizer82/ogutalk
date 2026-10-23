@@ -60,7 +60,7 @@ export const DEFAULT_BANNERS = [
     id: 'stamps',
     kind: 'tip',
     emoji: '🏅',
-    text: '오늘의 도장 4개를 채워보세요',
+    text: '오늘의 체크 4개를 채워보세요',
     action: { tab: 'reports' },
     sort: 30,
   },

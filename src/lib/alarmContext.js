@@ -176,6 +176,30 @@ export function todoHint(t, now = Date.now()) {
 }
 
 /**
+ * 날짜 표시 — 기간이 있으면 끝까지 보여준다 (순수).
+ * "11번가 긴급 행사 (10/25)" 는 25일 하루짜리로 읽힌다. 26일까지인데.
+ *
+ * 'YYYY-MM-DD' 는 new Date() 로 돌리지 않는다 — UTC 로 읽혀 하루가 밀린다
+ * (monthGrid 와 같은 규칙).
+ *
+ * @returns "10/25" | "10/25~26" | "10/25~11/2" | ''
+ */
+export function dateRangeLabel(t) {
+  const md = (v) => {
+    const m = String(v ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (!m) return null
+    return { m: Number(m[2]), d: Number(m[3]) }
+  }
+  const a = md(t?.due_date)
+  if (!a) return ''
+  const b = md(t?.end_date)
+  const head = `${a.m}/${a.d}`
+  if (!b || (b.m === a.m && b.d === a.d)) return head
+  // 같은 달이면 월을 두 번 쓰지 않는다 — 좁은 칸에서 글자만 늘어난다
+  return b.m === a.m ? `${head}~${b.d}` : `${head}~${b.m}/${b.d}`
+}
+
+/**
  * "지금 하나만" 한 줄 — 마감만 적으면 뭘 하라는 건지 알 수 없다.
  * 약속에는 시각과 장소가 있는데 팝업이 그걸 버리고 있었다.
  * 예: "오늘 마감 · 14시 · 강남역"

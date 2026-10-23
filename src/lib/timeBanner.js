@@ -21,7 +21,7 @@ export function slotOf(hour) {
 /**
  * @returns { slot, emoji, title, sub, cta, tab, from, to, showsScore }
  *   tab = 눌렀을 때 갈 곳. 'home' 이면 탭을 바꾸지 않고 focus 가 가리키는 카드로 간다.
- *   showsScore = 제목이 이미 점수를 말하고 있다 → 도장 줄에서 숫자를 또 쓰지 않는다
+ *   showsScore = 제목이 이미 점수를 말하고 있다 → 체크 줄에서 숫자를 또 쓰지 않는다
  */
 export function bannerFor({
   now = Date.now(), byGroup = {}, goals = {},
