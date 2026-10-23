@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+
+// TabBar.jsx 의 id 와 같아야 한다. 틀린 id 로 탭을 바꾸면 예외 없이 조용히 무시된다.
+const TAB_IDS = ['home', 'todos', 'alarms', 'reports', 'settings']
 import {
   SLOT_MS, MAX_BACKFILL_MS, floorToSlot, slotKey, buildSlots,
 } from '../src/lib/checkinSlots.js'
@@ -579,6 +582,8 @@ console.log('✓ 오늘의 미션 검증 통과')
       // 넘으면 48px 카드에서 두 줄이 되고 캐러셀 높이가 장마다 튄다.
       assert.ok(b.text && b.text.length <= 23, `${b.id} 문구가 길다(${b.text.length}자): ${b.text}`)
       assert.ok(b.action?.tab || b.action?.url, `${b.id} 에 눌렀을 때 갈 곳이 없다`)
+      // 'report' 로 적어도 조용히 아무 일도 안 일어난다 (실제 id 는 'reports')
+      if (b.action?.tab) assert.ok(TAB_IDS.includes(b.action.tab), `${b.id} 의 탭 id 가 틀렸다: ${b.action.tab}`)
       if (b.action?.url) assert.ok(b.action.url.startsWith('https://'), `${b.id} 는 https 여야 한다`)
     }
     assert.equal(new Set(DEFAULT_BANNERS.map(b => b.id)).size, DEFAULT_BANNERS.length, 'id 중복')
@@ -1006,6 +1011,17 @@ console.log('✓ 주간 축별 추이 검증 통과')
     assert.ok(!bannerFor({ now: at(h), score: 72 }).showsScore, `${h}시 배너가 점수를 말하면 안 된다`)
   }
   assert.ok(!bannerFor({ now: at(21) }).showsScore, '점수가 없으면 showsScore 도 아니다')
+
+  // 눌렀을 때 실제로 가는가 — 'report'(단수)로 적으면 조용히 아무 일도 안 일어난다.
+  // v1.21.0 에서 네 시간대 CTA 가 전부 이렇게 죽어 있었다.
+  for (const h of [7, 12, 15, 21]) {
+    for (const extra of [{}, { score: 72 }, { byGroup: { produce: 90, consume: 200 }, goals: { consumeLimit: 120 } }]) {
+      const b = bannerFor({ now: at(h), ...extra })
+      assert.ok(TAB_IDS.includes(b.tab), `${h}시 CTA 의 탭 id 가 틀렸다: ${b.tab}`)
+      // 'home' 은 같은 화면 안이라 어디로 갈지(focus)가 반드시 있어야 한다
+      if (b.tab === 'home') assert.ok(b.focus, `${h}시 CTA 가 home 인데 focus 가 없다 — 눌러도 아무 일이 없다`)
+    }
+  }
 
   // 네 상태 모두 제목·보조·CTA·색이 채워져 있어야 한다 (빈 배너는 자리만 먹는다)
   for (const h of [7, 12, 15, 21]) {

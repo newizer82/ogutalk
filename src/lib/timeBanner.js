@@ -20,7 +20,7 @@ export function slotOf(hour) {
 
 /**
  * @returns { slot, emoji, title, sub, cta, tab, from, to, showsScore }
- *   tab = 눌렀을 때 갈 곳. 'home' 이면 화면 이동 없이 그 자리 강조만 한다.
+ *   tab = 눌렀을 때 갈 곳. 'home' 이면 탭을 바꾸지 않고 focus 가 가리키는 카드로 간다.
  *   showsScore = 제목이 이미 점수를 말하고 있다 → 도장 줄에서 숫자를 또 쓰지 않는다
  */
 export function bannerFor({
@@ -39,10 +39,10 @@ export function bannerFor({
   if (slot === 'morning') {
     return produce > 0
       ? { ...base, title: `벌써 성장 ${formatMinutes(produce)}`,
-          sub: '좋은 출발이에요. 이대로 가볼까요?', cta: '오늘 보기', tab: 'report' }
+          sub: '좋은 출발이에요. 이대로 가볼까요?', cta: '오늘 보기', tab: 'reports' }
       : { ...base, title: '오늘, 세 가지만 할까요?',
           sub: missionLeft > 0 ? `5분이면 끝나는 미션 ${missionLeft}개가 기다려요` : '오늘의 추천 미션을 먼저 보세요',
-          cta: '미션 보기', tab: 'home' }
+          cta: '미션 보기', tab: 'home', focus: 'missions' }
   }
 
   if (slot === 'noon') {
@@ -53,7 +53,7 @@ export function bannerFor({
     const left = Math.max(0, target - produce)
     return { ...base, title: `오전엔 성장 ${formatMinutes(produce)}`,
       sub: left > 0 ? `점심 뒤 ${formatMinutes(left)}만 더 하면 목표예요` : '오늘 목표를 벌써 채웠어요',
-      cta: '오늘 보기', tab: 'report' }
+      cta: '오늘 보기', tab: 'reports' }
   }
 
   if (slot === 'afternoon') {
@@ -77,8 +77,8 @@ export function bannerFor({
     if (streak > 0) parts.push(`🔥 ${streak}일 연속`)
     if (!parts.length) parts.push('내일 할 일 한 줄만 적어둘까요?')
     return { ...base, title: `오늘 오구 지수 ${score}점`, sub: parts.join(' · '),
-      cta: '리포트', tab: 'report', showsScore: true }
+      cta: '리포트', tab: 'reports', showsScore: true }
   }
   return { ...base, title: '오늘 하루는 어땠나요?',
-    sub: '기록을 보면 내일이 조금 달라져요', cta: '리포트', tab: 'report' }
+    sub: '기록을 보면 내일이 조금 달라져요', cta: '리포트', tab: 'reports' }
 }

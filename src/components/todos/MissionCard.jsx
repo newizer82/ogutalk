@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AREAS } from '../../data/missions'
 import { todayMissions, completeMission, undoMission, shuffleMissions } from '../../lib/missionStore'
 import { logEvent } from '../../lib/firebase'
@@ -17,6 +17,19 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
     try { localStorage.setItem('ogu_mission_collapsed', next ? '0' : '1') } catch {}
   }
   const [state, setState] = useState(() => todayMissions(stage))
+
+  // 홈 배너의 "미션 보기" 가 부른다 — 접혀 있으면 펼치고 화면을 그리로 옮긴다.
+  // 카드가 자기 DOM 을 아는 쪽이라 여기서 처리한다 (HomePage 로 ref 를 끌어올리지 않는다)
+  const rootRef = useRef(null)
+  useEffect(() => {
+    const focus = () => {
+      setOpen(true)
+      try { localStorage.setItem('ogu_mission_collapsed', '0') } catch {}
+      rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    window.addEventListener('ogu:focus-missions', focus)
+    return () => window.removeEventListener('ogu:focus-missions', focus)
+  }, [])
 
   const refresh = () => {
     const next = todayMissions(stage)
@@ -46,7 +59,7 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
   if (!total) return null
 
   return (
-    <div style={{
+    <div ref={rootRef} style={{
       marginBottom: 14, padding: 16, borderRadius: 20,
       background: '#FFFFFF', border: '1px solid #ECECEF',
     }}>

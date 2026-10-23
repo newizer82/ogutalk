@@ -33,7 +33,7 @@ function buildBlocks(checkins = [], now = Date.now()) {
 }
 
 export default function TodayTimeHero({
-  checkins = [], nextAlarm = null, nowLabel = null, onOpenReport,
+  checkins = [], nextAlarm = null, nowLabel = null, onOpenReport, onOpenAlarms,
 }) {
   const now = Date.now()
   const { byGroup, total } = todayTotals(checkins, now)
@@ -50,12 +50,22 @@ export default function TodayTimeHero({
     <section style={{
       border: '1px solid #ECECEF', borderRadius: 24, padding: 20, marginBottom: 12,
     }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-        <div style={{ fontSize: 15, fontWeight: 900, color: '#111111' }}>오늘 내 시간</div>
-        <div style={{ fontSize: 12, color: '#9A9AA0', fontWeight: 600 }}>
+      {/* 제목줄이 리포트로 가는 문이다. 예전엔 구석의 "6시 알람" 글자만 눌렸는데,
+          알람 안내를 눌러 리포트가 열리는 건 라벨과 동작이 어긋난 것이었다 */}
+      <button
+        onClick={onOpenReport}
+        style={{
+          display: 'flex', alignItems: 'baseline', gap: 7, width: '100%',
+          border: 0, background: 'transparent', padding: 0, cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 900, color: '#111111' }}>오늘 내 시간</span>
+        <span style={{ fontSize: 12, color: '#9A9AA0', fontWeight: 600 }}>
           {total > 0 ? `${formatMinutes(total)} 기록됨` : '아직 기록이 없어요'}
-        </div>
-      </div>
+        </span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 12, color: '#C7C7CC', fontWeight: 700 }}>›</span>
+      </button>
 
       {/* 세 축이 주인공 — 성장·힐링·소통 */}
       <div style={{ marginTop: 14 }}>
@@ -125,7 +135,7 @@ export default function TodayTimeHero({
         </div>
         {nextAlarm && (
           <button
-            onClick={onOpenReport}
+            onClick={onOpenAlarms}
             style={{
               border: 0, background: 'transparent', padding: 0, cursor: 'pointer',
               fontSize: 12, color: '#9A9AA0', fontWeight: 600,

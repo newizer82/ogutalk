@@ -46,7 +46,13 @@ export default function TimeBanner({ checkins = [], goals = {}, lifeStage = null
 
   const go = () => {
     logEvent('time_banner_click', { slot: data.slot })
-    if (data.tab && data.tab !== 'home') onTabChange?.(data.tab)
+    // 같은 화면 안의 카드로 보낼 때 — 탭을 바꾸면 안 되니 그 카드에 직접 알린다.
+    // (예전엔 tab === 'home' 을 그냥 걸러내서 "미션 보기" 가 아무 일도 하지 않았다)
+    if (data.tab === 'home') {
+      if (data.focus) window.dispatchEvent(new Event(`ogu:focus-${data.focus}`))
+      return
+    }
+    if (data.tab) onTabChange?.(data.tab)
   }
 
   return (

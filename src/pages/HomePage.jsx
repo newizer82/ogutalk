@@ -91,7 +91,8 @@ export default function HomePage({
         checkins={checkins}
         nextAlarm={minutesToNextAlarm(now, alarmHours)}
         nowLabel={nowLabel}
-        onOpenReport={() => onTabChange('report')}
+        onOpenReport={() => onTabChange('reports')}
+        onOpenAlarms={() => onTabChange('alarms')}
       />
 
       {/* 배너 — 자리는 홈에 하나뿐 */}

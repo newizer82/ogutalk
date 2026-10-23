@@ -61,7 +61,7 @@ export const DEFAULT_BANNERS = [
     kind: 'tip',
     emoji: '🏅',
     text: '오늘의 도장 4개를 채워보세요',
-    action: { tab: 'report' },
+    action: { tab: 'reports' },
     sort: 30,
   },
   {
