@@ -131,3 +131,29 @@ export function gridRange(weeks) {
     new Date(`${lastKey}T23:59:59`).getTime(),
   ]
 }
+
+/**
+ * 여러 날에 걸친 일정을 띠로 그리기 위한 조각 (순수).
+ *
+ * 점만 찍으면 10/25~26 짜리가 "따로 있는 이틀" 로 보인다.
+ * 띠는 날과 날을 이어 붙여야 하루짜리와 구별된다.
+ *
+ * 하루짜리는 넣지 않는다 — 점으로 충분하고, 띠로 그리면 점과 구분이 안 된다.
+ *
+ * @returns { 'YYYY-MM-DD': { start, end } }
+ *   start/end = 그 칸이 띠의 시작/끝인가 (가운데면 둘 다 false → 양옆으로 이어진다)
+ */
+export function spanSegments(todos = []) {
+  const map = {}
+  for (const t of todos) {
+    const days = spanDays(t)
+    if (days.length < 2) continue
+    days.forEach((k, i) => {
+      const cur = map[k] ?? { start: false, end: false }
+      if (i === 0) cur.start = true
+      if (i === days.length - 1) cur.end = true
+      map[k] = cur
+    })
+  }
+  return map
+}

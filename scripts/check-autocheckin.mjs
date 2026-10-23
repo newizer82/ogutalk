@@ -351,6 +351,35 @@ console.log('✓ mergeCheckins 검증 통과')
   assert.equal(pickUpcomingEvent([], now), null)
   assert.equal(pickUpcomingEvent([{ title: '', startMs: T(15, 0), endMs: T(16, 0) }], now), null, '제목 없는 데이터는 버린다')
 }
+// ── spanSegments — 여러 날 일정을 띠로 ──────────────────────────
+{
+  const { spanSegments } = await import('../src/lib/monthGrid.js')
+
+  // 하루짜리는 띠가 아니다 — 점으로 충분하고 띠로 그리면 점과 구분이 안 된다
+  assert.deepEqual(spanSegments([{ due_date: '2026-10-31' }]), {})
+  assert.deepEqual(spanSegments([{ due_date: '2026-10-31', end_date: '2026-10-31' }]), {})
+  assert.deepEqual(spanSegments([]), {})
+
+  // 10/25~26 — 시작과 끝만 있고 가운데는 없다
+  const two = spanSegments([{ due_date: '2026-10-25', end_date: '2026-10-26' }])
+  assert.deepEqual(two['2026-10-25'], { start: true, end: false })
+  assert.deepEqual(two['2026-10-26'], { start: false, end: true })
+  assert.equal(Object.keys(two).length, 2)
+
+  // 가운데 날은 start·end 가 모두 false → 양옆으로 이어 붙는다
+  const four = spanSegments([{ due_date: '2026-10-14', end_date: '2026-10-17' }])
+  assert.deepEqual(four['2026-10-15'], { start: false, end: false })
+  assert.deepEqual(four['2026-10-16'], { start: false, end: false })
+  assert.equal(Object.keys(four).length, 4)
+
+  // 한 칸이 어떤 띠의 끝이면서 다른 띠의 시작일 수 있다
+  const touching = spanSegments([
+    { due_date: '2026-10-10', end_date: '2026-10-12' },
+    { due_date: '2026-10-12', end_date: '2026-10-14' },
+  ])
+  assert.deepEqual(touching['2026-10-12'], { start: true, end: true })
+}
+console.log('✓ spanSegments 검증 통과')
 console.log('✓ 캘린더 일정 검증 통과')
 
 // ── 장소 한 줄 줄이기 ────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getEvents } from '../../lib/calendar'
 import { dayScores } from '../../lib/dayLog'
-import { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, spanRange } from '../../lib/monthGrid'
+import { monthCells, eventsByDay, todosByDay, spanSegments, scoreTint, dateKey, gridRange, spanRange } from '../../lib/monthGrid'
 
 // 홈 하단 월간 캘린더 — 기기 일정 + 내 할일 마감 + 오구 지수를 한 장에 겹쳐 본다.
 // "이번 달 내 시간이 어땠나"를 보여주는 자리지, 일정을 관리하는 자리가 아니다
@@ -53,6 +53,8 @@ export default function MonthCalendar({
     () => (hidePeriod ? todos.filter(t => t.todo_type !== 'period') : todos),
     [todos, hidePeriod])
   const todoMap = useMemo(() => todosByDay(shownTodos), [shownTodos])
+  // 여러 날짜리는 점이 아니라 띠로 — 점만 찍으면 "따로 있는 이틀" 로 보인다
+  const segMap = useMemo(() => spanSegments(shownTodos), [shownTodos])
   // 마감일이 없으면 어느 칸에도 올라가지 못한다 → 달력이 모르는 할일이 된다
   const undated = useMemo(
     () => shownTodos.filter(t => !t.due_date && !(t.completed || t.done)),
@@ -146,6 +148,7 @@ export default function MonthCalendar({
           const dayItems = todoMap[cell.key] ?? []
           const hasTodo  = dayItems.some(t => !isPlanLike(t))
           const hasPlan  = dayItems.some(isPlanLike)
+          const seg      = segMap[cell.key]
           return (
             <button
               key={cell.key}
@@ -155,6 +158,7 @@ export default function MonthCalendar({
                 setOpen(hasEv || dayItems.length > 0)
               }}
               style={{
+                position: 'relative', overflow: 'visible',
                 height: compact ? 34 : 44, padding: 0, cursor: 'pointer', borderRadius: compact ? 9 : 11,
                 background: scoreTint(scores[cell.key]),
                 border: isPicked ? '1.5px solid #FF6B2C' : isToday ? '1.5px solid #FFD2B8' : '1.5px solid transparent',
@@ -175,8 +179,23 @@ export default function MonthCalendar({
               <span style={{ display: 'flex', gap: 3, height: 4 }}>
                 {hasEv   && <span style={{ width: 4, height: 4, borderRadius: 2, background: EVENT_DOT }} />}
                 {hasTodo && <span style={{ width: 4, height: 4, borderRadius: 2, background: TODO_DOT }} />}
-                {hasPlan && <span style={{ width: 4, height: 4, borderRadius: 2, background: PLAN_DOT }} />}
+                {/* 여러 날짜리는 아래 띠가 말해준다 → 점을 겹쳐 찍지 않는다 */}
+                {hasPlan && !seg && <span style={{ width: 4, height: 4, borderRadius: 2, background: PLAN_DOT }} />}
               </span>
+              {/* 기간 띠 — 칸 사이 간격(2px)을 넘어가 이어 붙는다.
+                  주 경계에서는 넘기지 않는다 (격자 밖으로 삐져나온다) */}
+              {seg && (
+                <span style={{
+                  position: 'absolute', bottom: compact ? 3 : 5, height: 3,
+                  background: PLAN_DOT,
+                  left:  seg.start || cell.weekday === 0 ? 4 : -2,
+                  right: seg.end   || cell.weekday === 6 ? 4 : -2,
+                  borderTopLeftRadius:    seg.start ? 2 : 0,
+                  borderBottomLeftRadius: seg.start ? 2 : 0,
+                  borderTopRightRadius:    seg.end ? 2 : 0,
+                  borderBottomRightRadius: seg.end ? 2 : 0,
+                }} />
+              )}
             </button>
           )
         })}
@@ -186,8 +205,8 @@ export default function MonthCalendar({
           compact 에서는 파란 점(기기 캘린더)이 섞일 때만 — 주황·초록은 아래 추가 버튼이 곧 설명이다 */}
       {(!compact || calendarSync) && (
       <div style={{ display: 'flex', gap: 10, marginTop: compact ? 6 : 8, fontSize: 10.5, color: '#9A9AA0' }}>
-        <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: TODO_DOT, marginRight: 3 }} />약속·마감</span>
-        <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: PLAN_DOT, marginRight: 3 }} />일정·계획</span>
+        <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: TODO_DOT, marginRight: 3 }} />약속</span>
+        <span><span style={{ display: 'inline-block', width: 10, height: 3, borderRadius: 2, background: PLAN_DOT, marginRight: 3, verticalAlign: 'middle' }} />일정(기간)</span>
         {calendarSync && <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, marginRight: 3 }} />기기 캘린더</span>}
       </div>
       )}
