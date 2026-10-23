@@ -19,7 +19,8 @@ const CACHE_KEY = 'ogu_link_title'
 const MAX_CACHE = 60
 const OK_TTL    = 30 * 24 * 3600 * 1000   // 제목은 잘 안 바뀐다
 const FAIL_TTL  = 6 * 3600 * 1000         // 실패는 짧게 — 잠깐 죽은 사이트일 수 있다
-const MAX_TITLE = 60
+// 메모 한 줄은 좁다. 60자면 세 줄을 다 먹고 내가 쓴 글이 밀려난다 (실기기 확인).
+const MAX_TITLE = 36
 const MAX_HTML  = 200_000                 // <head> 만 필요하다. 통째로 들고 있을 이유가 없다
 
 /** 주소에서 보여줄 이름 — 2차가 실패해도 이게 남는다 */
@@ -69,11 +70,18 @@ export function parseTitle(html = '') {
 
 /** 화면에 올려도 되는 모양으로 — 남의 페이지에서 온 글자다 */
 function clean(s) {
-  const t = decodeEntities(String(s))
+  let t = decodeEntities(String(s))
     .replace(/[\u0000-\u001f\u007f]/g, ' ')   // 제어문자 (줄바꿈 포함)
     .replace(/\s+/g, ' ')
     .trim()
   if (!t) return null
+
+  // 제목은 "글 제목 | 사이트" 나 "사이트의 OOO님 : 본문" 처럼 구분자로 이어붙는 일이 많다.
+  // 앞 토막이 쓸 만하면 거기서 끊는다 — 뒤는 대개 사이트 이름이거나 본문 꼬리다.
+  // 8자 미만이면 두지 않는다 ("Home | 진짜 사이트 이름" 이 "Home" 이 되면 안 된다).
+  const head = t.split(/ \| | : /)[0].trim()
+  if (head.length >= 8) t = head
+
   return t.length > MAX_TITLE ? `${t.slice(0, MAX_TITLE - 1)}…` : t
 }
 

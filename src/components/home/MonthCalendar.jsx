@@ -186,14 +186,16 @@ export default function MonthCalendar({
                   주 경계에서는 넘기지 않는다 (격자 밖으로 삐져나온다) */}
               {seg && (
                 <span style={{
-                  position: 'absolute', bottom: compact ? 3 : 5, height: 3,
+                  // 2px — 약속 점(4px)보다 가늘어야 같은 날 약속이 묻히지 않는다.
+                  // 실기기에서 3px 은 칸 아래쪽을 꽉 채워 점과 경쟁했다.
+                  position: 'absolute', bottom: compact ? 2 : 4, height: 2,
                   background: PLAN_DOT,
                   left:  seg.start || cell.weekday === 0 ? 4 : -2,
                   right: seg.end   || cell.weekday === 6 ? 4 : -2,
-                  borderTopLeftRadius:    seg.start ? 2 : 0,
-                  borderBottomLeftRadius: seg.start ? 2 : 0,
-                  borderTopRightRadius:    seg.end ? 2 : 0,
-                  borderBottomRightRadius: seg.end ? 2 : 0,
+                  borderTopLeftRadius:    seg.start ? 1 : 0,
+                  borderBottomLeftRadius: seg.start ? 1 : 0,
+                  borderTopRightRadius:    seg.end ? 1 : 0,
+                  borderBottomRightRadius: seg.end ? 1 : 0,
                 }} />
               )}
             </button>
@@ -206,7 +208,7 @@ export default function MonthCalendar({
       {(!compact || calendarSync) && (
       <div style={{ display: 'flex', gap: 10, marginTop: compact ? 6 : 8, fontSize: 10.5, color: '#9A9AA0' }}>
         <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: TODO_DOT, marginRight: 3 }} />약속</span>
-        <span><span style={{ display: 'inline-block', width: 10, height: 3, borderRadius: 2, background: PLAN_DOT, marginRight: 3, verticalAlign: 'middle' }} />일정(기간)</span>
+        <span><span style={{ display: 'inline-block', width: 10, height: 2, borderRadius: 1, background: PLAN_DOT, marginRight: 3, verticalAlign: 'middle' }} />일정(기간)</span>
         {calendarSync && <span><span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: EVENT_DOT, marginRight: 3 }} />기기 캘린더</span>}
       </div>
       )}

@@ -691,10 +691,17 @@ console.log('✓ 배너 검증 통과')
   // 남의 페이지에서 온 글자다 — 줄바꿈·제어문자가 화면을 깨면 안 된다
   assert.equal(parseTitle('<title>  두 줄\n짜리   제목  </title>'), '두 줄 짜리 제목')
   assert.equal(parseTitle('<title>   </title>'), null, '공백뿐이면 제목이 없는 것이다')
-  // 길면 자르고 자른 티를 낸다
+  // 길면 자르고 자른 티를 낸다. 60자면 메모 세 줄을 다 먹는다 (실기기 확인) → 36
   const long = parseTitle(`<title>${'가'.repeat(200)}</title>`)
-  assert.equal(long.length, 60)
+  assert.equal(long.length, 36)
   assert.ok(long.endsWith('…'))
+
+  // 구분자로 이어붙은 제목은 앞 토막만 — 뒤는 사이트 이름이거나 본문 꼬리다
+  assert.equal(parseTitle('<title>Instagram의 김현진 | 퍼스널컬러 | 향수님 : "✔"</title>'), 'Instagram의 김현진')
+  assert.equal(parseTitle('<title>Instagram의 담다 출판사님 : "2026 제5회 담다 페스티벌"</title>'), 'Instagram의 담다 출판사님')
+  // 앞 토막이 짧으면 두지 않는다 — "Home" 만 남으면 아무것도 알려주지 못한다
+  assert.equal(parseTitle('<title>Home | 트렌드코리아 연구소</title>'), 'Home | 트렌드코리아 연구소')
+  assert.equal(parseTitle('<title>윈클리니 : 네이버 스마트스토어</title>'), '윈클리니 : 네이버 스마트스토어')
 
   assert.equal(decodeEntities('A&amp;B &lt;tag&gt; &quot;q&quot; &#39;s&#39;'), `A&B <tag> "q" 's'`)
   assert.equal(decodeEntities('&unknown;'), '&unknown;', '모르는 엔티티는 건드리지 않는다')
