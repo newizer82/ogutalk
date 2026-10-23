@@ -159,7 +159,7 @@ export default function NotesCard({
                   }),
                 }}
               >
-                <TextWithLinks text={n.text} preview />
+                <TextWithLinks text={n.text} />
               </span>
               <button onClick={() => handleCopy(n)} title="복사" style={{
                 padding: '2px 6px', borderRadius: 6, border: 'none',
