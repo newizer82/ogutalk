@@ -566,6 +566,44 @@ console.log('✓ 오늘의 미션 검증 통과')
   assert.ok(pickBanners(DEFAULT_BANNERS, now).length >= 3)
   for (const d of DEFAULT_BANNERS) assert.ok(BANNER_KINDS[d.kind], `${d.id} → ${d.kind}`)
 }
+  // 실제 배너 목록 — 여섯 장이 네 칸에 어떻게 들어가는가 (v1.21.0)
+  {
+    const { DEFAULT_BANNERS, BANNER_KINDS } = await import('../src/data/banners.js')
+    const before = new Date('2026-11-01T12:00:00+09:00').getTime()
+    const sameDay = new Date('2026-11-07T20:00:00+09:00').getTime()
+    const after   = new Date('2026-11-08T09:00:00+09:00').getTime()
+
+    for (const b of DEFAULT_BANNERS) {
+      assert.ok(BANNER_KINDS[b.kind], `${b.id} 의 kind 가 없다: ${b.kind}`)
+      // 23자가 실기기에서 한 줄에 들어가는 것을 확인한 상한 (auto-record 가 그 길이다).
+      // 넘으면 48px 카드에서 두 줄이 되고 캐러셀 높이가 장마다 튄다.
+      assert.ok(b.text && b.text.length <= 23, `${b.id} 문구가 길다(${b.text.length}자): ${b.text}`)
+      assert.ok(b.action?.tab || b.action?.url, `${b.id} 에 눌렀을 때 갈 곳이 없다`)
+      if (b.action?.url) assert.ok(b.action.url.startsWith('https://'), `${b.id} 는 https 여야 한다`)
+    }
+    assert.equal(new Set(DEFAULT_BANNERS.map(b => b.id)).size, DEFAULT_BANNERS.length, 'id 중복')
+
+    // 행사 기간 — 이벤트가 맨 앞, 미션은 자리 밖으로 밀린다
+    const during = pickBanners(DEFAULT_BANNERS, before)
+    assert.equal(during.length, 4)
+    assert.equal(during[0].id, 'damda-2026', '이벤트가 맨 앞이어야 한다')
+    assert.ok(!during.some(b => b.id === 'mission'), '네 칸을 넘으면 뒤는 대기')
+
+    // 행사 당일 20시 — 아직 떠 있어야 한다 (당일까지라고 했다)
+    assert.ok(pickBanners(DEFAULT_BANNERS, sameDay).some(b => b.id === 'damda-2026'),
+      '행사 당일에 배너가 사라지면 안 된다')
+
+    // 다음 날 — 사라지고 뒤에 있던 것이 올라온다
+    const later = pickBanners(DEFAULT_BANNERS, after)
+    assert.ok(!later.some(b => b.id === 'damda-2026'), '지난 행사가 홈에 남으면 안 된다')
+    assert.ok(later.some(b => b.id === 'stamps'), '빈자리를 뒤에 있던 배너가 채워야 한다')
+    assert.equal(later[0].id, 'ai-bridge')
+
+    // 윈클리니는 상시 — 둘 다에 있어야 한다
+    for (const [when, list] of [['행사중', during], ['이후', later]]) {
+      assert.ok(list.some(b => b.id === 'wincleany'), `${when} 에 윈클리니가 빠졌다`)
+    }
+  }
 console.log('✓ 배너 검증 통과')
 
 // ── 월간 캘린더 격자 ─────────────────────────────────────────────

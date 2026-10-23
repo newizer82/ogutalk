@@ -134,7 +134,7 @@ export default function BannerCarousel({ onTabChange }) {
                 color: isEvent ? '#FFFFFF' : '#111111',
               }}>
                 {/* 태그는 공지·카드뉴스에만. 본문과 같은 줄에 둬서 카드 높이를 건드리지 않는다 */}
-                {(b.kind === 'notice' || b.kind === 'news') && (
+                {(b.kind === 'notice' || b.kind === 'news' || b.kind === 'store') && (
                   <span style={{
                     fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 4, marginRight: 5,
                     background: kind.tagBg, color: kind.tagText, whiteSpace: 'nowrap',

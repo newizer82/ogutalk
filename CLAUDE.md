@@ -332,7 +332,11 @@ src/data/missions.js (60개) + missionPick.js(순수) + missionStore.js(localSto
 ```
 src/data/banners.js(내장 기본) + bannerPick.js(순수) + BannerCarousel.jsx
 - 자리는 홈에 하나뿐 — 알람 앱의 홈이 광고판이 되면 "지금 하나만"이 가려진다
-- 외부 광고는 넣지 않는다 (AdMob 배너와 별개. 이 자리는 오구톡 자체 소식 전용)
+- 받아온 광고는 넣지 않는다 (AdMob 배너와 별개). 우리가 만든 것 + 우리가 운영하는 서비스만.
+  돈 받고 남의 상품을 올리기 시작하면 알람 앱의 홈이 광고판이 되고 "지금 하나만" 이 가려진다
+- kind 5종: notice · news · event · tip · store(우리 서비스, v1.21.0). 태그는 notice·news·store 만 보인다
+  (사용법 배너가 셋이 다 "사용법" 태그를 달고 있어서 알려주는 게 없었다)
+- 내장 6장이 네 칸에 들어간다 — sort 로 줄 세우고 뒤는 대기. 행사가 끝나면 자동으로 빈자리가 채워진다
 - 최대 4장, 이벤트는 동시에 한 장만, ends_at 지나면 자동 소멸
 - Supabase banners 테이블 → 실패/미생성 시 DEFAULT_BANNERS 로 폴백 (홈이 비지 않게)
 - 자동 전환 5초, 터치 중 정지, prefers-reduced-motion 이면 정지
