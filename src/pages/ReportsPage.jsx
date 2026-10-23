@@ -8,7 +8,7 @@ import OguScoreCard from '../components/report/OguScoreCard'
 import { oguScore, AXES, AXIS_LABEL } from '../lib/oguScore'
 import { axisMinutesByDay, formatMinutes } from '../lib/alarmContext'
 import ScoreBasisModal from '../components/report/ScoreBasisModal'
-import { todayLog, yesterdayScore, yesterdayIncomparable, streakDays, saveDayScore } from '../lib/dayLog'
+import { todayLog, yesterdayScore, streakDays, saveDayScore } from '../lib/dayLog'
 import { todayMissions } from '../lib/missionStore'
 
 const pad = n => String(n).padStart(2, '0')
@@ -39,7 +39,6 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
   }, [checkins, autoCheckin, goals, lifeStage])
   const prevScore = useMemo(() => yesterdayScore(), [])
   // 어제 점수는 있는데 공식이 바뀌어 비교할 수 없는 경우 — 이유를 알려준다
-  const formulaChanged = useMemo(() => yesterdayIncomparable(), [])
   const streak    = useMemo(() => streakDays(), [score.score])
 
   const handleGenerate = async () => {
@@ -52,7 +51,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
   if (!userId) {
     return (
       <div>
-        <OguScoreCard result={score} yesterday={prevScore} formulaChanged={formulaChanged} streak={streak} onOpenApps={() => setBasisOpen(true)} />
+        <OguScoreCard result={score} yesterday={prevScore} streak={streak} onOpenApps={() => setBasisOpen(true)} />
         <CheckinReport
           checkins={checkins}
           todayCheckins={todayCheckins}
@@ -83,7 +82,7 @@ export default function ReportsPage({ userId, autoCheckin = false, goals, lifeSt
   return (
     <div>
       {/* ── 오구 체크인 리포트 ── */}
-      <OguScoreCard result={score} yesterday={prevScore} formulaChanged={formulaChanged} streak={streak} onOpenApps={() => setBasisOpen(true)} />
+      <OguScoreCard result={score} yesterday={prevScore} streak={streak} onOpenApps={() => setBasisOpen(true)} />
       <CheckinReport
         checkins={checkins}
         todayCheckins={todayCheckins}

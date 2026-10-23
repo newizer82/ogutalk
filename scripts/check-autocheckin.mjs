@@ -450,6 +450,16 @@ console.log('✓ shortPlace 검증 통과')
   // 도장 — 실행 40점과 어긋나면 화면이 거짓말을 한다
   {
     const { STAMPS, WEIGHTS, doneScore } = await import('../src/lib/oguScore.js')
+    // 등급 문구 — 끝난 하루를 채점하지 않고 앞을 본다
+    const { oguScore: score1 } = await import('../src/lib/oguScore.js')
+    for (const pts of [0, 45, 70, 90]) {
+      const g = score1({ checkins: [], missionDone: pts >= 70 ? 3 : 0,
+        todoDone: pts >= 45 ? 1 : 0, actedOnAlarm: pts >= 90 })
+      assert.ok(!/었어요|았어요|웠어요/.test(g.grade), `과거형 평가 문구: ${g.grade}`)
+      assert.notEqual(g.color, '#D23B2E', `점수가 낮다고 경고색을 쓰면 꾸짖는 화면이 된다: ${g.grade}`)
+      assert.ok(g.grade.length <= 12, `등급 문구가 길다(${g.grade.length}자): ${g.grade}`)
+    }
+
     assert.equal(STAMPS.length, 4, '도장은 넷이다')
     assert.equal(new Set(STAMPS.map(s => s.key)).size, 4, 'key 중복')
     const full = doneScore({ missionDone: 3, missionTotal: 3, todoDone: 1, actedOnAlarm: true })

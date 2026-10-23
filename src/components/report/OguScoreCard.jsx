@@ -5,11 +5,14 @@ import { sharePromoImage } from '../../lib/promoShare'
 
 // 점수를 숫자 하나로만 주면 "왜 이 점수인지" 를 모른다 → 세 칸을 항상 함께 보여준다.
 // 성장 40 + 균형 20 + 실행 40 (v1.20.0 — 9칸 다양성은 설명해도 알 수 없어서 걷어냈다)
-const SIZE = 132, STROKE = 11
+// 360px 폰(화면 배율을 올리면 1080px 기기도 360 CSS px 가 된다)에서도
+// 링과 글이 한 줄에 들어가야 한다. 132 였을 때는 411px 에서 334/333 으로 간신히 맞아
+// 조금만 좁아져도 줄이 갈라졌다. 112 + gap 12 + minWidth 150 = 274 로 여유를 둔다.
+const SIZE = 112, STROKE = 10
 const R = (SIZE - STROKE) / 2
 const C = 2 * Math.PI * R
 
-export default function OguScoreCard({ result, yesterday = null, formulaChanged = false, streak = 0, onOpenApps }) {
+export default function OguScoreCard({ result, yesterday = null, streak = 0, onOpenApps }) {
   if (!result) return null
   const { score, produce, balance, done, grade, color, advice, byGroup, measured, measuredMinutes } = result
   const diff = yesterday === null ? null : score - yesterday
@@ -20,7 +23,7 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
       border: '1px solid #ECECEF',
       borderRadius: 20, padding: 20, marginBottom: 16,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         {/* 점수 링 */}
         <div style={{ position: 'relative', width: SIZE, height: SIZE, flexShrink: 0 }}>
           <svg width={SIZE} height={SIZE} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
@@ -35,7 +38,7 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
             position: 'absolute', inset: 0, display: 'flex',
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
-            <div style={{ fontSize: 38, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontSize: 34, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {score}
             </div>
             <div style={{ fontSize: 11, color: '#8E8E93', marginTop: 2 }}>오구 지수</div>
@@ -43,9 +46,9 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
         </div>
 
         {/* 등급 · 어제 대비 · 세 칸 */}
-        <div style={{ flex: 1, minWidth: 180 }}>
+        <div style={{ flex: 1, minWidth: 150 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#111111' }}>{grade}</span>
+            <span style={{ fontSize: 15.5, fontWeight: 800, color: '#111111', wordBreak: 'keep-all' }}>{grade}</span>
             {streak >= 2 && (
               <span style={{
                 fontSize: 12, fontWeight: 800, color: '#B4740F',
@@ -57,11 +60,6 @@ export default function OguScoreCard({ result, yesterday = null, formulaChanged 
             {diff !== null && (
               <span style={{ fontSize: 13, fontWeight: 700, color: diff >= 0 ? '#1E7A58' : '#D23B2E' }}>
                 어제보다 {diff >= 0 ? '▲' : '▼'}{Math.abs(diff)}
-              </span>
-            )}
-            {diff === null && formulaChanged && (
-              <span style={{ fontSize: 11.5, color: '#9A9AA0' }}>
-                점수 기준이 바뀌어 어제와 비교하지 않아요
               </span>
             )}
           </div>

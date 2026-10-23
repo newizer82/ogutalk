@@ -786,7 +786,13 @@ export default function App() {
       {showAlarmPopup && alarmContent && (
         <AlarmPopup
           alarmContent={alarmContent}
-          onClose={() => { closeAlarmPopup(); setActiveTab('home') }}
+          onClose={() => {
+            // 자동 기록을 켜면 팝업에 고를 버튼이 없다 → onCheckin 이 영영 안 불린다.
+            // 그대로 두면 자동 기록 사용자는 "알람 응답" 10점을 평생 못 받는다.
+            // closeAlarmPopup 은 닫기·뒤로가기(사용자 동작)에서만 불리므로 세어도 안전하다.
+            logAlarmAction()
+            closeAlarmPopup(); setActiveTab('home')
+          }}
           onCheckin={(a) => { logAlarmAction(); return saveCheckin(a) }}
           autoSummary={autoCheckin ? lastHourSummary : null}
           autoMode={autoCheckinMode}

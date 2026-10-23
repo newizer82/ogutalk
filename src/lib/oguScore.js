@@ -103,11 +103,14 @@ export function doneScore({
   return { total: Object.values(parts).reduce((a, b) => a + b, 0), parts }
 }
 
+// 점수 옆 한 줄. 끝난 하루를 채점하지 않고 지금 할 수 있는 것을 권한다.
+// "반반이었어요" 는 평가라 아무것도 바꾸지 못하고, 낮은 날엔 앱을 닫게 만든다.
+// 색도 빨강을 쓰지 않는다 — 점수가 낮은 날에 경고색을 띄우면 꾸짖는 화면이 된다.
 const GRADES = [
-  { min: 80, label: '오늘 잘 썼어요',        color: '#1E7A58' },
-  { min: 60, label: '괜찮은 하루였어요',     color: '#D9531B' },
-  { min: 40, label: '반반이었어요',          color: '#B4740F' },
-  { min: 0,  label: '오늘은 쉬어간 날이에요', color: '#D23B2E' },
+  { min: 80, label: '이대로 가요',          color: '#1E7A58' },
+  { min: 60, label: '한 칸 더 올려볼까요',   color: '#1E7A58' },
+  { min: 40, label: '한 가지만 더 해볼까요', color: '#D9531B' },
+  { min: 0,  label: '지금 하나만 해볼까요',  color: '#D9531B' },
 ]
 
 export function oguScore({
