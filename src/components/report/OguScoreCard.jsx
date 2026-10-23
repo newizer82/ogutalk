@@ -132,7 +132,12 @@ export default function OguScoreCard({ result, yesterday = null, streak = 0, onO
                       }}>
                         {on ? '✓' : ''}
                       </div>
-                      <div style={{ fontSize: 11, color: on ? '#3A3A3E' : '#9A9AA0' }}>{it.label}</div>
+                      {/* 네 칸을 나눠 쓰므로 한 칸이 47px 남짓이다. "알람 응답" 은 거기서
+                          "알람 응 / 답" 으로 쪼개진다 → 짧은 이름을 쓰고 전체는 title 로 */}
+                      <div title={it.label} style={{
+                        fontSize: 11, color: on ? '#3A3A3E' : '#9A9AA0',
+                        whiteSpace: 'nowrap', wordBreak: 'keep-all',
+                      }}>{it.short}</div>
                     </div>
                   )
                 })}

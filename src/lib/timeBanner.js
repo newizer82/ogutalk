@@ -39,9 +39,9 @@ export function bannerFor({
   if (slot === 'morning') {
     return produce > 0
       ? { ...base, title: `벌써 성장 ${formatMinutes(produce)}`,
-          sub: '좋은 출발이에요. 이대로 가볼까요?', cta: '오늘 보기', tab: 'reports' }
+          sub: '좋은 출발이에요. 이대로!', cta: '오늘 보기', tab: 'reports' }
       : { ...base, title: '오늘, 세 가지만 할까요?',
-          sub: missionLeft > 0 ? `5분이면 끝나는 미션 ${missionLeft}개가 기다려요` : '오늘의 추천 미션을 먼저 보세요',
+          sub: missionLeft > 0 ? `5분이면 되는 미션 ${missionLeft}개` : '오늘의 추천 미션부터 보세요',
           cta: '미션 보기', tab: 'home', focus: 'missions' }
   }
 
@@ -52,7 +52,7 @@ export function bannerFor({
     }
     const left = Math.max(0, target - produce)
     return { ...base, title: `오전엔 성장 ${formatMinutes(produce)}`,
-      sub: left > 0 ? `점심 뒤 ${formatMinutes(left)}만 더 하면 목표예요` : '오늘 목표를 벌써 채웠어요',
+      sub: left > 0 ? `목표까지 ${formatMinutes(left)}` : '오늘 목표를 벌써 채웠어요',
       cta: '오늘 보기', tab: 'reports' }
   }
 
@@ -63,8 +63,8 @@ export function bannerFor({
         sub: '10분만 성장으로 돌려볼까요?', cta: '지금 하나만', tab: 'todos' }
     }
     return { ...base, title: '오후 한 칸 남았어요',
-      sub: produce > 0 ? `지금까지 성장 ${formatMinutes(produce)}. 제일 잘 되는 시간이에요`
-                       : '지금이 제일 잘 되는 시간이에요',
+      sub: produce > 0 ? `지금까지 성장 ${formatMinutes(produce)}`
+                       : '지금이 제일 잘 되는 시간',
       cta: '할일 보기', tab: 'todos' }
   }
 

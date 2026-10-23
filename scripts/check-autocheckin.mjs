@@ -1058,7 +1058,9 @@ console.log('✓ 주간 축별 추이 검증 통과')
     const b = bannerFor({ now: at(h), byGroup: { produce: 90, consume: 150 },
       goals: { produceTarget: 120, consumeLimit: 120 }, score: 72, yesterday: 64, streak: 3 })
     assert.ok(b.title.length <= 18, `${h}시 제목 김: ${b.title}`)
-    assert.ok(b.sub.length <= 30, `${h}시 보조 김: ${b.sub}`)
+    // 실기기(SM-S936N, 밀도 450 = 384 CSS px)에서 보조문구 자리는 206px.
+    // 11.5px 한글이면 18자가 한계다 — 넘으면 "제일 잘 되..." 로 잘린다.
+    assert.ok(b.sub.length <= 18, `${h}시 보조 김(${b.sub.length}자): ${b.sub}`)
   }
   assert.ok(!bannerFor({ now: at(21) }).title.includes('점'), '점수가 없으면 점수를 말하지 않는다')
 
