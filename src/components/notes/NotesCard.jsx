@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import TextWithLinks from '../common/TextWithLinks'
 import { theme } from '../../styles/theme'
-import { NOTES_MAX } from '../../hooks/useNotes'
+import { NOTES_MAX, NOTE_LEN_MAX } from '../../hooks/useNotes'
 
 // 클립보드 복사 (웹·네이티브 공통)
 async function copyToClipboard(text) {
@@ -19,6 +19,9 @@ const cardStyle = {
   marginBottom: 14,
 }
 
+/** 3줄을 넘길 만한가 — 접기 안내를 보여줄지 정한다 (대략이면 충분하다) */
+const isLong = (t = '') => String(t).length > 90
+
 export default function NotesCard({
   isLoggedIn,
   notes = [],
@@ -28,6 +31,7 @@ export default function NotesCard({
 }) {
   const [input, setInput]     = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [openId, setOpenId] = useState(null)   // 펼친 메모 (한 번에 하나)
   const [copiedId, setCopiedId] = useState(null)
 
   // 비로그인 안내
@@ -96,8 +100,8 @@ export default function NotesCard({
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="링크 or 짧은 메모 (최대 200자)"
-            maxLength={200}
+            placeholder={`링크 or 메모 (최대 ${NOTE_LEN_MAX}자)`}
+            maxLength={NOTE_LEN_MAX}
             rows={2}
             autoFocus
             style={{
@@ -142,11 +146,20 @@ export default function NotesCard({
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 0',
               borderBottom: i < notes.length - 1 ? '1px solid rgba(0,0,0,0.025)' : 'none',
             }}>
-              <span style={{
-                flex: 1, color: theme.text.primary, fontSize: 13, lineHeight: 1.5,
-                wordBreak: 'break-all',
-              }}>
-                <TextWithLinks text={n.text} />
+              {/* 600자 메모 아홉 개가 통째로 펼쳐지면 홈이 메모장이 된다 → 3줄로 접는다.
+                  "더보기" 버튼을 따로 두지 않고 글 자체를 누르게 한다 (누를 곳이 둘이면 헷갈린다) */}
+              <span
+                onClick={() => setOpenId(openId === n.id ? null : n.id)}
+                style={{
+                  flex: 1, minWidth: 0, color: theme.text.primary, fontSize: 13, lineHeight: 1.5,
+                  wordBreak: 'break-word', cursor: isLong(n.text) ? 'pointer' : 'default',
+                  ...(openId === n.id ? {} : {
+                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }),
+                }}
+              >
+                <TextWithLinks text={n.text} preview />
               </span>
               <button onClick={() => handleCopy(n)} title="복사" style={{
                 padding: '2px 6px', borderRadius: 6, border: 'none',

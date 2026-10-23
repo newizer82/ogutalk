@@ -49,8 +49,10 @@ export const DEFAULT_BANNERS = [
   {
     id: 'auto-record',
     kind: 'tip',
-    emoji: '📊',
-    text: '내 하루의 성장과 힐링, 자동으로 재드려요',
+    emoji: '⏱️',
+    // 기능 설명("자동으로 재드려요")이 아니라 그 기능이 주는 것을 말한다.
+    // 알람이 오구 지수로 쌓인다 — 이 앱이 하는 일 전체가 한 줄이다
+    text: '59분 알람이 쌓여 오구 지수가 돼요',
     action: { tab: 'settings' },
     sort: 20,
   },

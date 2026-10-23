@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { logEvent } from '../../lib/firebase'
 import { firstLine } from '../../lib/sharedText'
+import { NOTE_LEN_MAX as NOTE_MAX } from '../../hooks/useNotes'
 
 // 돌아올 다리 — 다른 앱(주로 AI)에서 공유로 넘어온 글을 할일·메모로 꽂는다.
 //
@@ -8,7 +9,7 @@ import { firstLine } from '../../lib/sharedText'
 // 매시간 깨달은 것이 증발한다. 이 모달이 그 "어딘가" 로 가는 유일한 길이다.
 //
 // 고치고 저장하게 한다 — AI 답은 길고, 내가 쓸 한 줄은 그 안 어딘가에 있다.
-const NOTE_MAX = 200   // useNotes 가 자르는 길이. 미리 보여주지 않으면 잘린 걸 나중에 안다
+// 미리 보여주지 않으면 잘린 걸 나중에 안다
 
 export default function SharedTextModal({ text, isLoggedIn, onAddTodo, onAddNote, onSaved, onClose }) {
   const [draft, setDraft] = useState(text ?? '')

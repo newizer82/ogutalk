@@ -606,6 +606,46 @@ console.log('✓ 오늘의 미션 검증 통과')
   }
 console.log('✓ 배너 검증 통과')
 
+// ── 26. 링크 미리보기 — 주소 대신 읽을 수 있는 이름 ─────────────
+{
+  const { hostOf, parseTitle, decodeEntities, isFresh } = await import('../src/lib/linkPreview.js')
+
+  // 호스트 — 2차(제목 가져오기)가 실패해도 이게 남는다
+  assert.equal(hostOf('https://smartstore.naver.com/wincleany?NaPm=ct%3Dx'), 'smartstore.naver.com')
+  assert.equal(hostOf('www.instagram.com/p/abc/'), 'instagram.com', 'www. 는 떼고 보여준다')
+  assert.equal(hostOf('http://example.com'), 'example.com')
+  assert.equal(hostOf(''), '')
+
+  // og:title 이 <title> 보다 먼저 — <title> 에는 "- 사이트명" 꼬리가 붙는다
+  assert.equal(
+    parseTitle('<title>글 제목 - 네이버 블로그</title><meta property="og:title" content="글 제목">'),
+    '글 제목')
+  // content 가 property 앞에 오는 경우도 있다
+  assert.equal(parseTitle('<meta content="뒤집힌 순서" property="og:title">'), '뒤집힌 순서')
+  assert.equal(parseTitle('<title>그냥 제목</title>'), '그냥 제목')
+  assert.equal(parseTitle('<html><body>제목 없음</body></html>'), null)
+  assert.equal(parseTitle(''), null)
+
+  // 남의 페이지에서 온 글자다 — 줄바꿈·제어문자가 화면을 깨면 안 된다
+  assert.equal(parseTitle('<title>  두 줄\n짜리   제목  </title>'), '두 줄 짜리 제목')
+  assert.equal(parseTitle('<title>   </title>'), null, '공백뿐이면 제목이 없는 것이다')
+  // 길면 자르고 자른 티를 낸다
+  const long = parseTitle(`<title>${'가'.repeat(200)}</title>`)
+  assert.equal(long.length, 60)
+  assert.ok(long.endsWith('…'))
+
+  assert.equal(decodeEntities('A&amp;B &lt;tag&gt; &quot;q&quot; &#39;s&#39;'), `A&B <tag> "q" 's'`)
+  assert.equal(decodeEntities('&unknown;'), '&unknown;', '모르는 엔티티는 건드리지 않는다')
+
+  // 캐시 — 실패는 짧게 기억한다 (잠깐 죽은 사이트일 수 있다)
+  const now = Date.now()
+  assert.equal(isFresh(null, now), false)
+  assert.equal(isFresh({ title: '있음', at: now - 24 * 3600 * 1000 }, now), true)
+  assert.equal(isFresh({ title: null,  at: now - 24 * 3600 * 1000 }, now), false, '실패는 6시간')
+  assert.equal(isFresh({ title: null,  at: now - 3600 * 1000 }, now), true)
+}
+console.log('✓ 링크 미리보기 검증 통과')
+
 // ── 월간 캘린더 격자 ─────────────────────────────────────────────
 {
   const { monthCells, eventsByDay, todosByDay, scoreTint, dateKey, gridRange, dedupeEvents }

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 export const NOTES_MAX = 9
+/** 메모 한 건의 글자 수 상한. DB 컬럼은 text 라 제한이 없고, 이 숫자가 유일한 기준이다 */
+export const NOTE_LEN_MAX = 600
 
 export function useNotes(userId = null) {
   const [notes, setNotes] = useState([])
@@ -25,7 +27,7 @@ export function useNotes(userId = null) {
 
   const addNote = useCallback(async (text) => {
     if (!userId || !text?.trim()) return
-    const trimmed = text.trim().slice(0, 200)
+    const trimmed = text.trim().slice(0, NOTE_LEN_MAX)
 
     // 9개 이상이면 가장 오래된 것 삭제 (auto-prune)
     if (notes.length >= NOTES_MAX) {
