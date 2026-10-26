@@ -1,493 +1,214 @@
-# 오구톡 (OguTalk) — Claude Code 프로젝트 컨텍스트
+# 오구톡 (OguTalk) — 규칙 메모
 
-> ⚡ Claude Code가 이 파일을 자동으로 읽습니다.
-> 프로젝트 폴더 최상단(ogutalk/)에 반드시 두세요.
+> **이 파일의 규칙: 규칙만 담는다.**
 >
-> 마지막 업데이트: 2026-10-10 (v1.16.0 — 홈 월간 캘린더, 인스타 홍보 이미지)
+> 코드를 읽으면 알 수 있는 것(파일 개수, 디렉터리 트리, 기능이 무엇을 하는지)은 적지 않는다.
+> 적는 순간 낡기 시작하고, 틀린 목록은 없는 목록보다 나쁘다.
+> 여기 남는 것은 **코드를 다 읽어도 알 수 없는 것** — 왜 그렇게 했는지, 무엇을 건드리면 안 되는지.
+>
+> 새 규칙을 추가할 때: 해당 기능 섹션에 3줄 이내로. 기능 설명은 쓰지 않는다.
+>
+> 기준: v1.21.0 (versionCode 55)
+
+**매시 59분**에 짧은 "오구" 소리로 알림을 울려 시간 감각을 되찾게 하는 안드로이드 앱.
+React + Vite 정적 번들을 Capacitor WebView 에 넣고, 서버는 Supabase(PostgreSQL · Auth · RLS · Edge Functions).
 
 ---
 
-## 🎯 프로젝트 개요
+## 🔎 어디를 보면 되나
 
-**앱 이름**: 오구톡 (OguTalk)
-**핵심 콘셉트**: 매시 **59분**에 짧은 "오구" 사운드와 함께 알림을 울려 시간 감각을 되찾게 해주는 앱
-**타겟**: 스마트폰 사용 중에 시간 가는 줄 모르는 사람들
-**수익 모델**: 프리미엄 구독 (월 2,900원) + 광고
+| 알고 싶은 것 | 볼 곳 |
+|---|---|
+| DB 스키마·RLS | `supabase/migrations/` |
+| 설정 값과 기본값 | `src/lib/settings.js` (`DEFAULT_SETTINGS`) |
+| 앱 → 활동 분류표 | `src/data/appCategories.js` |
+| 네이티브 기능 | `android/app/src/main/java/com/ogutalk/app/*Plugin.java` |
+| 순수 로직 검증 | `scripts/check-autocheckin.mjs` (node 로 바로 실행) |
+| 릴리즈 빌드 | `scripts/release-build.mjs` (순서를 강제한다 — 직접 gradle 돌리지 말 것) |
+| 변경 이력 | `CHANGELOG.md` |
 
----
+**DB 테이블** (이름만 — 자세한 건 마이그레이션에서):
+`todos` · `goals` · `custom_alarms` · `notification_log`(체크인) · `notes` · `banners` ·
+`alarm_settings` · `economic_tips` · `weekly_reports` · `fcm_tokens` · `push_subscriptions` ·
+`user_sync`(기기 간 동기화) · `profiles` · `user_preferences`
 
-## 📊 현재 진행 상태 (2026-04-28)
-
-```
-✅ Day 1   개발 환경 + Supabase DB + 인증 (2026-04-14)
-✅ Day 2~7 React + PWA + Supabase 연동, 핵심 기능 구현
-✅ 추가    Capacitor 안드로이드 빌드, 카카오 로그인
-✅ 추가    커스텀 알람, 주간 리포트(템플릿), 백그라운드 알림
-✅ 추가    자동 활동 기록 (UsageStats, 30분 슬롯, 기본 OFF) — v1.7.0
-🟡 정리    몰입시간 알람 / 키워드 탭 / 죽은 코드 1차 정리 완료
-⏳ 다음    LoginModal 분리, SettingsPage 분할, DB 정리
-```
-
-### 최근 정리 작업 (2026-04-28 세션)
-
-```
-1단계  몰입시간 알람 기능 통째 제거           -377줄
-2단계  키워드 탭 통째 제거                    -1,681줄
-3단계  홈 화면 슬림화 (스탯·빠른이동 제거)    -48줄
-4단계  죽은 코드 17개 + voice 잔재 정리       -1,372줄
-─────────────────────────────────────────────────────
-원본 4,824줄 → 현재 3,501줄 (-27%)
-파일 50개 → 33개, 탭 5개 → 4개, 훅 14개 → 8개
-```
+**localStorage** 는 전부 `ogu_` 접두사. 설정은 `ogu_settings` 하나로 통합돼 있다
+(옛 개별 키에서 마이그레이션하는 코드가 settings.js 안에 있다).
 
 ---
 
-## 🛠️ 기술 스택
+## 🎨 디자인 규칙
 
-```
-프런트엔드:  React + Vite (PWA)
-모바일 빌드: Capacitor (Android)
-백엔드:      Supabase (PostgreSQL, Auth, RLS)
-인증:        이메일/비번 + 카카오 OAuth
-배포:        Vercel (웹) / Capacitor (안드로이드 APK)
-스타일:      인라인 CSS + theme.js 디자인 토큰
-사운드:      Web Audio API (오실레이터로 직접 생성)
-알림:        브라우저 Notification API + Capacitor Local Notifications
-네이티브 플러그인: 커스텀 Capacitor 플러그인 (AudioFocus, UsageStats)
-```
-
-추후 연동 예정:
-- Firebase FCM (원격 푸시)
-- RevenueCat (결제)
+- 화이트 테마 **고정**. 다크 모드 미지원.
+- **알람 팝업(`AlarmPopup.jsx`)만 어두운 배경을 유지한다.** 밤 알람에 화면이 번쩍하면 안 된다.
+  일괄 색 변환에서 이 파일은 **반드시 제외**할 것.
+- 앱 최대 너비 420px, 모바일 우선. 다만 **실기기는 384px 일 수 있다**(화면 밀도를 올리면).
+  좁은 폭에서 깨지는지 보지 않고 "420px 에서 맞으니 됐다" 고 하지 말 것.
+- 토큰은 `src/styles/theme.js` 의 `theme` / `gradients` / `S`.
 
 ---
 
-## 🗄️ Supabase
+## ⏰ 알람
 
-> 실제 키는 `.env.local` 에. 아래는 구조만.
-
-```
-환경변수:
-  VITE_SUPABASE_URL=https://[PROJECT_ID].supabase.co
-  VITE_SUPABASE_ANON_KEY=eyJhbGci...
-```
-
-### DB 테이블 (8개 — 정리 후 7개 활용)
-
-```
-public.profiles          - 사용자 프로필                 [사용]
-public.alarm_settings    - 알람 시간대 (7~23시 기본)     [사용]
-public.goals             - 연/월/주/일 목표              [사용]
-public.todos             - 할일                          [사용]
-public.notification_log  - 알림 기록 (체크인 저장)       [사용]
-                           ※ 리포트는 서버+로컬을 mergeCheckins 로 합쳐 읽는다 (서버 저장 실패 대비)
-public.economic_tips     - 경제 상식 (10건 입력됨)       [사용]
-public.banners           - 홈 배너 (공개 읽기)           [사용, v1.13.0]
-public.user_preferences  - 사용자 환경설정               [사용]
-```
-
-### 트리거
-
-```
-on_auth_user_created     - 가입 시 profiles + user_preferences + alarm_settings 자동 생성
-set_*_updated_at         - updated_at 자동 갱신 (4개 테이블)
-```
+- `setTimeout` 체인으로 다음 59분을 예약하고, 탭 복귀 시 재예약한다.
+- 네이티브는 **시스템 알림이 미리 예약**돼 있다 → "집중 중엔 소리를 줄인다" 같은 건 불가능하다.
+  조정할 수 있는 건 팝업 **문구뿐**이다.
+- 권한 요청을 **동시에 여러 개 띄우지 말 것**. 겹치면 예약이 0건이 된다 (실제로 겪음) → 체인으로.
+- 알람 시간대(`alarmHours`) 밖에서는 울리지 않는다.
+- 팝업은 **1분 개입**이다. 앱 화면으로 이동시키지 않는다.
+- 집중(`focus`) 중에는 할일·미션·AI 질문을 들이대지 않는다 — 알람의 최대 불만이 "집중을 깬다" 였다.
+- 팝업의 "오늘 누적" 에는 **반드시 '오늘' 라벨**을 붙인다. 제목이 "지난 1시간" 인데 7시간이 적혀
+  있으면 카드 전체가 거짓말로 읽힌다 (실기기에서 그렇게 보였다).
 
 ---
 
-## 📁 현재 프로젝트 구조 (실제)
+## 🏷️ 활동 분류 (`src/data/appCategories.js`)
 
-```
-ogutalk/
-├── CLAUDE.md                       ← 이 파일
-├── PRD.md                          ← 제품 요구사항
-├── STACK.md                        ← 기술 스택 상세
-├── CHANGELOG.md                    ← 변경 이력
-├── .env.local                      ← Supabase 키 (Git 제외)
-├── .gitignore
-├── index.html
-├── vite.config.js                  ← PWA 설정
-├── capacitor.config.ts             ← Capacitor (Android)
-├── package.json
-├── vercel.json
-├── public/
-│   ├── icon-192.png, icon-512.png
-│   └── sounds/
-├── android/                        ← Capacitor Android 프로젝트
-├── supabase/                       ← Supabase migrations
-├── src/
-│   ├── main.jsx
-│   ├── App.jsx                     ← 메인 (LoginModal 인라인, ~330줄)
-│   ├── sw-custom.js                ← Service Worker
-│   ├── lib/
-│   │   ├── supabase.js
-│   │   └── capacitor.js            ← 네이티브 알림 브리지
-│   ├── hooks/                      (8개)
-│   │   ├── useAuth.js              ← 로그인/회원가입/카카오
-│   │   ├── useAlarm.js             ← 59분 알람 + 오구 사운드
-│   │   ├── useTodos.js
-│   │   ├── useGoals.js
-│   │   ├── useCustomAlarms.js      ← 커스텀 시간 알람 (localStorage)
-│   │   └── useWeeklyReport.js      ← 주간 리포트 (템플릿)
-│   ├── components/
-│   │   ├── alarm/
-│   │   │   └── AlarmPopup.jsx
-│   │   ├── auth/
-│   │   │   ├── LoginForm.jsx, SignupForm.jsx
-│   │   ├── common/
-│   │   │   ├── GlassCard.jsx, EmptyState.jsx
-│   │   │   ├── LoadingSpinner.jsx, ProgressBar.jsx, Toggle.jsx
-│   │   ├── layout/
-│   │   │   ├── Layout.jsx, Header.jsx, TabBar.jsx (4탭)
-│   │   └── todos/
-│   │       └── TodoList.jsx, TodoForm.jsx, TodoItem.jsx
-│   ├── pages/                      (6개)
-│   │   ├── HomePage.jsx            ← 시계 / 카운트다운+타임라인 / 할일 / 명언
-│   │   ├── TodosPage.jsx
-│   │   ├── GoalsPage.jsx           ← (탭에서 빠짐, 코드는 보존)
-│   │   ├── ReportsPage.jsx
-│   │   ├── SettingsPage.jsx        ← ~460줄, 분리 후보
-│   │   └── AuthCallbackPage.jsx    ← 카카오 OAuth 콜백
-│   ├── data/
-│   │   └── oguData.js              ← OGU_TONES, TONE_CONFIGS, ECONOMIC_TIPS, QUOTES
-│   └── styles/
-│       └── theme.js
-└── reference/                      ← 참고 (빌드 제외)
-```
+- 그룹 넷: 🌱 성장 · 💬 소통 · 🌿 힐링 · 🧭 생활.
+  기준은 **성장 = 만들거나 끝낸 행위**, **힐링 = 보고 읽으며 쉰 시간**.
+- **힐링은 나쁜 시간이 아니다.** 꾸짖는 문구를 쓰지 말 것 (한도를 넘을 때만 알린다).
+- **미분류 앱은 아예 기록되지 않는다** → 분류표 누락은 곧 점수 왜곡이다.
+- 분류를 추가·변경하면 `supabase/functions/generate-weekly-report` 의 **`GROUP_OF` 사본도
+  함께 고치고 따로 배포**할 것. 서버 함수는 `src/` 를 import 하지 못한다.
+- 옛 값(`goal_work` · `study` · `rest` · `sns`)은 LEGACY 로 계속 표시한다.
+- AI 앱(Gemini·ChatGPT·Claude·Perplexity·Grok)은 **성장(`ai`)** 이다. 검색이 아니다.
+  단 구글 앱(`googlequicksearchbox`) 안의 Gemini 는 패키지가 같아 **검색/힐링으로 잡힌다** — 구분 불가.
 
 ---
 
-## 🎨 디자인 시스템
+## 📊 자동 활동 기록 (UsageStats, 기본 OFF)
 
-화이트 테마. `src/styles/theme.js` 의 `theme` / `gradients` / `S` 객체 사용.
-**알람 팝업(AlarmPopup.jsx)만 어두운 배경을 유지한다** — 밤 알람에 화면이 번쩍하면 안 되므로
-일괄 색 변환에서도 이 파일은 제외했다. 색을 바꿀 때 같이 건드리지 말 것.
-
-```javascript
-const theme = {
-  bg:     { primary: '#FFFFFF', elevated: '#F7F7F8' },
-  accent: { primary: '#FF6B2C', secondary: '#D9531B' },  // secondary = 흰 바탕 위 글자용
-  text:   { primary: '#111111', secondary: '#8E8E93', muted: '#9A9AA0', dim: '#B0B0B6' },
-  status: { success: '#1E7A58', warning: '#B4740F', error: '#D23B2E' },
-  border: { subtle: '#F0F0F3', normal: '#ECECEF' },
-  night:  { scrim: 'rgba(26,18,12,0.92)', card: '#FFFCF8' },  // 알람 팝업 전용
-}
-
-// 그라데이션
-로고·버튼: 'linear-gradient(135deg, #FF6B2C, #E8762C)'
-배경:      '#FFFFFF' (그라데이션 없음 — 흰 바탕에 테두리로만 나눈다)
-```
-
-앱 최대 너비 420px, 모바일 우선.
+- 기본값 OFF. 사용자가 사전 고지를 보고 직접 켠다 (Play 정책).
+- **사용시간 데이터는 기기 밖으로 나가지 않는다.** 이 약속을 깨는 변경은 처리방침도 함께 고쳐야 한다.
+- 분류 우선순위: 사용자 수정 > `BUILTIN_CATEGORY` > OS 앱 분류. 셋 다 없으면 기록하지 않는다.
+- 런처·시스템 UI·공유 시트 제외는 **집계 출력 단계에서만**. 스캔에서 빼면 직전 앱 시간이 부푼다.
+- 소급 기록은 앱 복귀·알람 발동 시점, 최대 24시간(48슬롯).
 
 ---
 
-## ⚡ 핵심 기능 (현재 활성)
+## 💯 오구 지수 (`src/lib/oguScore.js` · `dayLog.js`)
 
-### 1. 59분 알람 ⭐
+성장 40 + 균형 20 + 실행 40 = 100. 축은 셋(성장·힐링·소통), 생활은 점수 밖.
 
-```
-- setTimeout 체인으로 다음 59분 시각 예약 (탭 복귀 시 재예약)
-- 활성 시간대(alarmHours)일 때만 발동
-- 오구 사운드: Web Audio API 오실레이터 (TONE_CONFIGS 5종)
-- 진동: weak / medium / strong 패턴 선택
-- 모드: 'sound' | 'vibrate' | 'both'
-- 발동 시 알람 팝업: 명언 + 경제 상식 + 미완료 할일 수
-- 네이티브: Capacitor Local Notifications 으로 백그라운드 알람
-```
+- **잰 것만 점수로 쓴다.** 앱을 많이 열어서 오르는 점수는 만들지 않는다.
+- **폰을 안 쓴 시간은 감점이 아니다.** 산책·수면·대면 대화는 측정되지 않을 뿐 좋은 시간이다.
+- **힐링·소통에 "많을수록 좋음" 점수를 주지 않는다.** 점수를 벌려고 카톡을 켜는 순간 측정이 오염된다.
+- 기준값은 사용자의 것(`produceTarget` · `consumeLimit`). 비교는 **어제의 나뿐**.
+- `FORMULA` 번호가 바뀌면 과거 점수와 비교하지 않는다. 다른 잣대로 잰 값을 비교하면 거짓말이 된다.
+- 실행 40의 얼굴은 **"오늘의 체크" 4개(`CHECKS`)** — 이진 항목이라 게임화해도 정직하다.
+  **성장 40(잰 시간)은 게임 화폐로 만들지 않는다.**
+- `logTodoDone` 은 `actedOnAlarm` 을 켜지 않는다. 켜면 할일 하나로 20점이 들어간다.
+- 등급 문구는 **앞을 보는 말**로. "반반이었어요" 같은 평가는 아무것도 바꾸지 못하고,
+  낮은 날엔 앱을 닫게 만든다. 낮은 점수에 **빨강(경고색)을 쓰지 않는다**.
+- 점수 저장은 21시 이후, 스트릭은 60점 이상 연속 일수.
 
-### 2. 커스텀 알람
+---
 
-```
-- 사용자가 원하는 시간(시:분)에 매일 반복 알람
-- localStorage 저장 (향후 Supabase 이전 가능)
-- 프리셋 5종 (경제 브리핑/스트레칭/점심/오후 리셋/마무리)
-```
+## 📅 달력 (`src/lib/monthGrid.js` · 캘린더 연동)
 
-### 3. 할일 (Todos)
+- 기기 캘린더는 **읽기 전용**(`READ_CALENDAR`). 일정 추가·수정은 기기 캘린더 앱의 몫.
+- **`'YYYY-MM-DD'` 를 `new Date()` 로 돌리지 말 것.** UTC 로 읽혀 하루가 밀린다.
+- 일정 조회는 달이 바뀔 때 1회. **매 렌더 조회 금지** (배터리·권한 노출).
+- `registerPlugin()` 의 Proxy 를 **async 함수 밖으로 내보내지 말 것**.
+  내보내면 Promise 이행 절차가 `Proxy.then` 을 건드려 네이티브 호출이 항상 실패한다.
+  (`calendar.js` · `usageStats.js` · `aiApps.js` 가 모두 같은 규칙을 따른다)
+- 기간 일정은 **띠**로 잇는다. 칸 사이 간격을 음수 여백으로 넘되 **주 경계에서는 넘기지 않는다**.
+  하루짜리는 띠로 그리지 않는다 (점과 구분이 안 된다).
+- **점수 없는 날과 0점은 다르게 그린다.** 안 잰 날에 색을 칠하면 거짓말이 된다.
 
-```
-- daily / weekly / monthly 타입
-- 우선순위 (high/medium/low)
-- due_date (D-day 표시)
-- 비로그인: localStorage / 로그인: Supabase
-```
+---
 
-### 4. 주간 리포트
+## 🎯 오늘의 추천 미션
 
-```
-- 템플릿 기반 자동 생성 (Claude API 미사용)
-- 알람 횟수 / 할일 완료율 / 주간 활동 패턴
-- 서버 함수(generate-weekly-report)는 src/ 를 import 못 해 그룹 매핑 사본(GROUP_OF)을 둔다 → 분류를 바꾸면 함께 수정 + 별도 배포
-```
-
-### 5. 알람 팝업 콘텐츠
-
-```
-명언       - QUOTES 하드코딩 (5건)
-경제 상식  - TIPS 하드코딩 (3건) — economic_tips 테이블 활용으로 확장 가능
-할일       - todos 테이블에서 미완료 카운트
-```
-
-### 6. 자동 활동 기록 (UsageStats, 기본 OFF)
-
-```
-- 안드로이드 UsageStats 권한으로 앱별 사용시간을 조회해 30분 슬롯(정각/30분) 단위로 체크인 자동 기록
-- 기본값 OFF — 설정 > 자동 활동 기록에서 사용자가 직접 켜야 함 (Play 정책상 사전 고지 후 권한 이동)
-- 앱 패키지 → 세부 분류: 사용자 수정 > 내장 매핑(BUILTIN_CATEGORY) > 안드로이드 OS 앱 분류(ApplicationInfo.category) 순, 셋 다 없으면 기록하지 않음
-- 런처·시스템 UI·설정·공유 시트 등은 집계 출력 단계에서만 제외 (스캔에서 빼면 직전 앱 시간이 부풂)
-- 분류가 틀리면 리포트 > "무엇이 생산으로 잡혔나" > 오늘 많이 쓴 앱 에서 고친다(ogu_app_category)
-  (v1.10.1: 알람 팝업의 "다르게 기록" 은 제거 — 알람 순간에 고르게 하는 것이 부담이었다)
-- 소급 기록은 앱 복귀·알람 발동 시점에 실행 (useAutoCheckin), 최대 24시간(48슬롯) 상한
-- 권한 미허용/미지원(iOS·웹) 시 기존 수동 체크인 그대로 동작
-- 사용시간 데이터는 기기 내에서만 처리되며 서버로 전송하지 않음
-```
-
-### 7. 활동 분류 (src/data/appCategories.js)
-
-```
-그룹 4개 (수동 팝업 선택지 + 리포트 헤드라인)
-  🌱 성장  업무(문서·시트·메일) · 학습 · AI · 촬영·제작 · 구매·주문·예약 · 건강·운동
-  💬 소통  메신저(전화·문자 포함) · SNS
-  🌿 힐링  동영상 · 게임 · 검색·정보(NAVER·Google·Chrome)
-  🧭 생활  금융·투자 · 생활·이동
-- 기준: 성장 = 만들거나 끝낸 행위(운동 포함), 힐링 = 보고 읽으며 쉰 시간
-- 힐링은 나쁜 시간이 아니다 — 꾸짖는 문구를 쓰지 말 것 (한도를 넘을 때만 알린다)
-- activity_type 한 칸에 그룹 ID·세부 ID 모두 저장, 리포트는 groupOf() 로 묶음 (DB 변경 없음)
-- 옛 값(goal_work·study→생산, rest→생활, sns→소통)은 LEGACY 로 계속 표시
-- 옛 4분류 팝업에서 저장된 앱 수정값(goal_work 등)은 무시 — 새 기준을 덮지 않게
-- 수동 팝업은 그룹 4개만, 안 고르고 닫으면 기록 없음 (폰을 안 쓴 시간)
-- BUILTIN_CATEGORY 187개 (v1.9.1) — 미분류 앱은 아예 기록되지 않으므로, 누락은 곧 점수 왜곡이다.
-  새 분류를 추가하면 generate-weekly-report 의 GROUP_OF 사본도 함께 고칠 것
-```
-
-### 8. 59분 코치 (v1.8.0, src/lib/alarmContext.js)
-
-```
-팝업이 상태를 판정해 문구와 제안을 바꾼다 (순수 로직 — node 검증 대상)
-  binge  소비 앱 40분↑ 또는 소비 기록 2슬롯 연속 → 경고 문구 + 할일 1개 제안
-  focus  생산이 이어짐 → 칭찬 문구, 할일 제안·미완료 수 숨김 (알람의 최대 불만이 "집중을 깬다")
-  normal 기본 문구 + 할일 1개 제안
-- "지금 하나만": pickNextTodo = 마감 지남 > 마감 가까움 > 우선순위 > 먼저 만든 것
-  탭 1회로 완료하고 팝업을 닫는다 (앱 화면으로 이동 금지 — 1분 개입 유지)
-- 오늘 누적: minutesOf() = 자동 기록(:00/:30) 30분, 수동 체크인 60분으로 추정
-  ponytail: 레코드에 source 컬럼이 없어 분 단위로 추정 — 정확도가 필요해지면 컬럼 추가
-- 측정 이벤트: todo_done_from_popup
-- 네이티브 제약: 시스템 알림이 미리 예약돼 있어 "집중 중엔 소리 줄이기"는 불가 (문구만 조정)
-```
-
-### 9. 오구 지수 — 5 : 9 (v1.11.0, src/lib/oguScore.js · dayLog.js)
-
-```
-하루 점수 0~100, 앱 이름(매시 59분) 그대로의 구조
-  9 (50) 폰으로 한 생산 활동 9분류
-         시간 35 = (9분류 합 + 그룹으로만 기록된 수동 체크인) / produceTarget
-         다양성 15 = 채운 칸 수 / 4
-         소비 감점 = 한도 초과 30분당 -5, 최대 -10
-         NINE 에서 SNS 제외 (켜는 것만으로 다양성이 오르면 안 된다)
-  5 (50) 미션 1개 / 미션 완주 / 내 할일 / 이번 주 목표 / 알람 응답, 각 10
-- 설계 원칙: 잰 것만 점수로 / 폰 안 쓴 시간은 감점 아님 / 기준은 사용자 것 / 비교는 어제의 나뿐
-- dayLog.js(ogu_day_log): 앱이 직접 본 행동만 집계 (todos 에 완료 시각이 없다)
-- 점수 저장은 21시 이후에만, 스트릭은 60점 이상 연속 일수
-- 근거 화면(ScoreBasisModal): 분류별 시간 + "오늘 많이 쓴 앱" 에서 분류 수정
-- 실행 40 의 얼굴은 "오늘의 체크" 4개 (CHECKS, v1.21.0) — 홈 배너·리포트 공용.
-  "실행 4가지 10/40" 은 읽고 계산해야 하지만 빈 동그라미 셋은 보자마자 읽힌다.
-  이진 항목이라 게임화해도 정직하다. 성장 40(잰 시간)은 게임 화폐로 만들지 않는다
-  — 점수를 벌려고 앱을 켜게 되고 그 순간 측정이 오염된다
-- logTodoDone 은 actedOnAlarm 을 켜지 않는다 (v1.21.0 에서 고침). 알람 팝업의 완료 버튼을
-  없애면서 "할일 완료 = 알람 반응" 전제가 깨졌는데 그대로 둬서 한 번에 20점이 들어가고 있었다
-```
-
-### 10. 캘린더 연동 (v1.10.0, 기본 OFF)
-
-```
-오구톡 할일에는 시각·장소가 없다 → 캘린더가 그 빈칸을 메운다.
-- CalendarPlugin(네이티브): CalendarContract.Instances 로 [start,end] 구간 조회
-  Events 가 아니라 Instances 인 이유는 반복 일정의 회차를 펼쳐 받기 위함
-- src/lib/calendar.js: usageStats.js 와 같은 규칙 — registerPlugin Proxy 를 async 밖으로 내보내지 않는다
-- pickUpcomingEvent(): 진행 중 > 90분 내 시작 순, 종일 일정 제외
-- 팝업이 열릴 때만 1회 조회 (매 렌더 조회 금지 — 배터리·권한 노출 최소화)
-- READ_CALENDAR 는 실행 중 요청 권한. 사전 고지 모달 → 허용 → calendarSync=true
-- 일정 내용은 저장하지 않고 화면에만 쓴다. 서버 전송 없음 (처리방침에 명시)
-- 측정 이벤트: calendar_connected
-```
-
-### 11. 오늘의 미션 (v1.11.0)
-
-```
-src/data/missions.js (60개) + missionPick.js(순수) + missionStore.js(localStorage)
+- **날짜를 씨앗으로 쓴다.** 같은 날이면 몇 번을 계산해도 같은 결과여야 한다.
 - 몸·정리·머리에서 하나씩 = 3개. 무작위 3개면 머리 쓰는 일만 셋이 걸려 질린다.
-- 같은 날이면 몇 번을 계산해도 같은 결과 — 날짜를 씨앗으로 쓴다(렌더마다 바뀌면 안 된다)
-- recent 14일 제외 / skips 3회 제외 / 셔플 하루 1회(salt=1)
-- 풀이 마르면 조건을 풀어서라도 3개를 채운다 (빈칸보다 낫다)
-- 미션은 todos 에 넣지 않는다 — 매일 3개씩 쌓이면 내 할일 목록과 완료율이 오염된다
-- 생애주기(lifeStage)는 선택. 성별 분리는 하지 않는다.
-- 노출: 홈(접기 가능) + 할일 탭 + 알람("지금 하나만" 이 할일 없을 때 미션으로 폴백)
-- 첫 알람 안내는 claimFirstAlarm() — "묻는 순간 소모되는" 함수다.
-  useMemo 안에서 부르면 리렌더 때 두 번째 호출이 false 를 받아 안내가 사라진다 → useEffect 에서만 부를 것
-```
-
-### 12. 홈 배너 (v1.13.0)
-
-```
-src/data/banners.js(내장 기본) + bannerPick.js(순수) + BannerCarousel.jsx
-- 자리는 홈에 하나뿐 — 알람 앱의 홈이 광고판이 되면 "지금 하나만"이 가려진다
-- 받아온 광고는 넣지 않는다 (AdMob 배너와 별개). 우리가 만든 것 + 우리가 운영하는 서비스만.
-  돈 받고 남의 상품을 올리기 시작하면 알람 앱의 홈이 광고판이 되고 "지금 하나만" 이 가려진다
-- kind 5종: notice · news · event · tip · store(우리 서비스, v1.21.0). 태그는 notice·news·store 만 보인다
-  (사용법 배너가 셋이 다 "사용법" 태그를 달고 있어서 알려주는 게 없었다)
-- 내장 6장이 네 칸에 들어간다 — sort 로 줄 세우고 뒤는 대기. 행사가 끝나면 자동으로 빈자리가 채워진다
-- 최대 4장, 이벤트는 동시에 한 장만, ends_at 지나면 자동 소멸
-- Supabase banners 테이블 → 실패/미생성 시 DEFAULT_BANNERS 로 폴백 (홈이 비지 않게)
-- 자동 전환 5초, 터치 중 정지, prefers-reduced-motion 이면 정지
-- 테이블은 공개 읽기(RLS SELECT true) — 비로그인 사용자도 본다. 쓰기는 대시보드에서만
-```
-
-### 13. 월간 캘린더 (v1.16.0, 홈 하단)
-
-```
-src/lib/monthGrid.js(순수) + components/home/MonthCalendar.jsx
-- 한 칸에 셋을 겹쳐 본다: 배경 농도 = 오구 지수 / 파란 점 = 기기 일정 / 주황 점 = 할일 마감
-- 읽기 전용이다 — 일정 추가·수정은 기기 캘린더 앱의 몫 (READ_CALENDAR 만 쓴다)
-- 일정 조회는 격자가 덮는 구간 전체를 달이 바뀔 때 1회 (매 렌더 조회 금지)
-- 기기 일정 중 여러 날 걸친 것은 시작일에만 센다 (칸이 작다)
-- 내 일정(기간)은 띠로 잇는다 (spanSegments, v1.21.0) — 점만 찍으면 10/25~26 이
-  "따로 있는 이틀" 로 보인다. 칸 사이 간격 2px 을 음수 여백으로 넘어가 이어 붙이되,
-  주 경계(일·토)에서는 넘기지 않는다 (격자 밖으로 삐져나온다)
-- 하루짜리는 띠로 그리지 않는다 — 점과 구분이 안 된다
-- 'YYYY-MM-DD' 마감일은 new Date() 로 돌리지 않는다 — UTC 로 읽혀 하루 밀린다
-- 점수 없는 날과 0점은 다르게 그린다 (안 잰 날에 색을 칠하면 거짓말이 된다)
-- 이 화면 때문에 dayLog KEEP_DAYS 14 → 70 (지난달까지 보여줘야 한다)
-```
+- **미션을 `todos` 에 넣지 않는다.** 매일 3개씩 쌓이면 내 할일 목록과 완료율이 오염된다.
+- `claimFirstAlarm()` 은 **묻는 순간 소모되는** 함수다. `useMemo` 안에서 부르면 리렌더 때
+  두 번째 호출이 false 를 받아 안내가 사라진다 → **`useEffect` 에서만** 부를 것.
+- 풀이 마르면 조건을 풀어서라도 3개를 채운다 (빈칸보다 낫다).
 
 ---
 
-### 14. 오구 브리지 — AI로 보내기 (v1.21.0)
+## 📢 홈 배너
 
-```
-src/data/promptCards.js(15장) + promptPick.js(순수) + lib/aiApps.js + AiAppsPlugin.java
-- 오구톡은 AI를 품지 않는다. 사용자 폰에 이미 있다.
-  희소한 건 지능이 아니라 "맞는 순간의 질문" 이고, 그건 매시 59분에 우리만 가지고 있다.
-  → 서버 비용 0, API 키 0, "사용시간은 기기 밖으로 안 나간다" 는 약속 그대로
-- 알람 팝업에 "지금 AI에 물어볼 것" 한 장. 누르면 설치된 AI 앱이 질문과 함께 열린다
-- 앱 감지: CANDIDATES 순서대로 getLaunchIntentForPackage (Gemini 우선 — 안드로이드 도달률)
-  QUERY_ALL_PACKAGES 는 쓰지 않는다. Manifest <queries> 의 MAIN/LAUNCHER + SEND 선언으로 충분
-- 건네기 순서: 클립보드에 먼저 넣고 → ACTION_SEND → 실패하면 그냥 앱 열기.
-  프리필은 앱마다 되기도 안 되기도 한다(문서화된 인텐트가 없다). 빈손으로 보내지 않는 게 유일한 약속
-- 빈칸이 남은 프롬프트는 건네지 않는다 — "{todos}" 가 그대로 박히면 그 순간 이 기능은 끝이다
-  (promptPick.fill 이 null 을 돌려주면 그 카드는 후보에서 빠진다)
-- 같은 시각이면 같은 카드. 씨앗은 Math.floor(now/3600000) — 매시간 1씩 올라 pool 을 한 바퀴 돈다
-- 집중(focus) 중에는 띄우지 않는다. 알람의 최대 불만이 "집중을 깬다" 였다
-- 카드 문구가 이 기능의 전부다. 미션 60개를 손으로 쓴 것과 같은 이유로 여기를 아끼면 실패한다
-- 측정 이벤트: bridge_tap, ai_app_pick
+- **받아온 광고는 넣지 않는다.** 우리가 만든 것 + 우리가 운영하는 서비스만.
+  돈 받고 남의 상품을 올리는 순간 알람 앱의 홈이 광고판이 되고 "지금 하나만" 이 가려진다.
+- 한 번에 최대 4장, 이벤트는 동시에 한 장만, `ends_at` 이 지나면 자동 소멸.
+- 태그는 `notice` · `news` · `store` 에만. 사용법 배너가 셋이 다 같은 태그를 달면 알려주는 게 없다.
+- 문구는 **23자 이내**. 넘으면 48px 카드에서 두 줄이 되어 캐러셀 높이가 장마다 튄다.
+- 서버 조회 실패·테이블 미생성이어도 `DEFAULT_BANNERS` 로 홈이 비지 않게 한다.
 
-돌아올 다리 (2단계, v1.21.0)
-- 건너가기만 되면 반쪽이다 — AI 가 준 답을 어딘가에 남기지 않으면 매시간 증발한다
-- Manifest 의 MainActivity 에 ACTION_SEND + text/plain intent-filter → 공유 시트에 오구톡이 뜬다
-- 이벤트로 쏘지 않는다: 콜드 스타트에서는 인텐트가 WebView 보다 먼저 도착해 듣는 사람이 없다.
-  플러그인이 pendingShared 에 들고 있고 JS 가 takeShared() 로 가져간다 (가져가면 비워진다)
-- App.jsx 는 마운트 때 + visibilitychange 때 가져간다
-- SharedTextModal: 고쳐서 할일(첫 줄) 또는 메모(앞 200자)로. 메모는 로그인 필요
-- firstLine 은 sharedText.js(순수) — aiApps.js 는 네이티브를 import 해서 node 로 못 돌린다
-- 측정 이벤트: shared_in, shared_saved
+---
 
-기록을 남기면 그 시간이 성장이 된다 (sharedText.pickSlotToPromote)
-- "유튜브로 강의를 들었다" 를 성장으로 세는 방법. 좋아요·댓글은 잴 수 없다 —
-  UsageStats 는 "YouTube 가 몇 분 떠 있었다" 만 준다. 접근성 서비스나 YouTube API 를
-  붙이면 좋아요는 알 수 있지만, 1초짜리 좋아요가 1시간을 성장으로 바꾸는 구멍이 남는다.
-- 그래서 다른 걸 잰다: 남겼는가. 공유로 돌아온 글을 저장하면
-  직전 2시간 안의 힐링 슬롯 하나를 learning(성장)으로 올린다
-- 없으면 아무것도 안 한다. 한 슬롯은 한 번만 (올리고 나면 힐링이 아니라 다시 안 걸린다)
-- 실제로 바뀐 경우에만 화면에 말한다 — 안 바뀌었는데 바뀌었다고 하면 그게 거짓말이다
-- 측정 이벤트: slot_promoted
-```
+## 🤖 오구 브리지 (AI로 보내기)
 
-## ❌ 제거된 기능 (이전엔 있었지만 지금은 없음)
+- **오구톡은 AI를 품지 않는다.** 사용자 폰에 이미 있다. 희소한 건 지능이 아니라
+  "맞는 순간의 질문" 이고, 그건 매시 59분에 우리만 가지고 있다.
+  → 서버 비용 0, API 키 0, "기기 밖으로 안 나간다" 는 약속 그대로.
+- **빈칸이 남은 프롬프트는 건네지 않는다.** `{todos}` 가 그대로 박히면 그 순간 이 기능은 끝이다.
+- 건네기 순서: 프리필 되는 앱이면 `ACTION_SEND`, 안 되면 **클립보드에 넣고** 앱만 연다.
+  빈손으로 보내지 않는 것이 유일한 약속이다.
+- **구글 앱에는 공유로 보내지 않는다** — 수신처가 "Google에 저장" 이라 질문이 북마크가 된다.
+- `QUERY_ALL_PACKAGES` 를 쓰지 않는다. Manifest `<queries>` 의 MAIN/LAUNCHER + SEND 로 충분.
+- 돌아올 다리(공유 수신)는 **이벤트로 쏘지 않는다.** 콜드 스타트에서는 인텐트가 WebView 보다
+  먼저 도착해 듣는 사람이 없다 → 플러그인이 들고 있고 JS 가 `takeShared()` 로 가져간다.
+- 기록을 남기면 직전 2시간의 힐링 슬롯 하나가 성장으로 올라간다. **올릴 게 없으면 아무 말도 안 한다** —
+  안 바뀌었는데 바뀌었다고 하면 그게 거짓말이다. 한 슬롯은 한 번만.
+- 카드 문구가 이 기능의 전부다. 미션 60개를 손으로 쓴 것과 같은 이유로 여기를 아끼면 실패한다.
 
-```
-- 몰입시간 측정 / 30·60분 경고 알람
-  → 앱이 켜진 시간을 셀 뿐 실제 폰 사용을 측정 못해서 제거
+---
 
-- 키워드 탭 (트렌딩 분석, 내 키워드)
-  → KeywordsPage / KeywordList / KeywordNews / useKeywords /
-    useNaverNews / useTrendingData 모두 삭제
+## 🔗 링크 미리보기
 
-- 음성 안내 (캐릭터별 TTS)
-  → VOICE_CHARACTERS / VOICE_TEXTS / speakTime() 제거
+- 주소 대신 제목을 보여주는 것이 기본(`preview`). 메모·할일 공통.
+- 2단으로 내려간다: **호스트 축약(항상)** → **실제 제목(네이티브만)**.
+  웹은 CORS 가 남의 페이지를 막아서 2차가 불가능하다 — 우회하려면 서버를 세워야 한다.
+- 가져온 제목은 **남의 페이지에서 온 글자**다. 제어문자를 걷고 36자에서 자른다.
+- 같은 주소를 두 번 조회하지 않는다. 실패도 기억하되 6시간만.
 
-- 미사용 컴포넌트 11개 / 미사용 훅 4개
-  → StatusCards, Clock, AlarmSettings(짝꿍), ContentSettings,
-    ProfileSettings, GoalCard/List/Form/Progress, OguCheckin 등
-```
+---
+
+## ❌ 제거된 기능 — 되살리지 말 것
+
+- **몰입시간 측정 / 30·60분 경고 알람** — 앱이 켜진 시간만 셀 뿐 실제 폰 사용을 측정하지 못했다.
+- **키워드 탭**(트렌딩·내 키워드) — 네이버 API 의존, 앱의 목적과 멀었다.
+- **음성 안내(캐릭터별 TTS)** — `hourVoice` 로 녹음 파일을 쓰는 방식으로 대체됐다.
+- **알람 팝업의 할일 완료 버튼** — 알람 중 체크는 "점수를 벌려고" 누르는 행위가 되기 쉽다.
+- **알람 팝업의 "다르게 기록"** — 알람 순간에 분류를 고르게 하는 것이 부담이었다.
+  분류 수정은 리포트에서 한다.
 
 ---
 
 ## 🔑 코딩 컨벤션
 
 ```javascript
-// 파일명: PascalCase (컴포넌트) / camelCase (훅, 유틸)
-// 훅: use로 시작
-// 스타일: 인라인 JS 객체 또는 theme.js 의 S
-// 에러 처리: try/catch + 사용자 친화 메시지
-// Supabase: 항상 error 체크
-
+// 컴포넌트 PascalCase / 훅·유틸 camelCase, 훅은 use 로 시작
+// 스타일은 인라인 JS 객체 또는 theme.js 의 S
+// Supabase 는 항상 error 체크
 const { data, error } = await supabase.from('todos').select('*')
-if (error) {
-  console.error('할일 로딩 실패:', error)
-  setErrorMsg('데이터를 불러오지 못했어요.')
-  return
-}
+if (error) { console.error('할일 로딩 실패:', error); setErrorMsg('데이터를 불러오지 못했어요.'); return }
 ```
 
----
-
-## 🧠 상태 관리
-
-App.jsx 가 사실상 전역 상태 컨테이너입니다.
-
-```
-localStorage 키 (현재 6개 — 통합 후보):
-  ogu_oguTone, ogu_oguRepeat, ogu_alarmMode,
-  ogu_volume, ogu_vibStrength, ogu_alarmHours
-
-추가 키:
-  ogu_customAlarms (커스텀 알람 목록)
-  ogu_app_category (자동 활동 기록 — 앱→카테고리 사용자 수정 학습)
-
-설정 값 (settings.js, autoCheckin 기본 false):
-  autoCheckin (자동 활동 기록 on/off), lastBackfillAt (마지막 소급 기록 시각)
-  calendarSync (캘린더 연동 on/off), produceTarget·consumeLimit (오구 지수 목표)
-
-서버 상태:
-  user (Supabase Auth) → todos, goals 가 자동으로 user_id 분기
-  비로그인 시 localTodos / localGoals 로 fallback
-```
+- **순수 로직은 별도 파일로 떼어 `node` 로 검증한다** (`monthGrid` · `promptPick` · `timeBanner` ·
+  `oguScore` · `sharedText` …). 네이티브를 import 하는 파일은 검증 스크립트가 못 읽으니
+  순수 부분을 따로 둘 것.
+- 비로그인은 localStorage fallback, 로그인은 Supabase. `userId` 로 분기한다.
 
 ---
 
 ## ⚠️ 주의사항
 
-```
-1. .env.local 절대 Git 커밋 금지 (.gitignore 에 포함됨)
-2. Supabase service_role key 프런트엔드 사용 금지 (anon key만 사용)
-3. RLS 활성화로 anon key 노출 OK
-4. 앱 최대 너비 420px, 모바일 우선
-5. 화이트 테마 고정 (다크 모드 미지원). 알람 팝업만 예외로 어두운 배경
-6. localStorage 키 prefix 는 'ogu_' 통일
-7. 모든 src 파일 끝에 NULL 바이트 패딩이 붙기 쉬움 (윈도우↔리눅스 마운트)
-   → 빌드 실패 시 `tr -d '\000'` 로 정리 필요
-8. 안드로이드 릴리즈 빌드는 JDK 21로 해야 함 — Gradle 8.14.3은 JDK 25에서 실행 불가
-   (`Unsupported class file major version 69`). Android Studio 번들 JBR이 25로 올라가 있으면
-   그대로 못 씀 → `JAVA_HOME` 을 JDK 21로 지정(이 머신은 `~/.jdks/jbr-21.0.11`) 하거나
-   Android Studio의 Gradle JDK 설정을 21로 맞출 것
-```
-
----
-
-## 🚧 다음 작업 후보 (정리 단계)
-
-```
-[6] App.jsx 에 인라인된 LoginModal 분리 (~100줄 → 별도 파일)
-[8] SettingsPage.jsx 524줄 분할 (사운드/알람시간/커스텀알람/계정 등)
-
-완료됨: [5] localStorage 통합(src/lib/settings.js) · [7] tracked_keywords 테이블 제거 · [9] reference/ 폴더 정리 
+1. `.env.local` · `keystore.properties` 절대 커밋 금지.
+2. `service_role` key 는 프런트엔드에서 쓰지 않는다 (anon key 만, RLS 로 보호).
+3. **안드로이드 릴리즈 빌드는 JDK 21.** Gradle 8.14.3 은 JDK 25 에서 못 돈다
+   (`Unsupported class file major version 69`). `JAVA_HOME` 을 `~/.jdks/jbr-21.0.11` 로.
+4. **R8 은 `proguard-android.txt`(비최적화)를 쓴다.** `-optimize` 판은 Capacitor 의
+   `PluginHandle.pluginAnnotation` 을 지워 모든 플러그인이 NPE 로 죽는다 (versionCode 34 사고).
+5. **탭 id 는 `home` · `todos` · `alarms` · `reports` · `settings`.** 틀린 id 를 넘기면 예외 없이
+   **조용히 무시**된다 — `report`(단수)로 적어 홈의 링크 다섯 개가 죽어 있었다.
+   검증 스크립트의 `TAB_IDS` 가 막는다.
+6. src 파일 끝에 NULL 바이트가 붙는 일이 있다 (윈도우↔리눅스 마운트).
+   빌드 실패 시 `tr -d '\000'`.
+7. **사이드로드 금지.** 업로드 키로 서명한 APK 를 직접 설치하면 Play 업데이트가 깨진다
+   (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). 확인은 내부 테스트로.
+8. 같은 `.aab` 를 Play 에 두 번 올릴 수 없다. 트랙을 옮길 때는 **"라이브러리에서 추가"**.
