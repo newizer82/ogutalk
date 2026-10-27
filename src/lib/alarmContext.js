@@ -117,12 +117,23 @@ export function alarmMood({ checkins = [], autoSummary = null, now = Date.now() 
   return { mood: 'normal', group: streak.group, streak: streak.count }
 }
 
-/** 상태별 머리말 한 줄 */
+/**
+ * 받침이 있으면 '이', 없으면 '가'. 분류 이름을 그대로 붙이면 "힐링가" 가 된다.
+ * 한글이 아니면(영문 앱 이름 등) '이' 를 붙이지 않는다.
+ */
+function subjectParticle(word) {
+  const c = word.charCodeAt(word.length - 1) - 0xac00
+  if (c < 0 || c >= 11172) return '가'
+  return c % 28 ? '이' : '가'
+}
+
+/** 상태별 머리말 한 줄 — 한 줄에 들어가야 한다(실기기 384px). 넘치면 "요" 만 다음 줄로 떨어진다 */
 export function moodHeadline(m) {
   if (!m) return '이번 시간 뭐 하셨어요?'
   if (m.mood === 'binge') {
     if (m.appLabel && m.appMinutes) return `${m.appLabel} ${m.appMinutes}분째예요`
-    return `${labelOf('consume')}가 1시간 넘게 이어지고 있어요`
+    const label = labelOf('consume')
+    return `${label}${subjectParticle(label)} 한 시간을 넘겼어요`
   }
   if (m.mood === 'focus') {
     const hours = m.streak >= 4 ? '2시간째' : '1시간째'

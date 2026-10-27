@@ -27,7 +27,9 @@ export default function AlarmPopup({
   nextEvent = null, nextMission = null, missionIntro = null,
   promptCard = null,
 }) {
-  const now = new Date()
+  // 팝업이 열린 순간에 멈춘다. 매 렌더 new Date() 를 읽으면 닫지 않고 둔 팝업이
+  // "22:08 / 곧 11시예요" 처럼 시계와 문구가 서로 다른 말을 한다 (실기기에서 그랬다).
+  const [now] = useState(() => new Date())
   const HH  = pad(now.getHours())
   const MM  = pad(now.getMinutes())
 

@@ -194,6 +194,16 @@ console.log('✓ checkinStore 검증 통과')
     'SNS는 소통 — 연속 소비가 아니다')
   assert.equal(alarmMood({ checkins: [rec('video', 20, 30), rec('game', 20, 0)], now }).mood, 'binge')
 
+  // 분류 이름 뒤 조사 — "힐링가" 가 실기기 알람에 그대로 떴다 (받침이 있으면 '이')
+  {
+    const m = alarmMood({ checkins: [rec('video', 20, 30), rec('game', 20, 0)], now })
+    const h = moodHeadline(m)
+    assert.ok(!h.includes('힐링가'), `조사가 틀렸다: ${h}`)
+    assert.ok(h.includes('힐링이'), h)
+    // 머리말은 한 줄에 들어가야 한다 — 넘치면 "요" 만 다음 줄로 떨어진다 (실기기 384px)
+    assert.ok([...h].length <= 16, `머리말이 길다(${[...h].length}자): ${h}`)
+  }
+
   // 집중: 생산이 2슬롯 이상 이어짐 → 칭찬 문구
   {
     const m = alarmMood({ checkins: [rec('work', 20, 30), rec('ai', 20, 0)], now })
