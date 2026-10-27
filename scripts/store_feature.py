@@ -6,10 +6,10 @@ python scripts/store_feature.py <출력png> [a|b|c]
 마스코트(promo-bg.png 의 시계 캐릭터)는 쓰지 않는다. 귀여운 그림은
 "알림 장난감" 으로 읽히고, 이 앱이 파는 것은 능동적 시간 관리다.
 
-오른쪽 자리를 셋 중 하나로 채운다:
-  a  큰 59 숫자 — 이름이 곧 기능이다
-  b  시계 눈금 — 정각 1분 전이라는 위치를 그림 하나로
-  c  실제 앱 화면 — 점수가 쌓인 홈
+오른쪽 자리를 셋 중 하나로 채운다 (기본 c):
+  a  큰 59 숫자 — 첫 칩("매시 59분 알람")과 같은 말을 두 번 한다
+  b  시계 눈금 — 깔끔하지만 추상적인 문구에 추상적인 그림이라 남는 게 없다
+  c  실제 앱 화면 — "생산성 UP" 이 무엇으로 뒷받침되는지 옆에서 바로 보인다
 
 문구는 능동형으로 쓴다. "시간 가는 줄 모르는 당신에게" 는 사용자를
 탓하는 말이고, 설치 버튼을 누를 이유가 되지 못한다.
@@ -25,9 +25,10 @@ ORANGE   = (216, 83, 27)
 ORANGE_L = (255, 107, 44)
 LINE     = (236, 236, 239)
 
-TITLE = '매시 59분, 오구!'
-SUB   = '다음 한 시간을 내가 정합니다'
-CHIPS = ('59분 알람', '자동 기록', 'AI 질문')
+TITLE = '오구톡'
+SUB   = '능동적 시간관리, 생산성 UP'
+# 제목이 브랜드명이라 59분이 빠진다 → 첫 칩이 그 자리를 메운다
+CHIPS = ('매시 59분 알람', '자동 기록', 'AI 질문')
 
 SHOT = 'store/s2-home-src.png'   # 없으면 c 안은 건너뛴다
 
@@ -105,7 +106,7 @@ RIGHT = {'a': right_number, 'b': right_dial, 'c': right_screen}
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else 'store/feature-1024x500.png'
-    variant = (sys.argv[2] if len(sys.argv) > 2 else 'a').lower()
+    variant = (sys.argv[2] if len(sys.argv) > 2 else 'c').lower()
 
     base = Image.new('RGB', (W, H), CREAM)
     a, tint = glow((W, H), (900, 470), 420, (255, 150, 80))
@@ -114,16 +115,16 @@ def main():
     RIGHT[variant](canvas)
 
     draw = ImageDraw.Draw(canvas)
-    draw.text((56, 156), TITLE, font=ImageFont.truetype(FONT_BD, 74), fill=INK)
-    draw.text((58, 258), SUB, font=ImageFont.truetype(FONT_RG, 36), fill=INK_SUB)
+    draw.text((56, 132), TITLE, font=ImageFont.truetype(FONT_BD, 96), fill=INK)
+    draw.text((60, 258), SUB, font=ImageFont.truetype(FONT_RG, 40), fill=INK_SUB)
 
     f = ImageFont.truetype(FONT_BD, 25)
     x = 58
     for label in CHIPS:
         x0, y0, x1, y1 = draw.textbbox((0, 0), label, font=f)
         w = (x1 - x0) + 34
-        draw.rounded_rectangle([x, 334, x + w, 334 + 48], 24, fill=(255, 255, 255), outline=LINE)
-        draw.text((x + 17 - x0, 334 + 11 - y0), label, font=f, fill=ORANGE)
+        draw.rounded_rectangle([x, 340, x + w, 340 + 48], 24, fill=(255, 255, 255), outline=LINE)
+        draw.text((x + 17 - x0, 340 + 11 - y0), label, font=f, fill=ORANGE)
         x += w + 11
 
     canvas.convert('RGB').save(out, 'PNG', optimize=True)
