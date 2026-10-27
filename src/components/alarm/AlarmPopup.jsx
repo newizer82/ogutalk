@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import GlassCard from '../common/GlassCard'
 import { gradients } from '../../styles/theme'
 import { GROUPS, groupOf, labelOf } from '../../data/appCategories'
-import { moodHeadline, formatMinutes, todoHint, todoDetail, eventLine, shortPlace } from '../../lib/alarmContext'
+import { moodHeadline, formatMinutes, todoHint, todoDetail, eventLine, shortPlace, withJosa } from '../../lib/alarmContext'
 import { mapUrlFor } from '../../lib/calendar'
 import { openUrl } from '../../lib/capacitor'
 import { sendToAi, resultMessage, activeAiApp } from '../../lib/aiApps'
@@ -32,6 +32,9 @@ export default function AlarmPopup({
   const [now] = useState(() => new Date())
   const HH  = pad(now.getHours())
   const MM  = pad(now.getMinutes())
+
+  // "🌱 성장 · 🤖 AI 도구" — 뒤에 붙는 조사가 받침을 따라가야 한다
+  const recordedAs = autoSummary?.category ? summaryLabel(autoSummary.category) : ''
 
   const [selected, setSelected] = useState(null)
   const [checkedIn, setCheckedIn] = useState(false)
@@ -143,7 +146,7 @@ export default function AlarmPopup({
                 {headline.text === '지난 1시간' ? '' : '지난 1시간 · '}{autoSummary.label} {autoSummary.minutes}분
               </div>
               <div style={{ color: '#34d399', fontSize: 13, fontWeight: 700 }}>
-                ✓ {summaryLabel(autoSummary.category)} 으로 기록했어요
+                ✓ {recordedAs}{withJosa(recordedAs)} 기록했어요
               </div>
             </>
           ) : (

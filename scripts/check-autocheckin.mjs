@@ -204,6 +204,17 @@ console.log('✓ checkinStore 검증 통과')
     assert.ok([...h].length <= 16, `머리말이 길다(${[...h].length}자): ${h}`)
   }
 
+  // "AI 도구 으로 기록했어요" 도 실기기 알람에 그대로 떴다 (받침 없으면 '로')
+  {
+    const { withJosa } = await import('../src/lib/alarmContext.js')
+    assert.equal(withJosa('🤖 AI 도구'), '로')
+    assert.equal(withJosa('🔍 검색·정보'), '로')
+    assert.equal(withJosa('📺 동영상'), '으로')   // ㅇ 받침
+    assert.equal(withJosa('🎮 게임'), '으로')     // ㅁ 받침
+    assert.equal(withJosa('📱 SNS'), '로')        // 한글이 아니면 받침 없는 쪽
+    assert.equal(withJosa('서울'), '로')          // ㄹ 받침은 '으로' 가 아니다
+  }
+
   // 집중: 생산이 2슬롯 이상 이어짐 → 칭찬 문구
   {
     const m = alarmMood({ checkins: [rec('work', 20, 30), rec('ai', 20, 0)], now })

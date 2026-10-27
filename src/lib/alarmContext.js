@@ -118,13 +118,22 @@ export function alarmMood({ checkins = [], autoSummary = null, now = Date.now() 
 }
 
 /**
- * 받침이 있으면 '이', 없으면 '가'. 분류 이름을 그대로 붙이면 "힐링가" 가 된다.
- * 한글이 아니면(영문 앱 이름 등) '이' 를 붙이지 않는다.
+ * 분류 이름 뒤 조사. 그대로 이어 붙이면 "힐링가" · "AI 도구 으로" 가 된다
+ * (실기기 알람에 둘 다 그렇게 떴다). 받침을 보고 고른다.
+ * 한글이 아니면(SNS 등) 받침 없는 쪽으로 읽는다.
  */
-function subjectParticle(word) {
+function finalConsonant(word) {
   const c = word.charCodeAt(word.length - 1) - 0xac00
-  if (c < 0 || c >= 11172) return '가'
-  return c % 28 ? '이' : '가'
+  return c >= 0 && c < 11172 ? c % 28 : 0
+}
+
+/** 힐링이 / 오구가 */
+export const subjectJosa = word => (finalConsonant(word) ? '이' : '가')
+
+/** AI 도구로 / 동영상으로 — ㄹ(8) 받침은 '으로' 가 아니다 (게임으로 / 서울로) */
+export function withJosa(word) {
+  const b = finalConsonant(word)
+  return b === 0 || b === 8 ? '로' : '으로'
 }
 
 /** 상태별 머리말 한 줄 — 한 줄에 들어가야 한다(실기기 384px). 넘치면 "요" 만 다음 줄로 떨어진다 */
@@ -133,7 +142,7 @@ export function moodHeadline(m) {
   if (m.mood === 'binge') {
     if (m.appLabel && m.appMinutes) return `${m.appLabel} ${m.appMinutes}분째예요`
     const label = labelOf('consume')
-    return `${label}${subjectParticle(label)} 한 시간을 넘겼어요`
+    return `${label}${subjectJosa(label)} 한 시간을 넘겼어요`
   }
   if (m.mood === 'focus') {
     const hours = m.streak >= 4 ? '2시간째' : '1시간째'
