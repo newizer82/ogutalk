@@ -46,74 +46,79 @@ def wrap(body, bg=None):
             f'width="{W}" height="{W}">{rect}{body}</svg>')
 
 
-# ── 방패 실루엣 ────────────────────────────────────────────────
-# 원반에 눈금을 두르면 그게 곧 시계 문자판이다 (1차 시안의 실패).
-# 방패는 "위가 넓고 아래로 모이는" 실루엣이라 원과 즉시 구분된다.
-SW, TOP, BOT = 620, 230, 850          # 폭 · 윗변 · 아래 꼭지
+# ── 원형 방패 ──────────────────────────────────────────────────
+# 동심원 = 과녁·로델의 형식이다. 흔한 형식 자체는 문제가 없고,
+# 피해야 하는 것은 "빨강-흰-파랑 띠 + 별" 이라는 특정 배색이다.
+# 우리는 주황 계열 + 59.
+#
+# 입체감은 그라데이션이 아니라 띠의 명암 단계로 만든다 —
+# 아이콘이 작아지면 그라데이션은 뭉개지고 단계는 남는다.
+LIGHT = '#FFA470'                      # 하이라이트용 밝은 주황
+SHADE = '#B8420F'                      # 그늘용 짙은 주황
+
+R1, R2, R3, R4 = 330, 266, 206, 146    # 바깥 → 중앙. 마지막이 59 가 들어가는 원
 
 
-def shield_path(scale=1.0):
-    w, top, bot = SW * scale, C - (C - TOP) * scale, C + (BOT - C) * scale
-    l, r = C - w / 2, C + w / 2
-    k = top + (bot - top) * 0.52      # 옆구리가 꺾이는 높이
-    return (f'M {l:.1f} {top + 34:.1f} '
-            f'Q {l:.1f} {top:.1f} {l + 34:.1f} {top:.1f} '
-            f'L {r - 34:.1f} {top:.1f} '
-            f'Q {r:.1f} {top:.1f} {r:.1f} {top + 34:.1f} '
-            f'L {r:.1f} {k:.1f} '
-            f'Q {r:.1f} {bot - 60:.1f} {C:.1f} {bot:.1f} '
-            f'Q {l:.1f} {bot - 60:.1f} {l:.1f} {k:.1f} Z')
+def rings(colors):
+    return ''.join(f'<circle cx="{C}" cy="{C}" r="{r}" fill="{c}"/>'
+                   for r, c in zip((R1, R2, R3, R4), colors))
 
 
-def notch(scale=1.0, color=None):
-    """59번째 자리 — 윗변 왼쪽에서 1/60 만큼 안쪽. 16px 에서 유일하게 살아남은 표시"""
-    w = SW * scale
-    top = C - (C - TOP) * scale
-    x = C - w / 2 + w * 0.22
-    return (f'<rect x="{x:.1f}" y="{top - 44:.1f}" width="{w * 0.075:.1f}" height="{w * 0.30:.1f}" '
-            f'rx="{w * 0.037:.1f}" fill="{color or ORANGE}"/>')
-
-
-# 문장(紋章) — 방패는 면만으로는 아무 말도 하지 않는다.
-# 59 를 넣는다. 런처는 48dp 이상이라 실제 사용 크기에서 또렷하게 읽힌다.
-# ※ 지금은 시스템 폰트로 그린다. 방향이 정해지면 패스로 떠서 정본에 넣는다.
-def num(scale=1.0, color=None, dy=0.0):
-    size = 300 * scale
-    y = C + size * 0.34 + dy
-    return (f'<text x="{C}" y="{y:.1f}" font-family="Segoe UI Black, Arial Black, sans-serif" '
+def num(size, color, dy=0.0):
+    """59 — 지금은 시스템 폰트. 확정되면 패스로 떠서 정본에 넣는다"""
+    return (f'<text x="{C}" y="{C + size * 0.345 + dy:.1f}" '
+            f'font-family="Segoe UI Black, Arial Black, sans-serif" '
             f'font-size="{size:.0f}" font-weight="900" text-anchor="middle" '
-            f'letter-spacing="-10" fill="{color or WHITE}">59</text>')
+            f'letter-spacing="-8" fill="{color}">59</text>')
 
 
-# ── A · 방패 + 59 ──────────────────────────────────────────────
+# A 안을 다듬는다. 세 가지가 걸렸다:
+#   ① 동심원만으로는 "과녁" 으로 읽힌다 — 방패로 보이려면 테가 솟아야 한다
+#   ② 중앙 원이 작아 59 가 32px 에서 먼저 죽는다 — 원을 키운다
+#   ③ 앱이 플랫인데 혼자 입체면 튄다 — 그라데이션 대신 명암 단계로만
+
+R1, R2, R3, R4 = 330, 272, 212, 168    # 중앙 원을 146 → 168 로 키웠다
+
+
+# ── A · 명암 4단 (기본) ────────────────────────────────────────
 def variant_a():
-    return f'<path d="{shield_path()}" fill="{ORANGE}"/>' + num(1.0, WHITE, -18)
+    return rings((SHADE, ORANGE, LIGHT, WHITE)) + num(176, DEEP, -4)
 
 
-# ── B · 겹친 방패 + 59 ─────────────────────────────────────────
-# 바깥 테두리가 한 겹 더 있어 다른 주황 아이콘과 구분된다.
+# ── B · 금속 테 ────────────────────────────────────────────────
+# 바깥에 짙은 선을 한 겹 두르면 면이 아니라 "판" 으로 보인다. 과녁과 갈리는 지점.
 def variant_b():
-    return (f'<path d="{shield_path()}" fill="{ORANGE}"/>'
-            f'<path d="{shield_path(0.78)}" fill="{DEEP}"/>'
-            + num(0.82, WHITE, -8))
+    return (f'<circle cx="{C}" cy="{C}" r="{R1}" fill="{SHADE}"/>'
+            f'<circle cx="{C}" cy="{C}" r="{R1 - 16}" fill="{ORANGE}"/>'
+            f'<circle cx="{C}" cy="{C}" r="{R2}" fill="{LIGHT}"/>'
+            f'<circle cx="{C}" cy="{C}" r="{R3}" fill="{ORANGE}"/>'
+            f'<circle cx="{C}" cy="{C}" r="{R4}" fill="{WHITE}"/>'
+            + num(176, DEEP, -4))
 
 
-# ── C · 테두리 방패 + 59 ───────────────────────────────────────
+# ── C · 위쪽 빛 한 줄 ──────────────────────────────────────────
+# 그라데이션 없이 입체. 각 띠 위쪽에만 밝은 호를 얹는다 — 플랫을 깨지 않는다.
 def variant_c():
-    return (f'<path d="{shield_path()}" fill="{WHITE}" stroke="{ORANGE}" stroke-width="56" '
-            f'stroke-linejoin="round"/>' + num(0.92, ORANGE, -14))
+    p = [rings((SHADE, ORANGE, LIGHT, WHITE))]
+    for r in (R1 - 14, R2 - 14):
+        x0, y0 = pol(300, r)
+        x1, y1 = pol(60, r)
+        p.append(f'<path d="M {x0:.1f} {y0:.1f} A {r} {r} 0 0 1 {x1:.1f} {y1:.1f}" '
+                 f'fill="none" stroke="{WHITE}" stroke-opacity="0.34" stroke-width="18" '
+                 f'stroke-linecap="round"/>')
+    p.append(num(176, DEEP, -4))
+    return ''.join(p)
 
 
-# ── D · 방패 + 59 + 노치 ───────────────────────────────────────
-# 59 가 안 읽히는 16px 에서도 "윗변에 한 군데가 다른 방패" 는 남는다.
+# ── D · 중앙만 짙게 ────────────────────────────────────────────
+# 59 를 흰 글자로. 중앙이 어두우면 시선이 거기 멈춘다.
 def variant_d():
-    return (f'<path d="{shield_path()}" fill="{ORANGE}"/>' + num(0.94, WHITE, -4)
-            + notch(1.0, DEEP))
+    return (rings((SHADE, ORANGE, LIGHT, DEEP)) + num(176, WHITE, -4))
 
 
 VARIANTS = {'a': variant_a, 'b': variant_b, 'c': variant_c, 'd': variant_d}
-TITLE = {'a': 'A  shield + 59', 'b': 'B  double shield + 59',
-         'c': 'C  outlined + 59', 'd': 'D  shield + 59 + notch'}
+TITLE = {'a': 'A  4 steps', 'b': 'B  metal rim',
+         'c': 'C  top light', 'd': 'D  dark center'}
 SIZES = (96, 48, 32, 16)
 
 
