@@ -46,79 +46,108 @@ def wrap(body, bg=None):
             f'width="{W}" height="{W}">{rect}{body}</svg>')
 
 
-# ── 원형 방패 ──────────────────────────────────────────────────
-# 동심원 = 과녁·로델의 형식이다. 흔한 형식 자체는 문제가 없고,
-# 피해야 하는 것은 "빨강-흰-파랑 띠 + 별" 이라는 특정 배색이다.
-# 우리는 주황 계열 + 59.
+# ── 시계 방패 ──────────────────────────────────────────────────
+# 눈금은 "띠 하나" 에만 둔다. 전면에 두르면 그건 방패가 아니라 시계 문자판이다
+# (앞선 시안의 실패). 동심원 구조 안에서 눈금 띠는 한 겹일 뿐이다.
 #
-# 입체감은 그라데이션이 아니라 띠의 명암 단계로 만든다 —
-# 아이콘이 작아지면 그라데이션은 뭉개지고 단계는 남는다.
-LIGHT = '#FFA470'                      # 하이라이트용 밝은 주황
-SHADE = '#B8420F'                      # 그늘용 짙은 주황
+# 중앙 보스는 주황, 59 는 흰색. 바깥이 어둡고 가운데가 솟은 것처럼 보이게
+# 띠마다 위를 밝히고 아래를 어둡게 한다.
+LIGHT = '#FFA470'
+SHADE = '#B8420F'
+DARK  = '#8F300A'
 
-R1, R2, R3, R4 = 330, 266, 206, 146    # 바깥 → 중앙. 마지막이 59 가 들어가는 원
-
-
-def rings(colors):
-    return ''.join(f'<circle cx="{C}" cy="{C}" r="{r}" fill="{c}"/>'
-                   for r, c in zip((R1, R2, R3, R4), colors))
+R_RIM, R_TICK, R_RING, R_IN, R_BOSS = 330, 312, 250, 232, 178
+MARK = 59                                  # 짚는 눈금 — 정각 1분 전
 
 
-def num(size, color, dy=0.0):
-    """59 — 지금은 시스템 폰트. 확정되면 패스로 떠서 정본에 넣는다"""
-    return (f'<text x="{C}" y="{C + size * 0.345 + dy:.1f}" '
-            f'font-family="Segoe UI Black, Arial Black, sans-serif" '
-            f'font-size="{size:.0f}" font-weight="900" text-anchor="middle" '
-            f'letter-spacing="-8" fill="{color}">59</text>')
+def grad(gid, top, bottom):
+    return (f'<linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0" stop-color="{top}"/>'
+            f'<stop offset="1" stop-color="{bottom}"/></linearGradient>')
 
 
-# A 안을 다듬는다. 세 가지가 걸렸다:
-#   ① 동심원만으로는 "과녁" 으로 읽힌다 — 방패로 보이려면 테가 솟아야 한다
-#   ② 중앙 원이 작아 59 가 32px 에서 먼저 죽는다 — 원을 키운다
-#   ③ 앱이 플랫인데 혼자 입체면 튄다 — 그라데이션 대신 명암 단계로만
+def tick_band(mark_color=None):
+    out = []
+    for m in range(60):
+        if m == MARK and mark_color:
+            continue
+        long_ = (m % 5 == 0)
+        out.append(tick(m, R_TICK - (54 if long_ else 34), R_TICK - 10,
+                        13 if long_ else 8,
+                        'rgba(255,255,255,0.95)' if long_ else 'rgba(255,255,255,0.55)'))
+    if mark_color:
+        out.append(tick(MARK, R_RING + 6, R_TICK - 6, 18, mark_color))
+    return ''.join(out)
 
-R1, R2, R3, R4 = 330, 272, 212, 168    # 중앙 원을 146 → 168 로 키웠다
+
+def boss(fill, text_fill=WHITE):
+    return (f'<circle cx="{C}" cy="{C}" r="{R_BOSS}" fill="{fill}"/>'
+            f'<text x="{C}" y="{C + 186 * 0.345:.1f}" '
+            f'font-family="Segoe UI Black, Arial Black, sans-serif" font-size="186" '
+            f'font-weight="900" text-anchor="middle" letter-spacing="-8" '
+            f'fill="{text_fill}">59</text>')
 
 
-# ── A · 명암 4단 (기본) ────────────────────────────────────────
+# ── A · 플랫 ───────────────────────────────────────────────────
 def variant_a():
-    return rings((SHADE, ORANGE, LIGHT, WHITE)) + num(176, DEEP, -4)
+    return (f'<circle cx="{C}" cy="{C}" r="{R_RIM}" fill="{SHADE}"/>'
+            f'<circle cx="{C}" cy="{C}" r="{R_TICK}" fill="{ORANGE}"/>'
+            + tick_band(WHITE)
+            + f'<circle cx="{C}" cy="{C}" r="{R_RING}" fill="{WHITE}"/>'
+              f'<circle cx="{C}" cy="{C}" r="{R_IN}" fill="{LIGHT}"/>'
+            + boss(ORANGE))
 
 
-# ── B · 금속 테 ────────────────────────────────────────────────
-# 바깥에 짙은 선을 한 겹 두르면 면이 아니라 "판" 으로 보인다. 과녁과 갈리는 지점.
+# ── B · 띠마다 명암 ────────────────────────────────────────────
+# 위가 밝고 아래가 어둡다. 그라데이션 하나로 판이 기울어 보인다.
 def variant_b():
-    return (f'<circle cx="{C}" cy="{C}" r="{R1}" fill="{SHADE}"/>'
-            f'<circle cx="{C}" cy="{C}" r="{R1 - 16}" fill="{ORANGE}"/>'
-            f'<circle cx="{C}" cy="{C}" r="{R2}" fill="{LIGHT}"/>'
-            f'<circle cx="{C}" cy="{C}" r="{R3}" fill="{ORANGE}"/>'
-            f'<circle cx="{C}" cy="{C}" r="{R4}" fill="{WHITE}"/>'
-            + num(176, DEEP, -4))
+    d = ('<defs>' + grad('rim', SHADE, DARK) + grad('face', '#FF854F', '#E85A20')
+         + grad('bos', '#FF8A55', '#E25B1E') + '</defs>')
+    return (d
+            + f'<circle cx="{C}" cy="{C}" r="{R_RIM}" fill="url(#rim)"/>'
+              f'<circle cx="{C}" cy="{C}" r="{R_TICK}" fill="url(#face)"/>'
+            + tick_band(WHITE)
+            + f'<circle cx="{C}" cy="{C}" r="{R_RING}" fill="{WHITE}"/>'
+              f'<circle cx="{C}" cy="{C}" r="{R_IN}" fill="{LIGHT}"/>'
+            + boss('url(#bos)'))
 
 
-# ── C · 위쪽 빛 한 줄 ──────────────────────────────────────────
-# 그라데이션 없이 입체. 각 띠 위쪽에만 밝은 호를 얹는다 — 플랫을 깨지 않는다.
+# ── C · 솟은 보스 ──────────────────────────────────────────────
+# B + 테두리 위쪽 빛 한 줄 + 보스 아래 그림자. 가운데가 튀어나와 보인다.
 def variant_c():
-    p = [rings((SHADE, ORANGE, LIGHT, WHITE))]
-    for r in (R1 - 14, R2 - 14):
-        x0, y0 = pol(300, r)
-        x1, y1 = pol(60, r)
-        p.append(f'<path d="M {x0:.1f} {y0:.1f} A {r} {r} 0 0 1 {x1:.1f} {y1:.1f}" '
-                 f'fill="none" stroke="{WHITE}" stroke-opacity="0.34" stroke-width="18" '
-                 f'stroke-linecap="round"/>')
-    p.append(num(176, DEEP, -4))
-    return ''.join(p)
+    d = ('<defs>' + grad('rim2', SHADE, DARK) + grad('face2', '#FF854F', '#E85A20')
+         + grad('bos2', '#FF9566', '#DD5418') + '</defs>')
+    hi = []
+    for r, op, w in ((R_RIM - 10, 0.40, 16), (R_TICK - 8, 0.22, 12)):
+        x0, y0 = pol(305, r); x1, y1 = pol(55, r)
+        hi.append(f'<path d="M {x0:.1f} {y0:.1f} A {r} {r} 0 0 1 {x1:.1f} {y1:.1f}" '
+                  f'fill="none" stroke="{WHITE}" stroke-opacity="{op}" stroke-width="{w}" '
+                  f'stroke-linecap="round"/>')
+    sx0, sy0 = pol(125, R_BOSS + 9); sx1, sy1 = pol(235, R_BOSS + 9)
+    shadow = (f'<path d="M {sx0:.1f} {sy0:.1f} A {R_BOSS + 9} {R_BOSS + 9} 0 0 1 '
+              f'{sx1:.1f} {sy1:.1f}" fill="none" stroke="{DARK}" stroke-opacity="0.28" '
+              f'stroke-width="20" stroke-linecap="round"/>')
+    return (d
+            + f'<circle cx="{C}" cy="{C}" r="{R_RIM}" fill="url(#rim2)"/>'
+              f'<circle cx="{C}" cy="{C}" r="{R_TICK}" fill="url(#face2)"/>'
+            + tick_band(WHITE)
+            + f'<circle cx="{C}" cy="{C}" r="{R_RING}" fill="{WHITE}"/>'
+              f'<circle cx="{C}" cy="{C}" r="{R_IN}" fill="{LIGHT}"/>'
+            + shadow + boss('url(#bos2)') + ''.join(hi))
 
 
-# ── D · 중앙만 짙게 ────────────────────────────────────────────
-# 59 를 흰 글자로. 중앙이 어두우면 시선이 거기 멈춘다.
+# ── D · 59번 눈금 강조 ─────────────────────────────────────────
+# C + 짚는 눈금 하나만 길게. 정각 1분 전이 어디인지 보인다.
 def variant_d():
-    return (rings((SHADE, ORANGE, LIGHT, DEEP)) + num(176, WHITE, -4))
+    base = variant_c()
+    long_tick = tick(MARK, R_RING - 4, R_TICK - 4, 24, WHITE)
+    return base.replace(f'<circle cx="{C}" cy="{C}" r="{R_RING}" fill="{WHITE}"/>',
+                        long_tick + f'<circle cx="{C}" cy="{C}" r="{R_RING}" fill="{WHITE}"/>')
 
 
 VARIANTS = {'a': variant_a, 'b': variant_b, 'c': variant_c, 'd': variant_d}
-TITLE = {'a': 'A  4 steps', 'b': 'B  metal rim',
-         'c': 'C  top light', 'd': 'D  dark center'}
+TITLE = {'a': 'A  flat', 'b': 'B  shaded bands',
+         'c': 'C  raised boss', 'd': 'D  C + 59th tick'}
 SIZES = (96, 48, 32, 16)
 
 
