@@ -18,3 +18,4 @@ android/*.iml
 *.keystore
 *.jks
 android/keystore.properties
+.tmp-char/
