@@ -26,6 +26,7 @@ if (!SRC) throw new Error('사용법: node scripts/store-shots.mjs <캡처폴더
 export const SHOTS = [
   { file: 's1-alarm.png',    title: '매시 59분, 오구!',        sub: '울릴 시간대는 내가 고릅니다' },
   { file: 's2-home.png',     title: '안 적어도 알아요',          sub: '폰 쓴 시간을 자동으로 재드려요' },
+  // 아직 못 찍음 — :59 에만 뜬다. 찍으면 s3-alarm-ai.png 로 넣으면 이 자리에 들어간다
   { file: 's3-alarm-ai.png', title: '알람에서 바로 AI에게',      sub: '지금 물어볼 것 한 장을 드려요' },
   { file: 's4-report.png',   title: '오늘 하루를 100점으로',     sub: '성장·균형·실행 세 가지로' },
   // 달력 아래 약속·일정 목록에는 내 할일 제목이 그대로 나온다 → 카드에서 끊는다
