@@ -2,6 +2,7 @@
 
 > 2026-10-28 · 기준 v1.21.0 (versionCode 55)
 > **원본 그림: `public/promo-bg.png`** (확대본 `brand/ogu-character-ref.png`)
+> **SVG 정본: `brand/ogu-character.svg`** — 원본 픽셀 좌표 그대로. 부품마다 id 가 있다
 > v2(히어로 + 시계 방패)는 무겁고 차가워서 접었다. 오구는 **자라는 캐릭터**이고,
 > 마법의 시간방패는 자라면서 얻는 물건이다.
 

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="176 600 400 480" width="400" height="480">
+  <!-- 오구 원본 — public/promo-bg.png 를 좌표 그대로 옮겼다 (원본 픽셀 좌표계).
+       고칠 때는 이 파일의 부품만 바꾼다. 이미지 모델로 다시 그리지 않는다. -->
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#FB9A56"/><stop offset="1" stop-color="#F57F43"/>
+    </linearGradient>
+    <radialGradient id="face" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0.8" stop-color="#FEF6E8"/><stop offset="1" stop-color="#FCE8D2"/>
+    </radialGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#BED57E"/><stop offset="1" stop-color="#93BE62"/>
+    </linearGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#F2964F" stop-opacity="0.35"/><stop offset="1" stop-color="#F2964F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <ellipse id="ground" cx="376" cy="1064" rx="150" ry="16" fill="url(#shadow)"/>
+
+  <g id="sprout">
+    <path id="stem" d="M375 724 C375 710 374 700 372 690" stroke="#8FBA63" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <path id="leaf-l" d="M371 690 C366 650 326 630 292 644 C291 682 334 706 371 690 Z" fill="url(#leaf)"/>
+    <path id="leaf-r" d="M374 688 C374 642 410 618 448 621 C454 662 420 696 374 688 Z" fill="url(#leaf)"/>
+    <path d="M366 683 C350 668 330 660 312 656" stroke="#86B358" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M378 680 C392 662 412 646 432 636" stroke="#86B358" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <g id="feet" fill="#F47E3E">
+    <rect x="291" y="1016" width="45" height="52" rx="21"/>
+    <rect x="414" y="1016" width="45" height="52" rx="21"/>
+  </g>
+
+  <circle id="body" cx="376" cy="889" r="166" fill="url(#body)"/>
+
+  <g id="arms" fill="#F67B40">
+    <ellipse cx="222" cy="935" rx="30" ry="28"/>
+    <ellipse cx="530" cy="935" rx="30" ry="28"/>
+  </g>
+
+  <circle id="face" cx="377" cy="889" r="131" fill="url(#face)"/>
+
+  <g id="ticks" stroke="#FDC392" stroke-width="10" stroke-linecap="round">
+    <line x1="376" y1="773" x2="376" y2="792"/>
+    <line x1="376" y1="987" x2="376" y2="1006"/>
+    <line x1="261" y1="889" x2="280" y2="889"/>
+    <line x1="473" y1="889" x2="492" y2="889"/>
+  </g>
+
+  <g id="cheeks" fill="#FFC9A6" fill-opacity="0.75">
+    <circle cx="313" cy="852" r="16"/>
+    <circle cx="440" cy="852" r="16"/>
+  </g>
+
+  <g id="eyes" fill="#653E2A">
+    <ellipse cx="332" cy="829" rx="7.5" ry="13"/>
+    <ellipse cx="419" cy="829" rx="7.5" ry="13"/>
+  </g>
+  <path id="mouth" d="M362 845 Q376 864 390 845" stroke="#6E4733" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+
+  <!-- 바늘 — 원본 그대로 10시 10분. 59분으로 바꿀 때는 이 그룹만 고친다 -->
+  <g id="hands" stroke="#F47A41" stroke-width="12" stroke-linecap="round">
+    <line id="hour" x1="376" y1="908" x2="321" y2="874"/>
+    <line id="minute" x1="376" y1="908" x2="440" y2="860"/>
+  </g>
+  <circle id="pivot" cx="376" cy="908" r="16" fill="#FA8B44"/>
+</svg>
