@@ -18,16 +18,18 @@ export function seedOf(dateKey, salt = 0) {
 
 /**
  * @param dateKey  'YYYY-MM-DD'
- * @param state    { recent: {id: dateKey}, skips: {id: count} }
+ * @param state    { recent: {id: dateKey}, skips: {id: count}, exclude: [id] }
  * @param stage    생애주기 (없으면 공통 풀만)
  * @param salt     셔플 횟수 (하루 1회 허용 → 1 이 들어온다)
  */
 export function pickMissions(dateKey, state = {}, stage = null, salt = 0) {
-  const { recent = {}, skips = {} } = state
+  const { recent = {}, skips = {}, exclude = [] } = state
+  const out = new Set(exclude)
   const recentCutoff = dayOffsetKey(dateKey, -RECENT_DAYS)
 
   const usable = MISSIONS.filter(m => {
     if (m.stage && m.stage !== stage) return false
+    if (out.has(m.id)) return false
     if ((skips[m.id] ?? 0) >= SKIP_LIMIT) return false
     const seen = recent[m.id]
     return !seen || seen < recentCutoff
@@ -36,10 +38,26 @@ export function pickMissions(dateKey, state = {}, stage = null, salt = 0) {
   return Object.keys(AREAS).map((area, i) => {
     let pool = usable.filter(m => m.area === area)
     // 쓸 수 있는 게 다 떨어지면 조건을 풀어 준다 — 빈칸보다는 다시 나오는 편이 낫다
-    if (!pool.length) pool = MISSIONS.filter(m => m.area === area && (!m.stage || m.stage === stage))
+    if (!pool.length) pool = MISSIONS.filter(m => m.area === area && (!m.stage || m.stage === stage) && !out.has(m.id))
     if (!pool.length) return null
     return pool[seedOf(dateKey, salt * 31 + i) % pool.length]
   }).filter(Boolean)
+}
+
+/**
+ * 다시 뽑기 — 해낸 미션은 두고 나머지만 다른 미션으로 바꾼다. 바꿀 게 없으면 null.
+ * 지금 보이는 것을 반드시 뺀다: 14일 제외로 영역별 풀이 1~2개만 남으면 씨앗을 바꿔도
+ * 같은 미션이 다시 나와서, 눌러도 아무 일 없는 버튼이 됐다.
+ */
+export function rerollIds({ date, ids = [], done = [], recent, skips }, stage = null) {
+  const kept = new Set(done)
+  if (ids.every(id => kept.has(id))) return null
+  const picked = pickMissions(date, { recent, skips, exclude: ids }, stage, 1)
+  return ids.map(id => {
+    if (kept.has(id)) return id
+    const area = MISSIONS.find(m => m.id === id)?.area
+    return picked.find(m => m.area === area)?.id ?? id
+  })
 }
 
 /** 'YYYY-MM-DD' 에서 n일 이동 */

@@ -9,10 +9,12 @@ import TextWithLinks from '../components/common/TextWithLinks'
 import ShareButton from '../components/common/ShareButton'
 import SnsShareButtons from '../components/common/SnsShareButtons'
 import NotesCard from '../components/notes/NotesCard'
+import TodoQuickEdit from '../components/todos/TodoQuickEdit'
 import { theme } from '../styles/theme'
-import { dateRangeLabel } from '../lib/alarmContext'
+import { dateRangeLabel, daysUntil } from '../lib/alarmContext'
 
 const pad = n => String(n).padStart(2, '0')
+const HOME_TODO_MAX = 10   // 홈은 훑어보는 자리 — 나머지는 할일 탭에서
 
 // ── 카드 공통 스타일 ───────────────────────────────────────
 const cardStyle = {
@@ -56,6 +58,7 @@ export default function HomePage({
   onLoginOpen,
 }) {
   const [now, setNow] = useState(new Date())
+  const [editingId, setEditingId] = useState(null)
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -78,6 +81,7 @@ export default function HomePage({
       if (!b.due_date) return 1
       return String(a.due_date).localeCompare(String(b.due_date))
     })
+  const visibleTodos = pendingTodos.slice(0, HOME_TODO_MAX)
   const todoPct      = shown.length ? Math.round(doneTodos.length / shown.length * 100) : 0
 
   // 알람 통계
@@ -167,10 +171,11 @@ export default function HomePage({
             🎉 모든 할일 완료!
           </div>
         ) : (
-          pendingTodos.map((t, i) => (
-            <div key={t.id || i} style={{
-              display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0',
-              borderBottom: i < pendingTodos.length - 1 ? '1px solid rgba(0,0,0,0.025)' : 'none',
+          visibleTodos.map((t, i) => (
+            <div key={t.id || i}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0',
+              borderBottom: i < visibleTodos.length - 1 ? '1px solid rgba(0,0,0,0.025)' : 'none',
             }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
@@ -188,7 +193,7 @@ export default function HomePage({
               </span>
               {t.due_date && (() => {
                 // 지난 것은 D--6 이 아니라 "6일 지남" — 마이너스 두 개는 아무 뜻도 아니다
-                const d = Math.ceil((new Date(t.due_date) - new Date()) / 86400000)
+                const d = daysUntil(t.due_date, now)
                 return (
                   <span style={{
                     fontSize: 10, flexShrink: 0, fontWeight: d < 0 ? 800 : 400,
@@ -198,8 +203,37 @@ export default function HomePage({
                   </span>
                 )
               })()}
+              {/* 줄 전체를 버튼으로 만들지 않는다 — 제목 속 링크를 누를 수 있어야 한다 */}
+              <button
+                onClick={() => setEditingId(editingId === t.id ? null : t.id)}
+                aria-label={`${t.title || t.text} 수정·삭제`}
+                aria-expanded={editingId === t.id}
+                style={{
+                  width: 36, height: 36, flexShrink: 0, marginRight: -8, border: 'none', background: 'transparent',
+                  color: '#9A9AA0', fontSize: 15, cursor: 'pointer',
+                }}
+              >
+                {editingId === t.id ? '▲' : '⋯'}
+              </button>
+            </div>
+            {editingId === t.id && (
+              <TodoQuickEdit
+                todo={t}
+                onSave={patch => onUpdateTodo?.(t.id, patch)}
+                onDelete={() => onDeleteTodo?.(t.id)}
+                onClose={() => setEditingId(null)}
+              />
+            )}
             </div>
           ))
+        )}
+        {pendingTodos.length > HOME_TODO_MAX && (
+          <button onClick={() => onTabChange('todos')} style={{
+            width: '100%', marginTop: 8, padding: '9px 0', borderRadius: 10, border: 'none',
+            background: 'rgba(0,0,0,0.035)', color: '#8E8E93', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}>
+            {pendingTodos.length - HOME_TODO_MAX}개 더 보기 →
+          </button>
         )}
       </section>
 

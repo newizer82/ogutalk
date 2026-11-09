@@ -57,6 +57,7 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
   const doneCount = state.done.length
   const total = state.missions.length
   if (!total) return null
+  const canShuffle = !state.shuffled && doneCount < total   // 다 해냈으면 바꿀 것이 없다
 
   return (
     <div ref={rootRef} style={{
@@ -83,11 +84,11 @@ export default function MissionCard({ stage = null, onChange, collapsible = fals
         )}
         <button
           onClick={handleShuffle}
-          disabled={state.shuffled}
+          disabled={!canShuffle}
           style={{
             border: 'none', background: 'transparent', fontSize: 12, fontWeight: 700,
-            color: state.shuffled ? '#B0B0B6' : '#D9531B',
-            cursor: state.shuffled ? 'default' : 'pointer', padding: '2px 4px',
+            color: canShuffle ? '#D9531B' : '#B0B0B6',
+            cursor: canShuffle ? 'pointer' : 'default', padding: '2px 4px',
           }}
         >
           {state.shuffled ? '오늘 셔플 완료' : '🎲 다시 뽑기'}

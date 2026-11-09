@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Toggle from '../common/Toggle'
+import CalendarPicker from './CalendarPicker'
 import { IS_NATIVE } from '../../lib/capacitor'
 import { hasCalendarPermission, requestCalendarPermission, getCalendars } from '../../lib/calendar'
 import { logEvent } from '../../lib/firebase'
@@ -23,19 +24,6 @@ export default function CalendarSection({ enabled, onChange, calendarIds = [], o
     setGranted(ok)
     setCals(ok ? await getCalendars() : [])
   }, [])
-
-  // 고른 게 없으면 전체를 본다 — 계정이 여럿이면 같은 일정이 여러 번 뜬다
-  const picked = new Set(calendarIds)
-  const isOn = id => picked.size === 0 || picked.has(id)
-  const toggleCal = (id) => {
-    // 처음 손대는 순간 "전체"를 실제 목록으로 펼쳐 둔다 (하나만 끄려던 건데 하나만 켜지면 당황한다)
-    const base = picked.size === 0 ? new Set(cals.map(c => c.id)) : new Set(picked)
-    if (base.has(id)) base.delete(id)
-    else base.add(id)
-    // 전부 끄면 아무 일정도 안 보인다 → 마지막 하나는 끄지 못하게 한다
-    if (base.size === 0) return
-    onCalendarIdsChange?.(base.size === cals.length ? [] : [...base])
-  }
 
   useEffect(() => {
     if (!IS_NATIVE) return
@@ -95,49 +83,7 @@ export default function CalendarSection({ enabled, onChange, calendarIds = [], o
 
       {/* ── 볼 캘린더 고르기 — 계정이 여럿이면 같은 일정이 중복돼 들어온다 ── */}
       {enabled && granted && cals.length > 0 && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #ECECEF' }}>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: '#111111', marginBottom: 2 }}>
-            볼 캘린더
-          </div>
-          <div style={{ fontSize: 11, color: '#9A9AA0', marginBottom: 10, lineHeight: 1.5 }}>
-            {picked.size === 0
-              ? `전체 ${cals.length}개를 보고 있어요. 필요한 것만 남기면 중복이 줄어요.`
-              : `${picked.size}개 선택됨`}
-          </div>
-          {cals.map(c => (
-            <label
-              key={c.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={isOn(c.id)}
-                onChange={() => toggleCal(c.id)}
-                style={{ width: 18, height: 18, accentColor: '#FF6B2C', flexShrink: 0 }}
-              />
-              <span style={{
-                width: 10, height: 10, borderRadius: 3, flexShrink: 0,
-                background: c.color ? `#${(c.color >>> 0 & 0xFFFFFF).toString(16).padStart(6, '0')}` : '#C7C7CC',
-              }} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{
-                  display: 'block', fontSize: 13, color: isOn(c.id) ? '#111111' : '#B0B0B6',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {c.name || '(이름 없음)'}
-                </span>
-                <span style={{
-                  display: 'block', fontSize: 11, color: '#9A9AA0', marginTop: 1,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {c.account}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
+        <CalendarPicker cals={cals} calendarIds={calendarIds} onChange={onCalendarIdsChange} />
       )}
 
       {/* ── 사전 고지 (Play 정책: 권한 요청 전 명시적 동의) ── */}

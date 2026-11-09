@@ -11,10 +11,12 @@ import {
 } from '../src/data/appCategories.js'
 import { buildCheckinEntry, mergeCheckins } from '../src/lib/checkinEntry.js'
 import {
-  minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, formatMinutes,
+  minutesOf, todayTotals, alarmMood, moodHeadline, pickNextTodo, todoHint, daysUntil, formatMinutes,
   pickUpcomingEvent, eventLine, shortPlace,
 } from '../src/lib/alarmContext.js'
-import { pickMissions, seedOf, dayOffsetKey } from '../src/lib/missionPick.js'
+import { pickMissions, rerollIds, seedOf, dayOffsetKey } from '../src/lib/missionPick.js'
+import { groupCalendars, nextCalendarIds, isCalendarOn, accountLabel } from '../src/lib/calendarPick.js'
+import { draftOf, editError, editPatch } from '../src/lib/todoEdit.js'
 import { MISSIONS, AREAS } from '../src/data/missions.js'
 import { pickBanners, hiddenToday } from '../src/lib/bannerPick.js'
 import { DEFAULT_BANNERS, BANNER_KINDS } from '../src/data/banners.js'
@@ -605,7 +607,34 @@ console.log('✓ 오구 지수(성장·균형·실행) 검증 통과')
   {
     const ids = MISSIONS.map(m => m.id)
     assert.equal(new Set(ids).size, ids.length)
-    assert.ok(MISSIONS.length >= 55, `미션 수 ${MISSIONS.length}`)
+    assert.ok(MISSIONS.length >= 110, `미션 수 ${MISSIONS.length}`)
+    const texts = MISSIONS.map(m => m.text)
+    assert.equal(new Set(texts).size, texts.length, '같은 문구가 두 번 들어가면 안 된다')
+  }
+  // 다시 뽑기 — 매일 쓰는 사용자를 90일 돌려도 보이던 미션이 그대로 남으면 안 된다
+  // (14일 제외로 풀이 말랐을 때 씨앗만 바꾸면 같은 미션이 나와 버튼이 죽어 보였다)
+  {
+    let recent = {}, d = '2026-09-01'
+    for (let i = 0; i < 90; i++) {
+      const ids = pickMissions(d, { recent }, null).map(m => m.id)
+      const next = rerollIds({ date: d, ids, done: [], recent }, null)
+      assert.equal(next.length, 3)
+      next.forEach((id, j) => {
+        assert.notEqual(id, ids[j], `${d}: 다시 뽑았는데 ${id} 그대로`)
+        assert.equal(MISSIONS.find(m => m.id === id).area, MISSIONS.find(m => m.id === ids[j]).area, '영역은 그대로')
+      })
+      ids.forEach(id => { recent[id] = d })
+      d = dayOffsetKey(d, 1)
+    }
+    // 풀이 완전히 말라도 지금 보이는 것은 다시 안 나온다
+    const allRecent = Object.fromEntries(MISSIONS.map(m => [m.id, day]))
+    const ids = pickMissions(day, { recent: allRecent }, null).map(m => m.id)
+    rerollIds({ date: day, ids, done: [], recent: allRecent }, null).forEach((id, j) => assert.notEqual(id, ids[j]))
+    // 해낸 미션은 그대로 둔다 (번 점수가 날아가면 안 된다)
+    const kept = rerollIds({ date: day, ids, done: [ids[1]], recent: {} }, null)
+    assert.equal(kept[1], ids[1])
+    assert.notEqual(kept[0], ids[0])
+    assert.equal(rerollIds({ date: day, ids, done: ids, recent: {} }, null), null, '다 해냈으면 바꿀 것이 없다')
   }
   assert.equal(seedOf('2026-10-09'), seedOf('2026-10-09'))
   assert.equal(dayOffsetKey('2026-03-01', -1), '2026-02-28')
@@ -1232,3 +1261,68 @@ console.log('✓ 돌아올 다리 검증 통과')
   assert.equal(pickSlotToPromote(after, now), null, '같은 슬롯을 두 번 올리면 점수가 부푼다')
 }
 console.log('✓ 시간 승격 검증 통과')
+
+// ── 볼 캘린더 고르기 ─────────────────────────────────────────────
+{
+  const cals = [
+    { id: 1, name: '내 일정',   account: 'a@gmail.com', accountType: 'com.google' },
+    { id: 2, name: '공휴일',    account: 'a@gmail.com', accountType: 'com.google' },
+    { id: 3, name: '업무',      account: 'b@gmail.com', accountType: 'com.google' },
+    { id: 4, name: 'My calendar', account: '1234567890', accountType: 'com.osp.app.signin' },
+    { id: 5, name: '내 캘린더', account: 'My calendar', accountType: 'local' },
+  ]
+  const g = groupCalendars(cals)
+  assert.deepEqual(g.map(x => x.items.length), [2, 1, 1, 1])
+  assert.equal(accountLabel(cals[0]), 'a@gmail.com')
+  assert.equal(accountLabel(cals[3]), '삼성 계정', '삼성 계정 번호를 그대로 보여주지 않는다')
+  assert.equal(accountLabel(cals[4]), '내 휴대폰')
+
+  // [] = 전체. 하나를 끄면 나머지가 실제 목록으로 펼쳐진다
+  assert.ok(isCalendarOn([], 3))
+  assert.deepEqual(nextCalendarIds(cals, [], [2], false), [1, 3, 4, 5])
+  // 계정 하나를 통째로 끈다
+  assert.deepEqual(nextCalendarIds(cals, [], [1, 2], false), [3, 4, 5])
+  // 다시 다 켜면 [] 로 돌아온다 (새 캘린더가 생겨도 전체에 들어오게)
+  assert.deepEqual(nextCalendarIds(cals, [3, 4, 5], [1, 2], true), [])
+  // 전부 끄면 아무 일정도 안 보인다 → 거절
+  assert.equal(nextCalendarIds(cals, [1, 2], [1, 2], false), null)
+  assert.equal(nextCalendarIds(cals, [3], [3], false), null)
+}
+console.log('✓ 볼 캘린더 고르기 검증 통과')
+
+// ── 약속·일정 수정 ───────────────────────────────────────────────
+{
+  const appt = { todo_type: 'appointment', title: '치과', due_date: '2026-11-12', due_hour: 14, place: '강남', end_date: null }
+  const d0 = draftOf(appt)
+  assert.deepEqual(editPatch(appt, d0), {}, '안 고쳤으면 보낼 것이 없다')
+  assert.deepEqual(editPatch(appt, { ...d0, title: ' 치과 예약 ', due_hour: null, place: '' }),
+    { title: '치과 예약', due_hour: null, place: null })
+  assert.deepEqual(editPatch(appt, { ...d0, due_date: '2026-11-13' }), { due_date: '2026-11-13' })
+  assert.equal(editError(appt, { ...d0, title: '  ' }), '내용을 입력해 주세요')
+  assert.equal(editError(appt, { ...d0, due_date: '' }), '날짜를 골라 주세요')
+
+  const range = { todo_type: 'weekly', title: '출장', due_date: '2026-11-12', end_date: '2026-11-14' }
+  const d1 = draftOf(range)
+  assert.equal(editError(range, { ...d1, end_date: '2026-11-11' }), '끝나는 날이 시작보다 빨라요')
+  assert.deepEqual(editPatch(range, { ...d1, end_date: '2026-11-12' }), { end_date: null }, '하루로 줄면 띠로 그리지 않는다')
+  assert.equal(editPatch(range, d1).due_hour, undefined, '약속이 아니면 시각을 건드리지 않는다')
+
+  const undated = { todo_type: 'weekly', text: '책 사기', due_date: null }
+  assert.equal(draftOf(undated).title, '책 사기', '비로그인 할일은 text 칸을 쓴다')
+  assert.equal(editError(undated, draftOf(undated)), null, '날짜 없는 할일은 날짜 없이 저장된다')
+  assert.deepEqual(editPatch(undated, { ...draftOf(undated), due_date: '2026-11-20' }), { due_date: '2026-11-20' })
+}
+console.log('✓ 약속·일정 수정 검증 통과')
+
+// ── D-day — 시각과 상관없이 달력 날짜로 센다 (오전 9시 전에 하루 밀리던 버그) ──
+{
+  const at = h => new Date(2026, 10, 9, h).getTime()
+  for (const h of [0, 8, 9, 23]) {
+    assert.equal(daysUntil('2026-11-09', at(h)), 0, `${h}시: 오늘 마감은 D-DAY`)
+    assert.equal(daysUntil('2026-11-10', at(h)), 1, `${h}시: 내일`)
+    assert.equal(daysUntil('2026-11-08', at(h)), -1, `${h}시: 어제`)
+  }
+  assert.equal(daysUntil('2026-12-01', at(8)), 22, '달을 넘어도 맞다')
+  assert.equal(daysUntil('2026-11-09T00:00:00', at(8)), 0, '시각이 붙어 와도 날짜만 본다')
+}
+console.log('✓ D-day 검증 통과')

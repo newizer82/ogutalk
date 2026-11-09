@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getEvents } from '../../lib/calendar'
+import TodoQuickEdit from '../todos/TodoQuickEdit'
 import { dayScores } from '../../lib/dayLog'
 import { monthCells, eventsByDay, todosByDay, spanSegments, scoreTint, dateKey, gridRange, spanRange } from '../../lib/monthGrid'
 
@@ -88,13 +89,6 @@ export default function MonthCalendar({
     // 서버가 거부했을 때만 입력창을 열어 둔다. 닫아버리면 쓴 내용을 잃는다.
     if (ok === false) { setFailed(true); return }
     setDraft(null)
-  }
-
-  const applyEdit = () => {
-    const title = (editing?.title ?? '').trim()
-    if (!title) return
-    onUpdateTodo?.(editing.id, { title })
-    setEditing(null)
   }
 
   const dayEvents = evMap[picked] ?? []
@@ -276,7 +270,7 @@ export default function MonthCalendar({
           <div key={t.id}>
             {/* 누르면 수정·삭제가 열린다 — 잘못 넣은 약속을 지울 길이 없으면 달력이 쓰레기통이 된다 */}
             <button
-              onClick={() => { setEditing(editing?.id === t.id ? null : { id: t.id, title: t.title || t.text || '' }) }}
+              onClick={() => { setEditing(editing?.id === t.id ? null : { id: t.id }) }}
               style={{ ...row, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
             >
               <span style={{ width: 5, height: 5, borderRadius: 3, background: dotColorOf(t), flexShrink: 0 }} />
@@ -304,35 +298,12 @@ export default function MonthCalendar({
             </button>
 
             {editing?.id === t.id && (
-              <div style={{
-                display: 'flex', gap: 6, margin: '2px 0 8px', padding: 10,
-                borderRadius: 12, background: '#FAFAFB', border: '1px solid #ECECEF',
-              }}>
-                <input
-                  autoFocus
-                  value={editing.title}
-                  onChange={e => setEditing(v => ({ ...v, title: e.target.value }))}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') applyEdit()
-                    if (e.key === 'Escape') setEditing(null)
-                  }}
-                  style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                />
-                <button onClick={applyEdit} disabled={!editing.title.trim()} style={{
-                  border: 'none', borderRadius: 10, padding: '0 12px', fontSize: 12, fontWeight: 800,
-                  cursor: editing.title.trim() ? 'pointer' : 'default',
-                  background: editing.title.trim() ? '#FF6B2C' : '#F1F1F4',
-                  color: editing.title.trim() ? '#FFFFFF' : '#B0B0B6',
-                }}>
-                  수정
-                </button>
-                <button onClick={() => { onDeleteTodo?.(t.id); setEditing(null) }} style={{
-                  border: '1px solid rgba(210,59,46,0.3)', borderRadius: 10, padding: '0 12px',
-                  background: '#FFFFFF', color: '#D23B2E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                }}>
-                  삭제
-                </button>
-              </div>
+              <TodoQuickEdit
+                todo={t}
+                onSave={patch => onUpdateTodo?.(t.id, patch)}
+                onDelete={() => onDeleteTodo?.(t.id)}
+                onClose={() => setEditing(null)}
+              />
             )}
           </div>
         ))}

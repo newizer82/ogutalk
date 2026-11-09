@@ -180,13 +180,18 @@ export function pickNextTodo(todos = [], now = Date.now()) {
   })[0]
 }
 
+/** 오늘부터 며칠 남았나 (지났으면 음수). 'YYYY-MM-DD' 를 new Date() 로 읽으면 UTC 라 오전 9시 전엔 하루가 밀린다 */
+export function daysUntil(due, now = Date.now()) {
+  const [y, m, d] = String(due).slice(0, 10).split('-').map(Number)
+  const t = new Date(now)
+  return Math.round((new Date(y, m - 1, d) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000)
+}
+
 /** 할일 마감 라벨 (D-day) — 없으면 우선순위 라벨 */
 export function todoHint(t, now = Date.now()) {
   if (!t) return ''
   if (t.due_date) {
-    const d0 = new Date(now); d0.setHours(0, 0, 0, 0)
-    const d1 = new Date(t.due_date); d1.setHours(0, 0, 0, 0)
-    const days = Math.round((d1 - d0) / 86400000)
+    const days = daysUntil(t.due_date, now)
     if (days < 0)  return `${-days}일 지남`
     if (days === 0) return '오늘 마감'
     if (days === 1) return '내일 마감'

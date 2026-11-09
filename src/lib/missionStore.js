@@ -1,7 +1,7 @@
 // ── 오늘의 미션 저장소 (로컬 전용) ──────────────────────────────
 // 미션은 사용자가 만든 할일과 섞지 않는다 — 매일 3개씩 todos 에 쌓이면
 // 내 할일 목록이 오염되고 완료율도 망가진다. 별도 칸에서 하루치만 산다.
-import { pickMissions, RECENT_DAYS } from './missionPick'
+import { pickMissions, rerollIds, RECENT_DAYS } from './missionPick'
 import { missionById } from '../data/missions'
 
 const KEY = 'ogu_missions'
@@ -69,8 +69,9 @@ export function undoMission(id, now = Date.now()) {
 export function shuffleMissions(stage = null, now = Date.now()) {
   const s = read()
   if (s.date !== dayKey(now) || s.shuffled) return false
-  const picked = pickMissions(s.date, { recent: s.recent, skips: s.skips }, stage, 1)
-  write({ ...s, ids: picked.map(m => m.id), done: [], shuffled: true })
+  const ids = rerollIds(s, stage)
+  if (!ids) return false
+  write({ ...s, ids, shuffled: true })   // 해낸 미션은 남는다 (done 을 비우면 번 점수가 날아간다)
   return true
 }
 
