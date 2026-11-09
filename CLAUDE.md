@@ -8,7 +8,7 @@
 >
 > 새 규칙을 추가할 때: 해당 기능 섹션에 3줄 이내로. 기능 설명은 쓰지 않는다.
 >
-> 기준: v1.21.0 (versionCode 55)
+> 기준: v1.22.0 (versionCode 56)
 
 **매시 59분**에 짧은 "오구" 소리로 알림을 울려 시간 감각을 되찾게 하는 안드로이드 앱.
 React + Vite 정적 번들을 Capacitor WebView 에 넣고, 서버는 Supabase(PostgreSQL · Auth · RLS · Edge Functions).
