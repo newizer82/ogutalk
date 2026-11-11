@@ -226,8 +226,9 @@ export default function AlarmPopup({
           )}
         </div>
 
-        {/* 하루 첫 알람에만 — 오늘 미션이 준비됐다는 것만 한 줄로 알린다 */}
-        {missionIntro && (
+        {/* 하루 첫 알람에만 — 오늘 미션이 준비됐다는 것만 한 줄로 알린다.
+            집중 중에는 이것도 띄우지 않는다 (실기기에서 "집중 중이에요" 아래에 미션 안내가 붙어 있었다) */}
+        {missionIntro && mood?.mood !== 'focus' && (
           <div style={{
             marginBottom: 10, padding: '9px 12px', borderRadius: 12,
             background: 'rgba(255,107,44,0.1)', border: '1px solid rgba(255,107,44,0.28)',

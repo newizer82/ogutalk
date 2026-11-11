@@ -223,6 +223,25 @@ console.log('✓ checkinStore 검증 통과')
     assert.equal(m.mood, 'focus')
     assert.ok(moodHeadline(m).includes('집중'))
   }
+  // 잰 값이 있으면 그 값으로만 말한다 — 실기기에 "1시간째 집중 중" 아래 "피클 13분" 이 떴다
+  {
+    const streak = [rec('work', 20, 30), rec('work', 20, 0)]
+    const short = alarmMood({ checkins: streak, autoSummary: { category: 'work', label: '피클', minutes: 13 }, now })
+    assert.equal(short.mood, 'normal', '13분 쓴 한 시간을 집중이라고 하면 안 된다')
+    const long = alarmMood({ checkins: streak, autoSummary: { category: 'work', label: '피클', minutes: 47 }, now })
+    assert.equal(moodHeadline(long), '47분째 집중 중이에요 👏')
+    // 업무 앱 여럿을 나눠 쓴 한 시간도 집중이다
+    const split = alarmMood({ checkins: [], autoSummary: { category: 'work', label: '노션', minutes: 22, groupMinutes: 58 }, now })
+    assert.equal(split.mood, 'focus')
+    assert.equal(split.minutes, 58)
+    // 힐링도 같다 — 8분 본 한 시간에 "한 시간을 넘겼어요" 라고 하지 않는다
+    const heal = [rec('video', 20, 30), rec('game', 20, 0)]
+    assert.equal(alarmMood({ checkins: heal, autoSummary: { category: 'video', label: '유튜브', minutes: 8 }, now }).mood, 'normal')
+    const many = alarmMood({ checkins: [], autoSummary: { category: 'video', label: '유튜브', minutes: 25, groupMinutes: 50 }, now })
+    assert.equal(many.mood, 'binge')
+    assert.equal(moodHeadline(many), '🌿 힐링 50분째예요')
+    for (const m of [long, split, many]) assert.ok([...moodHeadline(m)].length <= 16, moodHeadline(m))
+  }
   // 오래된 기록은 연속으로 치지 않는다 (100분 창)
   assert.equal(alarmMood({ checkins: [rec('work', 17, 0), rec('work', 17, 30)], now }).mood, 'normal')
 
@@ -1360,3 +1379,50 @@ console.log('✓ 약속·일정 수정 검증 통과')
   assert.equal(daysUntil('2026-11-09T00:00:00', at(8)), 0, '시각이 붙어 와도 날짜만 본다')
 }
 console.log('✓ D-day 검증 통과')
+
+// ── 하루 시계 — 홈 히어로의 48칸 ─────────────────────────────────
+{
+  const { dayCells, nowCell, alarmMarks, CELLS } = await import('../src/lib/dayClock.js')
+  const at = (h, m = 0, d = 10) => new Date(2026, 10, d, h, m).getTime()
+  const c = (type, h, m) => ({ activity_type: type, created_at: new Date(at(h, m)).toISOString() })
+  const now = at(15, 20)
+
+  const cells = dayCells([
+    c('work', 9, 0), c('consume', 9, 30),  // 자동 기록 — 30분 칸 하나씩
+    c('produce', 10, 59),                  // 알람 때 고른 답 — 10시 한 시간
+    c('consume', 12, 2),                   // 정각을 넘겨 답했다 → 11시에 칠한다
+    c('consume', 13, 59), c('work', 13, 30), // 겹치면 자동 기록이 이긴다
+    c('모르는값', 14, 0),
+    c('work', 16, 0),                      // 지금보다 뒤 — 쓰지 않는다
+    { activity_type: 'work', created_at: new Date(at(9, 0, 9)).toISOString() },  // 어제
+  ], now)
+
+  assert.equal(cells.length, CELLS)
+  assert.deepEqual(cells.slice(18, 20), ['produce', 'consume'], '9시는 반반')
+  assert.deepEqual(cells.slice(20, 22), ['produce', 'produce'], '알람 답은 그 한 시간을 채운다')
+  assert.deepEqual(cells.slice(22, 24), ['consume', 'consume'], '늦은 답은 직전 시간에')
+  assert.deepEqual(cells.slice(24, 26), [null, null], '12시는 비어 있어야 한다')
+  assert.deepEqual(cells.slice(26, 28), ['consume', 'produce'], '잰 값이 고른 값을 이긴다')
+  assert.equal(cells[28], null, '모르는 분류는 칠하지 않는다')
+  assert.equal(cells[32], null, '아직 오지 않은 시간')
+  assert.equal(cells.filter(Boolean).length, 8, '기록 없는 칸에 색을 칠하면 거짓말이 된다')
+  assert.ok(dayCells([], now).every(x => x === null))
+
+  // 자정 직후의 늦은 답은 어제 것이다 — 오늘 시계에 그리지 않는다
+  assert.ok(dayCells([c('produce', 0, 3)], now).every(x => x === null))
+
+  assert.equal(nowCell(at(0, 0)), 0)
+  assert.equal(nowCell(now), 30)
+  assert.equal(nowCell(at(23, 45)), 47)
+
+  // 59분 알람 표시 — alarmHours[h] 는 (h-1)시 59분에 울린다
+  const marks = alarmMarks({ 7: true, 13: true, 0: true, 9: false }, at(12, 48))
+  assert.deepEqual(marks.map(m => m.hour), [7, 13, 0], '울리는 순서대로 (0시 알람은 23:59 라 맨 뒤)')
+  assert.deepEqual(marks.map(m => m.min), [6 * 60 + 59, 12 * 60 + 59, 23 * 60 + 59])
+  assert.deepEqual(marks.map(m => m.past), [true, false, false])
+  assert.deepEqual(marks.map(m => m.next), [false, true, false], '다음 알람은 하나뿐이다')
+  assert.equal(alarmMarks({ 13: true }, at(12, 59))[0].past, true, '울린 순간부터 지나간 알람이다')
+  assert.ok(alarmMarks({ 7: true }, at(20, 0)).every(m => !m.next), '오늘 남은 알람이 없으면 다음도 없다')
+  assert.equal(alarmMarks({}, at(9, 0)).length, 0)
+}
+console.log('✓ 하루 시계 검증 통과')

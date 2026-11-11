@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import MissionCard from '../components/todos/MissionCard'
-import TimeBanner from '../components/home/TimeBanner'
-import TodayTimeHero from '../components/home/TodayTimeHero'
+import DayClockHero from '../components/home/DayClockHero'
 import BannerCarousel from '../components/home/BannerCarousel'
 import InstallPrompt from '../components/common/InstallPrompt'
 import MonthCalendar from '../components/home/MonthCalendar'
@@ -60,12 +59,12 @@ export default function HomePage({
   const [now, setNow] = useState(new Date())
   const [editingId, setEditingId] = useState(null)
 
+  // 홈이 쓰는 시각은 전부 분 단위다 ("N분 뒤 알람", D-day, 시계 바늘).
+  // 1초마다 돌리면 달력·할일까지 통째로 다시 그려져 배터리만 쓴다
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000)
+    const id = setInterval(() => setNow(new Date()), 15000)
     return () => clearInterval(id)
   }, [])
-
-  const H = now.getHours(), M = now.getMinutes()
 
   // 할일 계산
   // 홈의 "오늘의 약속·일정" — 월·주간 계획은 여기 넣지 않는다 (할일 탭에서 본다)
@@ -88,16 +87,12 @@ export default function HomePage({
 
   return (
     <div>
-      {/* ── 시간대 배너 — 지금 내 숫자로 말한다 (닫기 없음) ── */}
-      <TimeBanner checkins={checkins} goals={scoreGoals} lifeStage={lifeStage} onTabChange={onTabChange} />
-
-      {/* ── 히어로: 오늘 내 시간 (알람 카운트다운이 아니라 "시간이 어디로 갔나") ── */}
-      <TodayTimeHero
-        checkins={checkins}
+      {/* ── 히어로: 하루 시계 — 지금 할 말 + 오늘 하루 + 세 축을 한 장에 ── */}
+      <DayClockHero
+        checkins={checkins} goals={scoreGoals} lifeStage={lifeStage} alarmHours={alarmHours}
         nextAlarm={minutesToNextAlarm(now, alarmHours)}
         nowLabel={nowLabel}
-        onOpenReport={() => onTabChange('reports')}
-        onOpenAlarms={() => onTabChange('alarms')}
+        onTabChange={onTabChange}
       />
 
       {/* 배너 — 자리는 홈에 하나뿐 */}

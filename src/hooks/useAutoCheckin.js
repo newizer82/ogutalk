@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { buildSlots, slotKey, floorToSlot, MIN_ACTIVE_MS } from '../lib/checkinSlots'
-import { categoryForApp } from '../data/appCategories'
+import { categoryForApp, groupOf } from '../data/appCategories'
 import { noteUnmapped } from '../lib/unmapped'
 import { getUsage, hasUsageAccess } from '../lib/usageStats'
 import { saveCheckin, updateCheckinCategory, loadLocalCheckins } from '../lib/checkinStore'
@@ -66,11 +66,16 @@ export function useAutoCheckin({ enabled, userId, lastBackfillAt, setLastBackfil
       const recent  = await getUsage(hourAgo, now, 3)
       if (recent.length) {
         const top = recent[0]
+        const catOf = a => categoryForApp(a.pkg, overrides, a.category)
+        const group = groupOf(catOf(top))
         setLastHourSummary({
           pkg:      top.pkg,
           label:    top.label,
           minutes:  Math.round(top.seconds / 60),
-          category: categoryForApp(top.pkg, overrides, top.category),
+          category: catOf(top),
+          // 같은 그룹 앱을 합친 시간 — "집중 중" 은 이 숫자로 판정한다 (가장 많이 쓴 앱 하나로는 모자란다)
+          groupMinutes: Math.round(
+            recent.filter(a => group && groupOf(catOf(a)) === group).reduce((s, a) => s + a.seconds, 0) / 60),
         })
       } else {
         setLastHourSummary(null)

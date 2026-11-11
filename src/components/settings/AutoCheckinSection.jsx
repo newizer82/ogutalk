@@ -100,7 +100,8 @@ export default function AutoCheckinSection({ enabled, onChange }) {
             </div>
             <div style={{ color: '#3A3A3E', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
               매시간 무엇을 했는지 자동으로 기록해 리포트를 채우기 위해 사용합니다.<br /><br />
-              이 정보는 <b style={{ color: '#D9531B' }}>기기 안에서만 처리되며 서버로 전송되지 않습니다.</b>
+              어떤 앱을 몇 분 썼는지는 <b style={{ color: '#D9531B' }}>기기 안에서만 처리되며 서버로 전송되지 않습니다.</b>{' '}
+              30분마다의 활동 분류(예: 업무, 동영상)만 기록으로 남고, 로그인한 경우 다른 기록과 함께 동기화됩니다.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button

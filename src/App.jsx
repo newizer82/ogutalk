@@ -453,8 +453,12 @@ export default function App() {
     if (!showAlarmPopup) { setMissionIntro(null); return }
     if (!claimFirstAlarm()) return
     const m = todayMissions(lifeStage)
-    if (m.missions.length) {
-      setMissionIntro(`오늘의 추천 미션 ${m.missions.length}개가 준비됐어요 (${m.done.length}/${m.missions.length})`)
+    // 이미 해낸 게 있으면 "준비됐어요 (2/3)" 가 아니라 남은 수를 말한다. 다 했으면 아무 말도 안 한다
+    const left = m.missions.length - m.done.length
+    if (left > 0) {
+      setMissionIntro(m.done.length
+        ? `오늘의 추천 미션 ${left}개 남았어요 (${m.done.length}/${m.missions.length})`
+        : `오늘의 추천 미션 ${m.missions.length}개가 준비됐어요`)
     }
   }, [showAlarmPopup, lifeStage])
 

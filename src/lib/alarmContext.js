@@ -102,12 +102,20 @@ export function alarmMood({ checkins = [], autoSummary = null, now = Date.now() 
   if (autoSummary?.category) {
     const g = groupOf(autoSummary.category)
     const min = autoSummary.minutes ?? 0
+    // 같은 그룹의 앱을 합친 시간 (업무 앱 셋을 20분씩 썼으면 60분). 없으면 가장 많이 쓴 앱 하나
+    const groupMin = autoSummary.groupMinutes ?? min
     if (g === 'consume' && min >= BINGE_APP_MIN) {
       return { mood: 'binge', group: g, appLabel: autoSummary.label, appMinutes: min }
     }
-    if (g === 'produce' && (min >= BINGE_APP_MIN || streak.count >= STREAK_SLOTS)) {
-      return { mood: 'focus', group: g, streak: streak.count }
+    if (g === 'consume' && groupMin >= BINGE_APP_MIN) {
+      return { mood: 'binge', group: g, appLabel: labelOf(g), appMinutes: groupMin }
     }
+    if (g === 'produce' && groupMin >= BINGE_APP_MIN) {
+      return { mood: 'focus', group: g, minutes: groupMin }
+    }
+    // 잰 값이 있으면 기록이 이어졌다는 것만으로 올려 말하지 않는다.
+    // 30분 칸은 5분만 써도 찍힌다 → "1시간째 집중 중" 바로 아래에 "피클 13분" 이 적혔다 (실기기)
+    return { mood: 'normal', group: g, streak: streak.count }
   }
 
   if (streak.count >= STREAK_SLOTS) {
@@ -145,6 +153,7 @@ export function moodHeadline(m) {
     return `${label}${subjectJosa(label)} 한 시간을 넘겼어요`
   }
   if (m.mood === 'focus') {
+    if (m.minutes) return `${m.minutes}분째 집중 중이에요 👏`   // 잰 시간이 있으면 그 숫자로 말한다
     const hours = m.streak >= 4 ? '2시간째' : '1시간째'
     return `${hours} 집중 중이에요 👏`
   }
