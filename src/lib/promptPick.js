@@ -8,6 +8,7 @@
 //     (missionPick 과 같은 이유로 시각을 씨앗으로 쓴다)
 import { PROMPT_CARDS } from '../data/promptCards.js'
 import { slotOf } from './timeBanner.js'
+import { seedOf } from './missionPick.js'
 
 /**
  * 프롬프트에 끼울 값 만들기.
@@ -53,10 +54,8 @@ export function fill(template, ctx = {}) {
 
 /**
  * 지금 꺼낼 카드 하나.
- * 시간대 전용 카드를 먼저 보고, 없으면 'any' 까지 넓힌다.
- *
- * 최근 쓴 것을 따로 기억하지 않는다 — 씨앗이 매시간 1씩 오르므로
- * pool 을 순서대로 한 바퀴 돈다. 무작위보다 겹침이 적다.
+ * 최근 쓴 것을 따로 기억하지 않는다 — 매시간 한 칸씩 넘어가므로
+ * pool 을 순서대로 돈다. 무작위보다 겹침이 적다.
  *
  * @returns { id, title, hint, prompt } | null
  */
@@ -68,14 +67,22 @@ export function pickPrompt({
   const opts = { measured, consumeHigh }
   const usable = cards.filter(c => canUse(c, ctx, opts) && fill(c.prompt, ctx))
 
-  if (!usable.length) return null
+  // 지금 시간대 카드와 '언제나' 카드를 번갈아 놓는다.
+  // 시간대 카드만 쓰면 '언제나' 카드는 영영 안 나오고, 다 섞으면 오전에 "오늘 돌아보기" 가 나온다
+  const mine = usable.filter(c => c.slot === slot)
+  const any = usable.filter(c => c.slot === 'any')
+  const pool = []
+  for (let i = 0; i < Math.max(mine.length, any.length); i++) {
+    if (mine[i]) pool.push(mine[i])
+    if (any[i]) pool.push(any[i])
+  }
+  if (!pool.length) return null
 
-  const bySlot = usable.filter(c => c.slot === slot)
-  const pool = bySlot.length ? bySlot : usable
-
-  // 한 시간 안에서는 같은 카드 (초 단위로 바뀌면 읽다 말고 놓친다)
-  const seed = Math.floor(now / 3600000)
-  const card = pool[seed % pool.length]
+  // 한 시간 안에서는 같은 카드, 다음 시간에는 다음 카드.
+  // 시작점은 날짜로 흩는다 — 시각만 쓰면 카드 수가 24의 약수일 때 매일 같은 시각에 같은 카드가 나온다
+  const d = new Date(now)
+  const start = seedOf(`${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`)
+  const card = pool[(start + d.getHours()) % pool.length]
 
   return { id: card.id, title: card.title, hint: card.hint, prompt: fill(card.prompt, ctx) }
 }

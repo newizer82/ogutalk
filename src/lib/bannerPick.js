@@ -30,7 +30,21 @@ export function pickBanners(list = [], now = Date.now()) {
     }
     kept.push(b)
   }
-  return kept.slice(0, MAX_BANNERS)
+
+  // 사용법(tip)이 자리보다 많으면 날마다 한 칸씩 돌린다.
+  // sort 순으로 자르기만 하면 뒤에 적은 사용법은 영영 안 보인다.
+  const tips = kept.filter(b => b.kind === 'tip')
+  const rest = kept.filter(b => b.kind !== 'tip').slice(0, MAX_BANNERS)
+  const room = MAX_BANNERS - rest.length
+  if (room <= 0 || tips.length <= room) return kept.slice(0, MAX_BANNERS)
+
+  const day = Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / 86400000)
+  const turn = Array.from({ length: room }, (_, i) => tips[(day + i) % tips.length])
+  // 이벤트 → 오늘의 사용법 한 장 → 공지·서비스 → 나머지 사용법.
+  // 첫 장이 날마다 바뀌어야 "어제 본 배너" 가 되지 않는다
+  const events = rest.filter(b => b.kind === 'event')
+  const others = rest.filter(b => b.kind !== 'event')
+  return [...events, turn[0], ...others, ...turn.slice(1)]
 }
 
 function bySort(a, b) {

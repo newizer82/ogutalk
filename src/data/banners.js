@@ -17,8 +17,9 @@ export const BANNER_KINDS = {
 }
 
 /** action: { tab } 앱 안으로, { url } 바깥으로 */
-// sort 가 작을수록 앞. 앞에서 4장만 뜨므로 뒤쪽은 대기 상태가 된다.
-// 기간 한정(ends_at)이 끝나면 자동으로 빠지고 뒤에 있던 것이 올라온다.
+// sort 가 작을수록 앞. 한 번에 4장만 뜬다.
+// 사용법(tip)은 4장을 넘으면 날마다 한 칸씩 돌아가며 나온다 (bannerPick) — 앞의 것만 뜨면 뒤는 영영 안 보인다.
+// 기간 한정(ends_at)이 끝나면 자동으로 빠진다.
 export const DEFAULT_BANNERS = [
   {
     id: 'damda-2026',
@@ -37,6 +38,15 @@ export const DEFAULT_BANNERS = [
     text: '알람 때 AI에게 물어볼 질문을 드려요',
     action: { tab: 'settings' },
     sort: 5,
+  },
+  // ── 오구톡이 뭘 하는 앱인지 — 기능 이름이 아니라 그 기능이 주는 것을 말한다 ──
+  {
+    id: 'hourly',
+    kind: 'tip',
+    emoji: '⏰',
+    text: '매시 59분, 한 시간을 닫는 소리',
+    action: { tab: 'alarms' },
+    sort: 10,
   },
   {
     id: 'wincleany',
@@ -57,12 +67,36 @@ export const DEFAULT_BANNERS = [
     sort: 20,
   },
   {
+    id: 'three-axes',
+    kind: 'tip',
+    emoji: '🌱',
+    text: '내 시간을 성장·힐링·소통으로',
+    action: { tab: 'reports' },
+    sort: 22,
+  },
+  {
     id: 'stamps',
     kind: 'tip',
     emoji: '🏅',
     text: '오늘의 체크 4개를 채워보세요',
     action: { tab: 'reports' },
     sort: 30,
+  },
+  {
+    id: 'yesterday-me',
+    kind: 'tip',
+    emoji: '📈',
+    text: '오구 지수, 비교는 어제의 나만',
+    action: { tab: 'reports' },
+    sort: 32,
+  },
+  {
+    id: 'healing',
+    kind: 'tip',
+    emoji: '🌿',
+    text: '쉬는 시간도 좋은 시간이에요',
+    action: { tab: 'reports' },
+    sort: 35,
   },
   {
     id: 'mission',

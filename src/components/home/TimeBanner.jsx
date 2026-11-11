@@ -57,6 +57,7 @@ export default function TimeBanner({ checkins = [], goals = {}, lifeStage = null
 
   return (
     <button
+      data-ogu-banner
       onClick={go}
       style={{
         width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left',

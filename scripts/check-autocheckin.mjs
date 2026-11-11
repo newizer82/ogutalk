@@ -695,11 +695,10 @@ console.log('✓ 오늘의 미션 검증 통과')
     }
     assert.equal(new Set(DEFAULT_BANNERS.map(b => b.id)).size, DEFAULT_BANNERS.length, 'id 중복')
 
-    // 행사 기간 — 이벤트가 맨 앞, 미션은 자리 밖으로 밀린다
+    // 행사 기간 — 이벤트가 맨 앞, 네 칸을 넘지 않는다
     const during = pickBanners(DEFAULT_BANNERS, before)
     assert.equal(during.length, 4)
     assert.equal(during[0].id, 'damda-2026', '이벤트가 맨 앞이어야 한다')
-    assert.ok(!during.some(b => b.id === 'mission'), '네 칸을 넘으면 뒤는 대기')
 
     // 행사 당일 20시 — 아직 떠 있어야 한다 (당일까지라고 했다)
     assert.ok(pickBanners(DEFAULT_BANNERS, sameDay).some(b => b.id === 'damda-2026'),
@@ -708,8 +707,24 @@ console.log('✓ 오늘의 미션 검증 통과')
     // 다음 날 — 사라지고 뒤에 있던 것이 올라온다
     const later = pickBanners(DEFAULT_BANNERS, after)
     assert.ok(!later.some(b => b.id === 'damda-2026'), '지난 행사가 홈에 남으면 안 된다')
-    assert.ok(later.some(b => b.id === 'stamps'), '빈자리를 뒤에 있던 배너가 채워야 한다')
-    assert.equal(later[0].id, 'ai-bridge')
+    assert.equal(later.length, 4, '빈자리를 사용법이 채워야 한다')
+    assert.equal(later[0].kind, 'tip', '첫 장은 사용법이다 (서비스 홍보가 맨 앞에 서지 않는다)')
+    assert.equal(later[1].id, 'wincleany')
+
+    // 사용법은 날마다 한 칸씩 돈다 — sort 순으로 자르기만 하면 뒤의 것은 영영 안 보인다
+    const tipIds = DEFAULT_BANNERS.filter(b => b.kind === 'tip').map(b => b.id)
+    const seen = new Set(), firsts = new Set()
+    for (let d = 0; d < tipIds.length; d++) {
+      const list = pickBanners(DEFAULT_BANNERS, after + d * 86400000)
+      assert.equal(new Set(list.map(b => b.id)).size, list.length, '같은 배너가 두 번 뜬다')
+      list.forEach(b => seen.add(b.id))
+      firsts.add(list[0].id)
+    }
+    for (const id of tipIds) assert.ok(seen.has(id), `${id} 배너가 한 번도 안 나온다`)
+    assert.equal(firsts.size, tipIds.length, '첫 장이 날마다 바뀌어야 한다')
+    // 같은 날이면 몇 번을 골라도 같다 (열 때마다 바뀌면 읽다 말고 놓친다)
+    assert.deepEqual(pickBanners(DEFAULT_BANNERS, after).map(b => b.id),
+      pickBanners(DEFAULT_BANNERS, after + 3600000).map(b => b.id))
 
     // 윈클리니는 상시 — 둘 다에 있어야 한다
     for (const [when, list] of [['행사중', during], ['이후', later]]) {
@@ -1192,7 +1207,23 @@ console.log('✓ 시간대 배너 검증 통과')
   assert.equal(pickPrompt({ now: at(8), ctx }).id, pickPrompt({ now: at(8) + 59_000, ctx }).id)
   // 시간이 지나면 넘어간다 — 같은 카드를 하루 종일 보여주지 않는다
   const slotIds = new Set([14, 15, 16, 17].map(h => pickPrompt({ now: at(h), ctx, consumeHigh: true }).id))
-  assert.ok(slotIds.size > 1, '오후 내내 같은 카드만 나온다')
+  assert.equal(slotIds.size, 4, '오후에 같은 카드가 두 번 나온다')
+
+  // 어느 시간대든 그 시간대 카드나 '언제나' 카드만 — 오전에 "오늘 돌아보기" 가 나오면 안 된다
+  const slotAt = h => (h < 9 ? 'morning' : h < 13 ? 'noon' : h < 18 ? 'afternoon' : 'night')
+  for (let h = 6; h <= 23; h++) {
+    const got = PROMPT_CARDS.find(c => c.id === pickPrompt({ now: at(h), ctx, measured: true }).id)
+    assert.ok([slotAt(h), 'any'].includes(got.slot), `${h}시에 ${got.slot} 카드(${got.id})`)
+  }
+  // 매일 같은 시각에 같은 카드가 나오지 않는다 (카드 수가 24의 약수일 때 그랬다)
+  const sameHour = new Set(Array.from({ length: 14 }, (_, i) => pickPrompt({ now: at(12, 1 + i), ctx }).id))
+  assert.ok(sameHour.size >= 4, `2주 동안 12시 카드가 ${sameHour.size}종뿐이다`)
+  // '언제나' 카드도 실제로 나온다
+  const dayIds = new Set(Array.from({ length: 18 }, (_, i) => pickPrompt({ now: at(6 + i), ctx }).id))
+  assert.ok([...dayIds].some(id => PROMPT_CARDS.find(c => c.id === id).slot === 'any'), "'언제나' 카드가 안 나온다")
+
+  // 사용자가 고쳐 써야 하는 빈칸을 남기지 않는다 — AI가 먼저 묻게 한다
+  for (const c of PROMPT_CARDS) assert.ok(!c.prompt.includes('(여기에'), `${c.id} 에 손으로 채울 빈칸이 있다`)
 
   // 모든 카드가 조건만 갖추면 빈칸 없이 채워져야 한다
   const full = { ...ctx, event: '팀 회의' }
@@ -1203,6 +1234,9 @@ console.log('✓ 시간대 배너 검증 통과')
     assert.ok(c.hint.length <= 20, `${c.id} 힌트 김: ${c.hint}`)
   }
   assert.ok(PROMPT_CARDS.length >= 12, '카드가 12장은 돼야 하루가 돈다')
+  for (const s of ['morning', 'noon', 'afternoon', 'night']) {
+    assert.ok(PROMPT_CARDS.some(c => c.slot === s && !c.need.length), `${s} 에 조건 없는 카드가 없다`)
+  }
   assert.equal(new Set(PROMPT_CARDS.map(c => c.id)).size, PROMPT_CARDS.length, 'id 중복')
 }
 console.log('✓ 오구 브리지 검증 통과')
